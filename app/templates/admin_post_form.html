@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% if item %}
+    {% set page_title = "Edit Item" %}
+{% else %}
+    {% set page_title = "Create Item" %}
+{% endif %}
+
+{% block title %}{{ page_title }} · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 m-0">{{ page_title }}</h1>
+    <a href="{{ url_for('main.admin_posts') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<form method="post" class="card shadow-sm">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12">
+                <label for="title" class="form-label">Title</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="title"
+                    name="title"
+                    maxlength="160"
+                    required
+                    value="{{ values.title }}"
+                >
+            </div>
+
+            <div class="col-12">
+                <label for="summary" class="form-label">Summary</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="summary"
+                    name="summary"
+                    maxlength="256"
+                    value="{{ values.summary }}"
+                >
+            </div>
+
+            <div class="col-12">
+                <label for="body" class="form-label">Body</label>
+                <textarea
+                    class="form-control"
+                    id="body"
+                    name="body"
+                    rows="8"
+                >{{ values.body }}</textarea>
+            </div>
+
+            <div class="col-md-6">
+                <label for="starts_at" class="form-label">Start Time</label>
+                <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="starts_at"
+                    name="starts_at"
+                    value="{{ values.starts_at }}"
+                >
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="is_active"
+                        name="is_active"
+                        {% if values.is_active %}checked{% endif %}
+                    >
+                    <label class="form-check-label" for="is_active">
+                        Active
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end">
+        <button type="submit" class="btn btn-dark">Save</button>
+    </div>
+</form>
+{% endblock %}

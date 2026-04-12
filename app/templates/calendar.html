@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="{{ url_for('main.calendar_view', month=prev_month_value) }}" class="btn btn-outline-secondary btn-sm">Previous</a>
+    <h1 class="h3 m-0">{{ month_label }}</h1>
+    <a href="{{ url_for('main.calendar_view', month=next_month_value) }}" class="btn btn-outline-secondary btn-sm">Next</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-bordered align-top mb-0">
+            <thead>
+                <tr>
+                    <th class="text-center">Mon</th>
+                    <th class="text-center">Tue</th>
+                    <th class="text-center">Wed</th>
+                    <th class="text-center">Thu</th>
+                    <th class="text-center">Fri</th>
+                    <th class="text-center">Sat</th>
+                    <th class="text-center">Sun</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in month_matrix %}
+                    <tr>
+                        {% for day in week %}
+                            {% set day_items = events_by_day.get(day, []) %}
+                            <td class="{% if day.month != current_month %}bg-body-tertiary text-body-tertiary{% endif %}" style="width: 14.28%; min-height: 160px;">
+                                <div class="small fw-semibold mb-2">{{ day.day }}</div>
+
+                                {% if day_items %}
+                                    <div class="d-flex flex-column gap-2">
+                                        {% for item in day_items %}
+                                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-decoration-none">
+                                                <div class="border rounded p-2 small">
+                                                    <div class="fw-semibold">{{ item.starts_at.strftime("%H:%M") }}</div>
+                                                    <div>{{ item.title }}</div>
+                                                </div>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

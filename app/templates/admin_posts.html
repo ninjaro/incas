@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Posts and Events · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 m-0">Posts and Events</h1>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.calendar_view') }}" class="btn btn-outline-secondary btn-sm">Calendar</a>
+        <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+        <a href="{{ url_for('main.admin_post_create') }}" class="btn btn-dark btn-sm">Create</a>
+    </div>
+</div>
+
+{% if items %}
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Start</th>
+                        <th>State</th>
+                        <th>Updated</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ item.title }}</div>
+                                <div class="small text-muted">{{ item.slug }}</div>
+                            </td>
+                            <td>
+                                {% if item.starts_at %}
+                                    {{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.is_live %}
+                                    <span class="badge text-bg-dark">Live</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Archived</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
+                                <a href="{{ url_for('main.admin_post_edit', post_id=item.id) }}" class="btn btn-sm btn-dark">Edit</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <p class="text-muted">No items yet.</p>
+{% endif %}
+{% endblock %}
