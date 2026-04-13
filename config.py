@@ -3,7 +3,10 @@ import os
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
-    ADMIN_PHRASE = os.getenv("ADMIN_PHRASE", "dev-admin")
     APP_NAME = "INCAS"
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///incas.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    ACCESS_HASHES = {
+        "posts": "f7ad4b9a8a02154df95cd3c79e12e54efeaa9647b55632b18bacdb47033fefb0",
+        "language_tandem": "7a98ddc581d6ab06adeb6912deafc9a06f98fc694f83b0f3ad982e400798fc41",
+    }

@@ -15,7 +15,9 @@
             <a class="nav-link" href="{{ url_for('main.calendar_view') }}">Calendar</a>
             <a class="nav-link" href="{{ url_for('main.about') }}">About</a>
             <a class="nav-link" href="{{ url_for('main.contacts') }}">Contacts</a>
-            <a class="nav-link" href="{{ url_for('main.admin_login') }}">Admin</a>
+            {% if session.get('access_scopes') %}
+                <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Admin</a>
+            {% endif %}
         </div>
     </div>
 </nav>

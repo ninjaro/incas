@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Language Tandem · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 m-0">Language Tandem</h1>
+    <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Active Requests</div>
+                <div class="fs-3">{{ stats.active_requests }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Inactive Requests</div>
+                <div class="fs-3">{{ stats.inactive_requests }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Matches Ready</div>
+                <div class="fs-3">{{ stats.matches_ready }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p class="mb-0">Language Tandem processing will go here.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,6 @@
 import calendar
+import hashlib
+import hmac
 
 from datetime import datetime
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
@@ -9,10 +11,61 @@ bp = Blueprint("main", __name__)
 
 
 
-def require_admin():
-    if not session.get("admin_open"):
-        return redirect(url_for("main.admin_login"))
+ACCESS_LABELS = {
+    "posts": "Posts and Events",
+    "language_tandem": "Language Tandem",
+}
+
+
+def get_access_scopes():
+    return session.get("access_scopes", [])
+
+
+def has_any_access():
+    return len(get_access_scopes()) > 0
+
+
+def has_scope(scope):
+    return scope in get_access_scopes()
+
+
+def grant_scope(scope):
+    scopes = list(get_access_scopes())
+    if scope not in scopes:
+        scopes.append(scope)
+        session["access_scopes"] = scopes
+
+
+def resolve_scope_by_phrase(phrase):
+    phrase = (phrase or "").strip()
+    if not phrase:
+        return None
+
+    digest = hashlib.sha256(phrase.encode("utf-8")).hexdigest()
+
+    for scope, expected_digest in current_app.config["ACCESS_HASHES"].items():
+        if hmac.compare_digest(digest, expected_digest):
+            return scope
+
     return None
+
+
+def require_any_access():
+    if has_any_access():
+        return None
+    return redirect(url_for("main.admin_login"))
+
+
+def require_scope(scope):
+    if has_scope(scope):
+        return None
+
+    flash(f"Access required: {ACCESS_LABELS.get(scope, scope)}.")
+
+    if has_any_access():
+        return redirect(url_for("main.admin_corridor"))
+
+    return redirect(url_for("main.admin_login"))
 
 
 def slugify(value):
@@ -177,16 +230,26 @@ def calendar_view():
 def admin_login():
     if request.method == "POST":
         phrase = request.form.get("phrase", "").strip()
-        if phrase == current_app.config["ADMIN_PHRASE"]:
-            session["admin_open"] = True
+        scope = resolve_scope_by_phrase(phrase)
+
+        if scope is not None:
+            grant_scope(scope)
             return redirect(url_for("main.admin_corridor"))
+
         flash("Invalid access phrase.")
+
+        if has_any_access():
+            return redirect(url_for("main.admin_corridor"))
+
+    if has_any_access():
+        return redirect(url_for("main.admin_corridor"))
+
     return render_template("admin_login.html")
 
 
 @bp.route("/admin/corridor")
 def admin_corridor():
-    guard = require_admin()
+    guard = require_any_access()
     if guard:
         return guard
 
@@ -196,11 +259,32 @@ def admin_corridor():
         "visits_today": 17,
     }
 
-    return render_template("admin_corridor.html", stats=stats)
+    doors = [
+        {
+            "label": "Posts and Events",
+            "scope": "posts",
+            "is_open": has_scope("posts"),
+            "url": url_for("main.admin_posts") if has_scope("posts") else None,
+        },
+        {
+            "label": "Language Tandem",
+            "scope": "language_tandem",
+            "is_open": has_scope("language_tandem"),
+            "url": url_for("main.admin_language_tandem") if has_scope("language_tandem") else None,
+        },
+    ]
+
+    return render_template(
+        "admin_corridor.html",
+        stats=stats,
+        doors=doors,
+        access_scopes=get_access_scopes(),
+        access_labels=ACCESS_LABELS,
+    )
 
 @bp.route("/admin/posts")
 def admin_posts():
-    guard = require_admin()
+    guard = require_scope("posts")
     if guard:
         return guard
 
@@ -210,7 +294,7 @@ def admin_posts():
 
 @bp.route("/admin/posts/new", methods=["GET", "POST"])
 def admin_post_create():
-    guard = require_admin()
+    guard = require_scope("posts")
     if guard:
         return guard
 
@@ -250,7 +334,7 @@ def admin_post_create():
 
 @bp.route("/admin/posts/<int:post_id>/edit", methods=["GET", "POST"])
 def admin_post_edit(post_id):
-    guard = require_admin()
+    guard = require_scope("posts")
     if guard:
         return guard
 
@@ -293,6 +377,20 @@ def admin_post_edit(post_id):
     }
 
     return render_template("admin_post_form.html", values=values, item=item)
+
+@bp.route("/admin/language-tandem")
+def admin_language_tandem():
+    guard = require_scope("language_tandem")
+    if guard:
+        return guard
+
+    stats = {
+        "active_requests": 0,
+        "inactive_requests": 0,
+        "matches_ready": 0,
+    }
+
+    return render_template("admin_language_tandem.html", stats=stats)
 
 @bp.route("/admin/logout")
 def admin_logout():

@@ -23,7 +23,8 @@ python run.py
 ## Admin access
 
 ```bash
-dev-admin
+dev-posts
+dev-language-tandem
 ```
 
 ## Docker deps

@@ -8,7 +8,7 @@
         <div class="mb-3 d-flex gap-2">
             <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary">Back to Home</a>
 
-            {% if session.get('admin_open') %}
+            {% if 'posts' in session.get('access_scopes', []) %}
                 <a href="{{ url_for('main.admin_post_edit', post_id=item.id) }}" class="btn btn-sm btn-dark">Edit</a>
             {% endif %}
         </div>
