@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Language Tandem · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="h3 mb-4">Language Tandem</h1>
+
+        <form method="post" class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
+                        <input class="form-control" id="first_name" name="first_name" required value="{{ values.first_name }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
+                        <input class="form-control" id="last_name" name="last_name" required value="{{ values.last_name }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                        <input class="form-control" id="email" name="email" type="email" required value="{{ values.email }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="occupation">Occupation <span class="text-danger">*</span></label>
+                        <select class="form-select" id="occupation" name="occupation" required>
+                            <option value="">Select</option>
+                            <option value="Student at RWTH Aachen" {% if values.occupation == "Student at RWTH Aachen" %}selected{% endif %}>Student at RWTH Aachen</option>
+                            <option value="Student at FH Aachen" {% if values.occupation == "Student at FH Aachen" %}selected{% endif %}>Student at FH Aachen</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
+                        <select class="form-select" id="gender" name="gender" required>
+                            <option value="">Select</option>
+                            <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
+                            <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
+                            <option value="Divers" {% if values.gender == "Divers" %}selected{% endif %}>Divers</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="birth_year">Year of Birth <span class="text-danger">*</span></label>
+                        <input class="form-control" id="birth_year" name="birth_year" type="number" required value="{{ values.birth_year }}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="departure_date">Departure Date <span class="text-danger">*</span></label>
+                        <input class="form-control" id="departure_date" name="departure_date" type="date" required value="{{ values.departure_date }}">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="country_of_origin">Country of Origin <span class="text-danger">*</span></label>
+                        <select class="form-select" id="country_of_origin" name="country_of_origin" required>
+                            <option value="">Select</option>
+                            {% for country in country_options %}
+                                <option value="{{ country.code }}" {% if values.country_of_origin == country.code %}selected{% endif %}>
+                                    {{ country.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label m-0" for="offered_languages">Offered Languages <span class="text-danger">*</span></label>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary language-sort" data-target-select="offered_languages" data-sort-mode="alpha">A–Z</button>
+                                <button type="button" class="btn btn-outline-secondary language-sort" data-target-select="offered_languages" data-sort-mode="popularity">Popular</button>
+                            </div>
+                        </div>
+
+                        {% if offered_field.hint_choices %}
+                            <div class="mb-2">
+                                <div class="small text-muted mb-2">Recommended for this country</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for choice in offered_field.hint_choices %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm language-chip {% if choice.is_selected %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+                                            data-target-select="offered_languages"
+                                            data-target-value="{{ choice.code }}"
+                                        >
+                                            {{ choice.label }}
+                                            {% if choice.signal_level %}
+                                                <span class="ms-1">{{ "▮" * choice.signal_level }}{{ "▯" * (4 - choice.signal_level) }}</span>
+                                            {% endif %}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+                        {% endif %}
+                        <div class="mb-2">
+                            <input
+                                type="text"
+                                class="form-control form-control-sm language-filter"
+                                data-target-select="offered_languages"
+                                placeholder="Filter languages"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <select
+                            class="form-select language-select"
+                            id="offered_languages"
+                            name="offered_languages"
+                            multiple
+                            size="10"
+                            required
+                        >
+                            {% for choice in offered_field.all_choices %}
+                                <option
+                                    value="{{ choice.code }}"
+                                    data-label="{{ choice.label|lower }}"
+                                    data-popularity="{{ choice.popularity }}"
+                                    data-is-hint="{{ 1 if choice.is_hint else 0 }}"
+                                    {% if choice.is_selected %}selected{% endif %}
+                                >
+                                    {% if choice.is_hint %}★ {% endif %}{{ choice.label }}{% if choice.signal_level %} · {{ "▮" * choice.signal_level }}{{ "▯" * (4 - choice.signal_level) }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label m-0" for="requested_languages">Requested Languages <span class="text-danger">*</span></label>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary language-sort" data-target-select="requested_languages" data-sort-mode="alpha">A–Z</button>
+                                <button type="button" class="btn btn-outline-secondary language-sort" data-target-select="requested_languages" data-sort-mode="popularity">Popular</button>
+                            </div>
+                        </div>
+
+                        {% if requested_field.hint_choices %}
+                            <div class="mb-2">
+                                <div class="small text-muted mb-2">Strong local availability</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for choice in requested_field.hint_choices %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm language-chip {% if choice.is_selected %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+                                            data-target-select="requested_languages"
+                                            data-target-value="{{ choice.code }}"
+                                        >
+                                            {{ choice.label }}
+                                            {% if choice.signal_level %}
+                                                <span class="ms-1">{{ "▮" * choice.signal_level }}{{ "▯" * (4 - choice.signal_level) }}</span>
+                                            {% endif %}
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr class="my-3">
+                        {% endif %}
+                        <div class="mb-2">
+                            <input
+                                type="text"
+                                class="form-control form-control-sm language-filter"
+                                data-target-select="requested_languages"
+                                placeholder="Filter languages"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <select
+                            class="form-select language-select"
+                            id="requested_languages"
+                            name="requested_languages"
+                            multiple
+                            size="10"
+                            required
+                        >
+                            {% for choice in requested_field.all_choices %}
+                                <option
+                                    value="{{ choice.code }}"
+                                    data-label="{{ choice.label|lower }}"
+                                    data-popularity="{{ choice.popularity }}"
+                                    data-is-hint="{{ 1 if choice.is_hint else 0 }}"
+                                    {% if choice.is_selected %}selected{% endif %}
+                                >
+                                    {% if choice.is_hint %}★ {% endif %}{{ choice.label }}{% if choice.signal_level %} · {{ "▮" * choice.signal_level }}{{ "▯" * (4 - choice.signal_level) }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
+                            <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" id="same_gender_only" name="same_gender_only" type="checkbox" {% if values.same_gender_only %}checked{% endif %}>
+                            <label class="form-check-label" for="same_gender_only">Same gender tandems only</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="comment">Comment</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end">
+                <button type="submit" class="btn btn-dark">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    const languageSelectState = {};
+
+    function ensureLanguageSelectState(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) {
+            return null;
+        }
+
+        if (!languageSelectState[selectId]) {
+            languageSelectState[selectId] = {
+                allOptions: Array.from(select.options).map((option) => ({
+                    value: option.value,
+                    text: option.text,
+                    label: option.dataset.label || option.text.toLowerCase(),
+                    popularity: Number(option.dataset.popularity || 0),
+                    isHint: option.dataset.isHint === "1",
+                    selected: option.selected,
+                })),
+                sortMode: "alpha",
+                query: "",
+            };
+        }
+
+        return languageSelectState[selectId];
+    }
+
+    function syncLanguageChips(selectId) {
+        const state = ensureLanguageSelectState(selectId);
+        if (!state) {
+            return;
+        }
+
+        const selectedValues = new Set(
+            state.allOptions
+                .filter((item) => item.selected)
+                .map((item) => item.value)
+        );
+
+        document.querySelectorAll(`.language-chip[data-target-select="${selectId}"]`).forEach((button) => {
+            const isActive = selectedValues.has(button.dataset.targetValue);
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function renderLanguageSelect(selectId) {
+        const select = document.getElementById(selectId);
+        const state = ensureLanguageSelectState(selectId);
+
+        if (!select || !state) {
+            return;
+        }
+
+        const items = [...state.allOptions];
+
+        items.sort((a, b) => {
+            if (state.sortMode === "popularity") {
+                const popularityDiff = b.popularity - a.popularity;
+                if (popularityDiff !== 0) {
+                    return popularityDiff;
+                }
+            }
+
+            return a.label.localeCompare(b.label);
+        });
+
+        const query = state.query.trim().toLowerCase();
+        const filteredItems = query
+            ? items.filter((item) => item.text.toLowerCase().includes(query))
+            : items;
+
+        select.innerHTML = "";
+
+        filteredItems.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = item.value;
+            option.text = item.text;
+            option.dataset.label = item.label;
+            option.dataset.popularity = String(item.popularity);
+            option.dataset.isHint = item.isHint ? "1" : "0";
+            option.selected = item.selected;
+            select.appendChild(option);
+        });
+
+        syncLanguageChips(selectId);
+        syncSortButtons(selectId);
+    }
+
+    function syncSortButtons(selectId) {
+        const state = ensureLanguageSelectState(selectId);
+        if (!state) {
+            return;
+        }
+
+        document.querySelectorAll(`.language-sort[data-target-select="${selectId}"]`).forEach((button) => {
+            const isActive = button.dataset.sortMode === state.sortMode;
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function toggleLanguageSelection(selectId, value) {
+        const state = ensureLanguageSelectState(selectId);
+        if (!state) {
+            return;
+        }
+
+        const item = state.allOptions.find((entry) => entry.value === value);
+        if (!item) {
+            return;
+        }
+
+        item.selected = !item.selected;
+        renderLanguageSelect(selectId);
+    }
+
+    function updateLanguageSelectionFromSelect(selectId) {
+        const select = document.getElementById(selectId);
+        const state = ensureLanguageSelectState(selectId);
+
+        if (!select || !state) {
+            return;
+        }
+
+        const visibleSelection = new Map(
+            Array.from(select.options).map((option) => [option.value, option.selected])
+        );
+
+        state.allOptions.forEach((item) => {
+            if (visibleSelection.has(item.value)) {
+                item.selected = visibleSelection.get(item.value);
+            }
+        });
+
+        syncLanguageChips(selectId);
+    }
+
+    function setLanguageFilter(selectId, query) {
+        const state = ensureLanguageSelectState(selectId);
+        if (!state) {
+            return;
+        }
+
+        state.query = query || "";
+        renderLanguageSelect(selectId);
+    }
+
+    function setLanguageSortMode(selectId, sortMode) {
+        const state = ensureLanguageSelectState(selectId);
+        if (!state) {
+            return;
+        }
+
+        state.sortMode = sortMode;
+        renderLanguageSelect(selectId);
+    }
+
+    document.querySelectorAll(".language-chip").forEach((button) => {
+        button.addEventListener("click", () => {
+            toggleLanguageSelection(button.dataset.targetSelect, button.dataset.targetValue);
+        });
+    });
+
+    document.querySelectorAll(".language-select").forEach((select) => {
+        ensureLanguageSelectState(select.id);
+
+        select.addEventListener("change", () => {
+            updateLanguageSelectionFromSelect(select.id);
+        });
+
+        renderLanguageSelect(select.id);
+    });
+
+    document.querySelectorAll(".language-sort").forEach((button) => {
+        button.addEventListener("click", () => {
+            setLanguageSortMode(button.dataset.targetSelect, button.dataset.sortMode);
+        });
+    });
+
+    document.querySelectorAll(".language-filter").forEach((input) => {
+        input.addEventListener("input", () => {
+            setLanguageFilter(input.dataset.targetSelect, input.value);
+        });
+    });
+</script>
+{% endblock %}

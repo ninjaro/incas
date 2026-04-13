@@ -1,15 +1,63 @@
 import calendar
 import hashlib
 import hmac
+import json
 
-from datetime import datetime
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from collections import Counter
+from functools import lru_cache
 
-from app.models import Post, db
+import pycountry
+from babel import Locale
+from babel.languages import get_official_languages
+
+from datetime import datetime, date
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
+
+from app.models import Post, LanguageTandemRequest, db
 
 bp = Blueprint("main", __name__)
 
 
+LANGUAGE_OPTIONS = [
+    "* any",
+    "Arabic",
+    "Chinese (Mandarin)",
+    "English",
+    "French",
+    "German",
+    "Hindi",
+    "Italian",
+    "Japanese",
+    "Portuguese",
+    "Spanish",
+    "Urdu",
+    "Russian",
+    "Ukrainian",
+    "Dutch",
+    "Turkish",
+    "Polish",
+]
+
+COUNTRY_OPTIONS = [
+    "Germany",
+    "Ukraine",
+    "France",
+    "Italy",
+    "Spain",
+    "Turkey",
+    "China",
+    "India",
+    "United States",
+    "United Kingdom",
+    "Poland",
+    "Netherlands",
+    "Other",
+]
+
+ACCESS_TARGETS = {
+    "posts": "main.admin_posts",
+    "language_tandem": "main.admin_language_tandem",
+}
 
 ACCESS_LABELS = {
     "posts": "Posts and Events",
@@ -35,6 +83,186 @@ def grant_scope(scope):
         scopes.append(scope)
         session["access_scopes"] = scopes
 
+def get_scope_target(scope):
+    endpoint = ACCESS_TARGETS.get(scope)
+    if endpoint is None:
+        return url_for("main.admin_corridor")
+    return url_for(endpoint)
+
+@lru_cache(maxsize=1)
+def get_country_label_map():
+    locale = Locale("en")
+
+    labels = {}
+    for country in pycountry.countries:
+        code = getattr(country, "alpha_2", None)
+        if not code:
+            continue
+        labels[code] = locale.territories.get(code, country.name)
+
+    return labels
+
+@lru_cache(maxsize=1)
+def get_country_options():
+    labels = get_country_label_map()
+    return [
+        {"code": code, "label": label}
+        for code, label in sorted(labels.items(), key=lambda item: item[1])
+    ]
+
+@lru_cache(maxsize=1)
+def get_language_label_map():
+    locale = Locale("en")
+
+    labels = {}
+    for language in pycountry.languages:
+        code = getattr(language, "alpha_2", None)
+        if not code or len(code) != 2:
+            continue
+        if code in labels:
+            continue
+
+        fallback = getattr(language, "name", code)
+        labels[code] = locale.languages.get(code, fallback)
+
+    return labels
+
+def normalize_country_code(value):
+    code = (value or "").strip().upper()
+    if code not in get_country_label_map():
+        return ""
+    return code
+
+def normalize_language_codes(values):
+    labels = get_language_label_map()
+
+    cleaned = []
+    seen = set()
+
+    for value in values:
+        code = (value or "").strip().lower()
+        if not code or code not in labels or code in seen:
+            continue
+        seen.add(code)
+        cleaned.append(code)
+
+    return cleaned
+
+
+def get_offered_language_counts():
+    counts = Counter()
+    rows = (
+        LanguageTandemRequest.query
+        .with_entities(LanguageTandemRequest.offered_languages)
+        .all()
+    )
+
+    for row in rows:
+        raw_value = row[0] or "[]"
+
+        try:
+            codes = json.loads(raw_value)
+        except (TypeError, ValueError):
+            continue
+
+        for code in set(codes):
+            if code in get_language_label_map():
+                counts[code] += 1
+
+    return counts
+
+
+def get_signal_level(count, max_count):
+    if count <= 0 or max_count <= 0:
+        return 0
+
+    ratio = count / max_count
+
+    if ratio >= 0.75:
+        return 4
+    if ratio >= 0.50:
+        return 3
+    if ratio >= 0.25:
+        return 2
+    return 1
+
+def get_country_recommended_language_codes(country_code):
+    if not country_code:
+        return []
+
+    allowed_codes = get_language_label_map()
+
+    try:
+        codes = get_official_languages(
+            country_code,
+            regional=False,
+            de_facto=True,
+        )
+    except Exception:
+        return []
+
+    return [code for code in codes if code in allowed_codes]
+
+
+def build_language_field_context(selected_codes, hint_codes, popularity_counts):
+    labels = get_language_label_map()
+    hint_set = set(hint_codes)
+    max_count = max(popularity_counts.values(), default=0)
+
+    all_choices = []
+    for code, label in labels.items():
+        popularity = popularity_counts.get(code, 0)
+        all_choices.append(
+            {
+                "code": code,
+                "label": label,
+                "popularity": popularity,
+                "signal_level": get_signal_level(popularity, max_count),
+                "is_hint": code in hint_set,
+                "is_selected": code in selected_codes,
+            }
+        )
+
+    all_choices.sort(key=lambda item: item["label"].lower())
+    by_code = {item["code"]: item for item in all_choices}
+
+    hint_choices = []
+    for code in hint_codes:
+        choice = by_code.get(code)
+        if choice is not None:
+            hint_choices.append(choice)
+
+    return {
+        "hint_choices": hint_choices,
+        "all_choices": all_choices,
+    }
+
+def render_language_tandem_form_page(values):
+    offered_counts = get_offered_language_counts()
+
+    offered_field = build_language_field_context(
+        selected_codes=values["offered_languages"],
+        hint_codes=get_country_recommended_language_codes(values["country_of_origin"]),
+        popularity_counts=offered_counts,
+    )
+
+    requested_field = build_language_field_context(
+        selected_codes=values["requested_languages"],
+        hint_codes=[code for code, _count in offered_counts.most_common(8)],
+        popularity_counts=offered_counts,
+    )
+
+    return render_template(
+        "language_tandem_form.html",
+        values=values,
+        country_options=get_country_options(),
+        offered_field=offered_field,
+        requested_field=requested_field,
+    )
+
+def format_language_codes(codes):
+    labels = get_language_label_map()
+    return [labels.get(code, code) for code in codes]
 
 def resolve_scope_by_phrase(phrase):
     phrase = (phrase or "").strip()
@@ -100,6 +328,31 @@ def unique_slug(title, current_id=None):
         slug = f"{base}-{index}"
         index += 1
 
+def parse_birth_year(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+
+    try:
+        year = int(value)
+    except ValueError:
+        return None
+
+    current_year = datetime.utcnow().year
+    if year < 1900 or year > current_year:
+        return None
+
+    return year
+
+def parse_departure_date(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
 
 def parse_starts_at(value):
     value = (value or "").strip()
@@ -121,6 +374,24 @@ def parse_calendar_month(raw_value):
         now = datetime.utcnow()
         return now.year, now.month
 
+def build_counter_rows(counter, label_map=None, limit=8):
+    rows = []
+
+    for key, count in counter.most_common(limit):
+        if label_map is None:
+            label = key
+        elif callable(label_map):
+            label = label_map(key)
+        else:
+            label = label_map.get(key, key)
+
+        rows.append({
+            "key": key,
+            "label": label,
+            "count": count,
+        })
+
+    return rows
 
 @bp.route("/")
 def index():
@@ -225,6 +496,89 @@ def calendar_view():
         next_month_value=f"{next_year:04d}-{next_month:02d}",
     )
 
+@bp.route("/language-tandem", methods=["GET", "POST"])
+def language_tandem_form():
+    values = {
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "occupation": "",
+        "gender": "",
+        "birth_year": "",
+        "departure_date": "",
+        "country_of_origin": "",
+        "offered_languages": [],
+        "requested_languages": [],
+        "requested_native_only": False,
+        "same_gender_only": False,
+        "comment": "",
+    }
+
+    if request.method == "POST":
+        values["first_name"] = request.form.get("first_name", "").strip()
+        values["last_name"] = request.form.get("last_name", "").strip()
+        values["email"] = request.form.get("email", "").strip()
+        values["occupation"] = request.form.get("occupation", "").strip()
+        values["gender"] = request.form.get("gender", "").strip()
+        values["birth_year"] = request.form.get("birth_year", "").strip()
+        values["departure_date"] = request.form.get("departure_date", "").strip()
+        values["country_of_origin"] = normalize_country_code(request.form.get("country_of_origin"))
+        values["offered_languages"] = normalize_language_codes(request.form.getlist("offered_languages"))
+        values["requested_languages"] = normalize_language_codes(request.form.getlist("requested_languages"))
+        values["requested_native_only"] = request.form.get("requested_native_only") == "on"
+        values["same_gender_only"] = request.form.get("same_gender_only") == "on"
+        values["comment"] = request.form.get("comment", "").strip()
+
+        birth_year = parse_birth_year(values["birth_year"])
+        departure_date = parse_departure_date(values["departure_date"])
+
+        if not values["first_name"] or not values["last_name"] or not values["email"]:
+            flash("First name, last name, and email are required.")
+            return render_language_tandem_form_page(values)
+
+        if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
+            flash("Occupation, gender, and country of origin are required.")
+            return render_language_tandem_form_page(values)
+
+        if birth_year is None:
+            flash("Enter a valid birth year.")
+            return render_language_tandem_form_page(values)
+
+        if departure_date is None:
+            flash("Enter a valid departure date.")
+            return render_language_tandem_form_page(values)
+
+        if not values["offered_languages"]:
+            flash("Select at least one offered language.")
+            return render_language_tandem_form_page(values)
+
+        if not values["requested_languages"]:
+            flash("Select at least one requested language.")
+            return render_language_tandem_form_page(values)
+
+        item = LanguageTandemRequest(
+            first_name=values["first_name"],
+            last_name=values["last_name"],
+            email=values["email"],
+            occupation=values["occupation"],
+            gender=values["gender"],
+            birth_year=birth_year,
+            departure_date=departure_date,
+            country_of_origin=values["country_of_origin"],
+            offered_languages=json.dumps(values["offered_languages"]),
+            requested_languages=json.dumps(values["requested_languages"]),
+            requested_native_only=values["requested_native_only"],
+            same_gender_only=values["same_gender_only"],
+            comment=values["comment"],
+        )
+
+        db.session.add(item)
+        db.session.commit()
+
+        flash("Your request has been submitted.")
+        return redirect(url_for("main.language_tandem_form"))
+
+    return render_language_tandem_form_page(values)
 
 @bp.route("/admin", methods=["GET", "POST"])
 def admin_login():
@@ -246,6 +600,33 @@ def admin_login():
 
     return render_template("admin_login.html")
 
+
+@bp.route("/admin/access/<scope>", methods=["GET", "POST"])
+def admin_scope_access(scope):
+    if scope not in ACCESS_LABELS:
+        abort(404)
+
+    if has_scope(scope):
+        return redirect(get_scope_target(scope))
+
+    if request.method == "POST":
+        phrase = request.form.get("phrase", "").strip()
+        resolved_scope = resolve_scope_by_phrase(phrase)
+
+        if resolved_scope == scope:
+            grant_scope(scope)
+            return redirect(get_scope_target(scope))
+
+        if resolved_scope is not None:
+            flash(f"This phrase unlocks {ACCESS_LABELS.get(resolved_scope, resolved_scope)}, not {ACCESS_LABELS[scope]}.")
+        else:
+            flash("Invalid access phrase.")
+
+    return render_template(
+        "admin_scope_access.html",
+        scope=scope,
+        scope_label=ACCESS_LABELS[scope],
+    )
 
 @bp.route("/admin/corridor")
 def admin_corridor():
@@ -384,13 +765,117 @@ def admin_language_tandem():
     if guard:
         return guard
 
+    status = (request.args.get("status") or "all").strip()
+    gender = (request.args.get("gender") or "").strip()
+    occupation = (request.args.get("occupation") or "").strip()
+    country = normalize_country_code(request.args.get("country"))
+
+    items = (
+        LanguageTandemRequest.query
+        .order_by(LanguageTandemRequest.created_at.desc())
+        .all()
+    )
+
+    country_labels = get_country_label_map()
+    language_labels = get_language_label_map()
+
+    for item in items:
+        item.country_of_origin_display = country_labels.get(
+            item.country_of_origin,
+            item.country_of_origin,
+        )
+        item.offered_languages_display = format_language_codes(item.offered_languages_list)
+        item.requested_languages_display = format_language_codes(item.requested_languages_list)
+
+    filtered_items = items
+
+    if status == "viewed":
+        filtered_items = [item for item in filtered_items if item.is_viewed]
+    elif status == "unviewed":
+        filtered_items = [item for item in filtered_items if not item.is_viewed]
+
+    if gender:
+        filtered_items = [item for item in filtered_items if item.gender == gender]
+
+    if occupation:
+        filtered_items = [item for item in filtered_items if item.occupation == occupation]
+
+    if country:
+        filtered_items = [item for item in filtered_items if item.country_of_origin == country]
+
+    gender_counter = Counter(item.gender for item in filtered_items if item.gender)
+    occupation_counter = Counter(item.occupation for item in filtered_items if item.occupation)
+    country_counter = Counter(item.country_of_origin for item in filtered_items if item.country_of_origin)
+
+    offered_language_counter = Counter()
+    requested_language_counter = Counter()
+
+    for item in filtered_items:
+        offered_language_counter.update(set(item.offered_languages_list))
+        requested_language_counter.update(set(item.requested_languages_list))
+
     stats = {
-        "active_requests": 0,
-        "inactive_requests": 0,
-        "matches_ready": 0,
+        "total_requests": len(items),
+        "unviewed_requests": sum(1 for item in items if not item.is_viewed),
+        "viewed_requests": sum(1 for item in items if item.is_viewed),
+        "filtered_requests": len(filtered_items),
     }
 
-    return render_template("admin_language_tandem.html", stats=stats)
+    available_genders = sorted({item.gender for item in items if item.gender})
+    available_occupations = sorted({item.occupation for item in items if item.occupation})
+    available_country_codes = sorted(
+        {item.country_of_origin for item in items if item.country_of_origin},
+        key=lambda code: country_labels.get(code, code),
+    )
+
+    filters = {
+        "status": status,
+        "gender": gender,
+        "occupation": occupation,
+        "country": country,
+    }
+
+    filter_options = {
+        "genders": available_genders,
+        "occupations": available_occupations,
+        "countries": [
+            {"code": code, "label": country_labels.get(code, code)}
+            for code in available_country_codes
+        ],
+    }
+
+    breakdowns = {
+        "genders": build_counter_rows(gender_counter),
+        "occupations": build_counter_rows(occupation_counter),
+        "countries": build_counter_rows(country_counter, label_map=country_labels),
+        "offered_languages": build_counter_rows(offered_language_counter, label_map=language_labels),
+        "requested_languages": build_counter_rows(requested_language_counter, label_map=language_labels),
+    }
+
+    return render_template(
+        "admin_language_tandem.html",
+        stats=stats,
+        items=filtered_items,
+        filters=filters,
+        filter_options=filter_options,
+        breakdowns=breakdowns,
+    )
+
+@bp.route("/admin/language-tandem/<int:request_id>/toggle-viewed", methods=["POST"])
+def admin_language_tandem_toggle_viewed(request_id):
+    guard = require_scope("language_tandem")
+    if guard:
+        return guard
+
+    item = LanguageTandemRequest.query.get_or_404(request_id)
+    item.is_viewed = not item.is_viewed
+    db.session.commit()
+
+    return_to = (request.form.get("return_to") or "").strip()
+    if return_to.startswith("/admin/language-tandem"):
+        return redirect(return_to)
+
+    return redirect(url_for("main.admin_language_tandem"))
 
 @bp.route("/admin/logout")
 def admin_logout():
