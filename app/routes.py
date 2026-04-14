@@ -14,6 +14,7 @@ from datetime import datetime, date
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, session, url_for
 
 from app.models import Post, LanguageTandemRequest, db
+from app.matching import MATCH_CONFIG, build_match_groups
 
 bp = Blueprint("main", __name__)
 
@@ -204,6 +205,24 @@ def get_country_recommended_language_codes(country_code):
     return [code for code in codes if code in allowed_codes]
 
 
+def hydrate_tandem_request_display(item, country_labels=None):
+    country_labels = country_labels or get_country_label_map()
+
+    item.country_of_origin_display = country_labels.get(
+        item.country_of_origin,
+        item.country_of_origin,
+    )
+    item.offered_languages_display = format_language_codes(item.offered_languages_list)
+    item.requested_languages_display = format_language_codes(item.requested_languages_list)
+
+    return item
+
+def get_safe_tandem_return_url(value):
+    candidate = (value or "").strip()
+    if candidate.startswith("/admin/language-tandem"):
+        return candidate
+    return url_for("main.admin_language_tandem")
+
 def build_language_field_context(selected_codes, hint_codes, popularity_counts):
     labels = get_language_label_map()
     hint_set = set(hint_codes)
@@ -392,6 +411,36 @@ def build_counter_rows(counter, label_map=None, limit=8):
         })
 
     return rows
+
+def normalize_single_language_code(value):
+    codes = normalize_language_codes([value])
+    return codes[0] if codes else ""
+
+def matches_tandem_query(item, query):
+    query = (query or "").strip().lower()
+    if not query:
+        return True
+
+    haystack = " ".join([
+        str(item.id),
+        item.first_name or "",
+        item.last_name or "",
+        item.email or "",
+        item.comment or "",
+    ]).lower()
+
+    return query in haystack
+
+def matches_yes_no_filter(flag_value, raw_filter):
+    raw_filter = (raw_filter or "").strip().lower()
+
+    if raw_filter == "yes":
+        return bool(flag_value)
+
+    if raw_filter == "no":
+        return not bool(flag_value)
+
+    return True
 
 @bp.route("/")
 def index():
@@ -769,6 +818,11 @@ def admin_language_tandem():
     gender = (request.args.get("gender") or "").strip()
     occupation = (request.args.get("occupation") or "").strip()
     country = normalize_country_code(request.args.get("country"))
+    q = (request.args.get("q") or "").strip()
+    offered_language = normalize_single_language_code(request.args.get("offered_language"))
+    requested_language = normalize_single_language_code(request.args.get("requested_language"))
+    native_only = (request.args.get("native_only") or "").strip()
+    same_gender_only = (request.args.get("same_gender_only") or "").strip()
 
     items = (
         LanguageTandemRequest.query
@@ -780,28 +834,36 @@ def admin_language_tandem():
     language_labels = get_language_label_map()
 
     for item in items:
-        item.country_of_origin_display = country_labels.get(
-            item.country_of_origin,
-            item.country_of_origin,
-        )
-        item.offered_languages_display = format_language_codes(item.offered_languages_list)
-        item.requested_languages_display = format_language_codes(item.requested_languages_list)
+        hydrate_tandem_request_display(item, country_labels=country_labels)
 
-    filtered_items = items
+    filtered_items = []
 
-    if status == "viewed":
-        filtered_items = [item for item in filtered_items if item.is_viewed]
-    elif status == "unviewed":
-        filtered_items = [item for item in filtered_items if not item.is_viewed]
+    for item in items:
+        if status == "viewed" and not item.is_viewed:
+            continue
+        if status == "unviewed" and item.is_viewed:
+            continue
+        if gender and item.gender != gender:
+            continue
+        if occupation and item.occupation != occupation:
+            continue
+        if country and item.country_of_origin != country:
+            continue
+        if offered_language and offered_language not in item.offered_languages_list:
+            continue
+        if requested_language and requested_language not in item.requested_languages_list:
+            continue
+        if not matches_yes_no_filter(item.requested_native_only, native_only):
+            continue
+        if not matches_yes_no_filter(item.same_gender_only, same_gender_only):
+            continue
+        if not matches_tandem_query(item, q):
+            continue
 
-    if gender:
-        filtered_items = [item for item in filtered_items if item.gender == gender]
+        filtered_items.append(item)
 
-    if occupation:
-        filtered_items = [item for item in filtered_items if item.occupation == occupation]
-
-    if country:
-        filtered_items = [item for item in filtered_items if item.country_of_origin == country]
+    unviewed_items = [item for item in filtered_items if not item.is_viewed]
+    viewed_items = [item for item in filtered_items if item.is_viewed]
 
     gender_counter = Counter(item.gender for item in filtered_items if item.gender)
     occupation_counter = Counter(item.occupation for item in filtered_items if item.occupation)
@@ -819,6 +881,8 @@ def admin_language_tandem():
         "unviewed_requests": sum(1 for item in items if not item.is_viewed),
         "viewed_requests": sum(1 for item in items if item.is_viewed),
         "filtered_requests": len(filtered_items),
+        "filtered_unviewed_requests": len(unviewed_items),
+        "filtered_viewed_requests": len(viewed_items),
     }
 
     available_genders = sorted({item.gender for item in items if item.gender})
@@ -828,11 +892,25 @@ def admin_language_tandem():
         key=lambda code: country_labels.get(code, code),
     )
 
+    available_offered_language_codes = sorted(
+        {code for item in items for code in item.offered_languages_list},
+        key=lambda code: language_labels.get(code, code),
+    )
+    available_requested_language_codes = sorted(
+        {code for item in items for code in item.requested_languages_list},
+        key=lambda code: language_labels.get(code, code),
+    )
+
     filters = {
         "status": status,
         "gender": gender,
         "occupation": occupation,
         "country": country,
+        "q": q,
+        "offered_language": offered_language,
+        "requested_language": requested_language,
+        "native_only": native_only,
+        "same_gender_only": same_gender_only,
     }
 
     filter_options = {
@@ -841,6 +919,14 @@ def admin_language_tandem():
         "countries": [
             {"code": code, "label": country_labels.get(code, code)}
             for code in available_country_codes
+        ],
+        "offered_languages": [
+            {"code": code, "label": language_labels.get(code, code)}
+            for code in available_offered_language_codes
+        ],
+        "requested_languages": [
+            {"code": code, "label": language_labels.get(code, code)}
+            for code in available_requested_language_codes
         ],
     }
 
@@ -855,7 +941,8 @@ def admin_language_tandem():
     return render_template(
         "admin_language_tandem.html",
         stats=stats,
-        items=filtered_items,
+        unviewed_items=unviewed_items,
+        viewed_items=viewed_items,
         filters=filters,
         filter_options=filter_options,
         breakdowns=breakdowns,
@@ -871,11 +958,49 @@ def admin_language_tandem_toggle_viewed(request_id):
     item.is_viewed = not item.is_viewed
     db.session.commit()
 
-    return_to = (request.form.get("return_to") or "").strip()
-    if return_to.startswith("/admin/language-tandem"):
-        return redirect(return_to)
+    return redirect(get_safe_tandem_return_url(request.form.get("return_to")))
 
-    return redirect(url_for("main.admin_language_tandem"))
+@bp.route("/admin/language-tandem/<int:request_id>")
+def admin_language_tandem_detail(request_id):
+    guard = require_scope("language_tandem")
+    if guard:
+        return guard
+
+    item = LanguageTandemRequest.query.get_or_404(request_id)
+    return_to = get_safe_tandem_return_url(request.args.get("return_to"))
+
+    if not item.is_viewed:
+        item.is_viewed = True
+        db.session.commit()
+
+    country_labels = get_country_label_map()
+    language_labels = get_language_label_map()
+
+    hydrate_tandem_request_display(item, country_labels=country_labels)
+
+    candidate_items = (
+        LanguageTandemRequest.query
+        .filter(LanguageTandemRequest.id != item.id)
+        .order_by(LanguageTandemRequest.created_at.desc())
+        .all()
+    )
+
+    for candidate in candidate_items:
+        hydrate_tandem_request_display(candidate, country_labels=country_labels)
+
+    match_groups = build_match_groups(
+        source_item=item,
+        candidate_items=candidate_items,
+        language_labels=language_labels,
+        config=MATCH_CONFIG,
+    )
+
+    return render_template(
+        "admin_language_tandem_detail.html",
+        item=item,
+        match_groups=match_groups,
+        return_to=return_to,
+    )
 
 @bp.route("/admin/logout")
 def admin_logout():

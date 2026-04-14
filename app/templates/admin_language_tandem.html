@@ -46,7 +46,19 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-4">
+                <label class="form-label" for="q">Search</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="q"
+                    name="q"
+                    value="{{ filters.q }}"
+                    placeholder="Name, email, comment, request id"
+                >
+            </div>
+
+            <div class="col-md-2">
                 <label class="form-label" for="status">Status</label>
                 <select class="form-select" id="status" name="status">
                     <option value="all" {% if filters.status == "all" %}selected{% endif %}>All</option>
@@ -85,7 +97,45 @@
                 </select>
             </div>
 
-            <div class="col-12 d-flex gap-2">
+            <div class="col-md-3">
+                <label class="form-label" for="offered_language">Offered Language</label>
+                <select class="form-select" id="offered_language" name="offered_language">
+                    <option value="">All</option>
+                    {% for item in filter_options.offered_languages %}
+                        <option value="{{ item.code }}" {% if filters.offered_language == item.code %}selected{% endif %}>{{ item.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="requested_language">Requested Language</label>
+                <select class="form-select" id="requested_language" name="requested_language">
+                    <option value="">All</option>
+                    {% for item in filter_options.requested_languages %}
+                        <option value="{{ item.code }}" {% if filters.requested_language == item.code %}selected{% endif %}>{{ item.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="native_only">Native Only</label>
+                <select class="form-select" id="native_only" name="native_only">
+                    <option value="">All</option>
+                    <option value="yes" {% if filters.native_only == "yes" %}selected{% endif %}>Yes</option>
+                    <option value="no" {% if filters.native_only == "no" %}selected{% endif %}>No</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="same_gender_only">Same Gender Only</label>
+                <select class="form-select" id="same_gender_only" name="same_gender_only">
+                    <option value="">All</option>
+                    <option value="yes" {% if filters.same_gender_only == "yes" %}selected{% endif %}>Yes</option>
+                    <option value="no" {% if filters.same_gender_only == "no" %}selected{% endif %}>No</option>
+                </select>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-dark btn-sm">Apply Filters</button>
                 <a href="{{ url_for('main.admin_language_tandem') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
             </div>
@@ -195,82 +245,200 @@
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        {% if items %}
-            <div class="d-flex flex-column gap-3">
-                {% for item in items %}
-                    <div class="border rounded p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <div class="fw-semibold">
-                                    {{ item.first_name }} {{ item.last_name }}
-                                </div>
-                                <div class="small text-muted">
-                                    {{ item.email }} · {{ item.occupation }} · {{ item.gender }}
-                                </div>
-                            </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="small text-muted">Requests View</div>
+            <div class="fw-semibold">Switch between compact list and grid</div>
+        </div>
 
-                            <div class="d-flex align-items-center gap-2">
-                                {% if item.is_viewed %}
-                                    <span class="badge text-bg-secondary">Viewed</span>
-                                {% else %}
-                                    <span class="badge text-bg-dark">Unviewed</span>
-                                {% endif %}
-
-                                <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
-                                    <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        {% if item.is_viewed %}Mark Unviewed{% else %}Mark Viewed{% endif %}
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div class="small text-muted mb-2">
-                            Submitted {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Birth Year:</strong> {{ item.birth_year }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Country:</strong> {{ item.country_of_origin_display }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Native Only:</strong> {{ "Yes" if item.requested_native_only else "No" }}
-                        </div>
-
-                        <div class="small mb-1">
-                            <strong>Same Gender Only:</strong> {{ "Yes" if item.same_gender_only else "No" }}
-                        </div>
-
-                        {% if item.comment %}
-                            <div class="small mt-2" style="white-space: pre-line;">
-                                <strong>Comment:</strong><br>
-                                {{ item.comment }}
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="mb-0 text-muted">No tandem requests found.</p>
-        {% endif %}
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-dark" data-set-request-view-mode="list">List</button>
+            <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid">Grid</button>
+        </div>
     </div>
 </div>
+
+{% set sections = [
+    ("unviewed", "Unviewed Requests", "text-bg-dark", unviewed_items),
+    ("viewed", "Viewed Requests", "text-bg-secondary", viewed_items),
+] %}
+
+{% for section_key, section_title, section_badge_class, section_items in sections %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 m-0">{{ section_title }}</h2>
+                <span class="badge {{ section_badge_class }}">
+                    {{ section_items|length }}
+                </span>
+            </div>
+
+            {% if section_items %}
+                <div
+                    id="tandem-request-results-{{ section_key }}"
+                    class="tandem-request-results"
+                    data-request-results
+                    data-view-mode="list"
+                >
+                    {% for item in section_items %}
+                        <div class="tandem-request-item">
+                            <div class="border rounded p-3 h-100 d-flex flex-column tandem-request-card">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2 tandem-request-header">
+                                    <div class="min-w-0">
+                                        <div class="fw-semibold">
+                                            {{ item.first_name }} {{ item.last_name }}
+                                        </div>
+                                        <div class="small text-muted text-break">
+                                            {{ item.email }} · {{ item.occupation }} · {{ item.gender }}
+                                        </div>
+                                    </div>
+
+                                    <div class="request-actions">
+                                        {% if item.is_viewed %}
+                                            <span class="badge text-bg-secondary">Viewed</span>
+                                        {% else %}
+                                            <span class="badge text-bg-dark">Unviewed</span>
+                                        {% endif %}
+
+                                        <a
+                                            href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                            class="btn btn-sm btn-dark"
+                                        >
+                                            Open Matching
+                                        </a>
+
+                                        <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}" class="m-0">
+                                            <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                                            <button
+                                                type="submit"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                                aria-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                            >
+                                                <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="small text-muted mb-2">
+                                    #{{ item.id }} · Submitted {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Birth Year:</strong> {{ item.birth_year }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Country:</strong> {{ item.country_of_origin_display }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Native Only:</strong> {{ "Yes" if item.requested_native_only else "No" }}
+                                </div>
+
+                                <div class="small mb-1">
+                                    <strong>Same Gender Only:</strong> {{ "Yes" if item.same_gender_only else "No" }}
+                                </div>
+
+                                {% if item.comment %}
+                                    <div class="small mt-2" style="white-space: pre-line;">
+                                        <strong>Comment:</strong><br>
+                                        {{ item.comment }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mb-0 text-muted">No requests in this section.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
+
+<style>
+    .tandem-request-results {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .tandem-request-results[data-view-mode="grid"] {
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    }
+
+    .tandem-request-card .request-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .tandem-request-card .min-w-0 {
+        min-width: 0;
+    }
+
+    @media (max-width: 991.98px) {
+        .tandem-request-card .tandem-request-header {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .tandem-request-card .request-actions {
+            justify-content: flex-start;
+        }
+    }
+</style>
+
+<script>
+    const tandemRequestViewState = {
+        viewMode: "list",
+    };
+
+    function getRequestResultsContainers() {
+        return Array.from(document.querySelectorAll("[data-request-results]"));
+    }
+
+    function syncRequestViewButtons() {
+        document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
+            const isActive = button.dataset.setRequestViewMode === tandemRequestViewState.viewMode;
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function applyRequestViewMode() {
+        getRequestResultsContainers().forEach((container) => {
+            container.dataset.viewMode = tandemRequestViewState.viewMode;
+        });
+
+        syncRequestViewButtons();
+    }
+
+    document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+            tandemRequestViewState.viewMode = button.dataset.setRequestViewMode;
+            applyRequestViewMode();
+        });
+    });
+
+    applyRequestViewMode();
+</script>
 {% endblock %}

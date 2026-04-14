@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Match Helper · Language Tandem · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 m-0">Match Helper</h1>
+        <div class="text-muted small">Request #{{ item.id }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
+
+        <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
+            <input type="hidden" name="return_to" value="{{ return_to }}">
+            <button
+                type="submit"
+                class="btn btn-outline-secondary btn-sm"
+                title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                aria-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+            >
+                <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {% if item.is_viewed %}
+                <span class="badge text-bg-secondary">Viewed</span>
+            {% else %}
+                <span class="badge text-bg-dark">Unviewed</span>
+            {% endif %}
+
+            {% if item.requested_native_only %}
+                <span class="badge text-bg-warning">Native Only</span>
+            {% endif %}
+
+            {% if item.same_gender_only %}
+                <span class="badge text-bg-warning">Same Gender Only</span>
+            {% endif %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</div>
+                <div class="small text-muted">{{ item.email }}</div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small"><strong>Occupation:</strong> {{ item.occupation }}</div>
+                <div class="small"><strong>Gender:</strong> {{ item.gender }}</div>
+                <div class="small"><strong>Birth Year:</strong> {{ item.birth_year }}</div>
+                <div class="small"><strong>Country:</strong> {{ item.country_of_origin_display }}</div>
+                <div class="small"><strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}</div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small text-muted mb-1">Offered Languages</div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for value in item.offered_languages_display %}
+                        <span class="badge text-bg-secondary">{{ value }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small text-muted mb-1">Requested Languages</div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for value in item.requested_languages_display %}
+                        <span class="badge text-bg-dark">{{ value }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if item.comment %}
+                <div class="col-12">
+                    <div class="small text-muted mb-1">Comment</div>
+                    <div class="small" style="white-space: pre-line;">{{ item.comment }}</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <div class="small text-muted mb-2">View</div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-dark" data-set-view-mode="list">List</button>
+                    <button type="button" class="btn btn-outline-secondary" data-set-view-mode="grid">Grid</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="match-sort-mode">Sort</label>
+                <select class="form-select form-select-sm" id="match-sort-mode">
+                    <option value="score">Best first</option>
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="name_asc">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="match-warning-filter">Warnings</label>
+                <select class="form-select form-select-sm" id="match-warning-filter">
+                    <option value="all">All</option>
+                    <option value="warning_free">No warnings</option>
+                    <option value="with_warnings">With warnings</option>
+                    <option value="same_country">Same country</option>
+                    <option value="gender_mismatch">Gender mismatch</option>
+                    <option value="native_unconfirmed">Native preference not confirmed</option>
+                    <option value="departure_gap">Departure gap</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% set sections = [
+    ("full", "Full Matches", "text-bg-dark"),
+    ("partial", "Partial Matches", "text-bg-secondary"),
+    ("weak", "Weak Matches", "text-bg-warning")
+] %}
+
+{% for key, title, badge_class in sections %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 m-0">{{ title }}</h2>
+                <span class="badge {{ badge_class }}" data-count-for="{{ key }}">{{ match_groups[key]|length }}</span>
+            </div>
+
+            <p class="text-muted mb-0 {% if match_groups[key] %}d-none{% endif %}" data-empty-for="{{ key }}">
+                No visible candidates in this group.
+            </p>
+
+            <div class="match-results" data-match-results data-section-key="{{ key }}" data-view-mode="list">
+                {% for match in match_groups[key] %}
+                    {% set candidate = match.candidate %}
+                    <div
+                        class="match-card-wrapper"
+                        data-match-card
+                        data-origin-section="{{ key }}"
+                        data-score="{{ match.score }}"
+                        data-created-at="{{ candidate.created_at.strftime('%Y-%m-%dT%H:%M:%S') }}"
+                        data-name="{{ (candidate.last_name ~ ' ' ~ candidate.first_name)|lower }}"
+                        data-warning-keys="{{ match.warning_keys|join(',') }}"
+                    >
+                        <div class="border rounded p-3 h-100 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ candidate.first_name }} {{ candidate.last_name }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ candidate.email }} · {{ candidate.occupation }} · {{ candidate.gender }} · {{ candidate.country_of_origin_display }}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                                    <span class="badge {{ badge_class }}">
+                                        {% if key == "full" %}Full{% elif key == "partial" %}Partial{% else %}Weak{% endif %}
+                                    </span>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>
+                                        Hide
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-restore-match>
+                                        Restore
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="small text-muted mb-2">
+                                Submitted {{ candidate.created_at.strftime("%Y-%m-%d %H:%M") }}
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Signal:</strong>
+                                <span class="ms-1">{{ "▮" * match.signal_level }}{{ "▯" * (4 - match.signal_level) }}</span>
+                                <span class="text-muted ms-2">
+                                    {{ match.total_overlap_count }} overlap{% if match.total_overlap_count != 1 %}s{% endif %}
+                                </span>
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Offered:</strong> {{ ", ".join(candidate.offered_languages_display) }}
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Requested:</strong> {{ ", ".join(candidate.requested_languages_display) }}
+                            </div>
+
+                            {% if match.reasons %}
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    {% for reason in match.reasons %}
+                                        <span class="badge text-bg-light border">{{ reason }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            {% if match.warnings %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for warning in match.warnings %}
+                                        <span class="badge text-bg-warning">{{ warning }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 m-0">Hidden Matches</h2>
+            <span class="badge text-bg-secondary" data-hidden-count>0</span>
+        </div>
+
+        <p class="text-muted mb-0" data-hidden-empty>No hidden matches.</p>
+
+        <div class="match-results d-none" id="hidden-match-results" data-match-results data-view-mode="list"></div>
+    </div>
+</div>
+<style>
+    .match-results {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .match-results[data-view-mode="grid"] {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+</style>
+
+<script>
+    const matchUiState = {
+        viewMode: "list",
+        sortMode: "score",
+        warningFilter: "all",
+    };
+
+    function getMatchResultsContainers() {
+        return Array.from(document.querySelectorAll("[data-match-results]"));
+    }
+
+    function getCards(container) {
+        return Array.from(container.querySelectorAll("[data-match-card]"));
+    }
+
+    function parseCreatedAt(card) {
+        const value = card.dataset.createdAt || "";
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function compareCards(a, b) {
+        const sortMode = matchUiState.sortMode;
+
+        const scoreA = Number(a.dataset.score || 0);
+        const scoreB = Number(b.dataset.score || 0);
+
+        const createdA = parseCreatedAt(a);
+        const createdB = parseCreatedAt(b);
+
+        const nameA = a.dataset.name || "";
+        const nameB = b.dataset.name || "";
+
+        if (sortMode === "newest") {
+            return createdB - createdA || nameA.localeCompare(nameB);
+        }
+
+        if (sortMode === "oldest") {
+            return createdA - createdB || nameA.localeCompare(nameB);
+        }
+
+        if (sortMode === "name_asc") {
+            return nameA.localeCompare(nameB) || createdB - createdA;
+        }
+
+        if (sortMode === "name_desc") {
+            return nameB.localeCompare(nameA) || createdB - createdA;
+        }
+
+        return (scoreB - scoreA) || (createdB - createdA) || nameA.localeCompare(nameB);
+    }
+
+    function matchesWarningFilter(card) {
+        const filterValue = matchUiState.warningFilter;
+        if (filterValue === "all") {
+            return true;
+        }
+
+        const warningKeys = (card.dataset.warningKeys || "")
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean);
+
+        const hasWarnings = warningKeys.length > 0;
+
+        if (filterValue === "warning_free") {
+            return !hasWarnings;
+        }
+
+        if (filterValue === "with_warnings") {
+            return hasWarnings;
+        }
+
+        return warningKeys.includes(filterValue);
+    }
+
+    function setCardHiddenState(card, isHidden) {
+        const hideButton = card.querySelector("[data-hide-match]");
+        const restoreButton = card.querySelector("[data-restore-match]");
+
+        if (hideButton) {
+            hideButton.classList.toggle("d-none", isHidden);
+        }
+
+        if (restoreButton) {
+            restoreButton.classList.toggle("d-none", !isHidden);
+        }
+    }
+
+    function applyContainerState(container) {
+        const cards = getCards(container);
+
+        cards.sort(compareCards).forEach((card) => {
+            container.appendChild(card);
+        });
+
+        container.dataset.viewMode = matchUiState.viewMode;
+
+        cards.forEach((card) => {
+            card.classList.toggle("d-none", !matchesWarningFilter(card));
+        });
+    }
+
+    function updateSectionState(sectionKey) {
+        const container = document.querySelector(`[data-section-key="${sectionKey}"]`);
+        const countBadge = document.querySelector(`[data-count-for="${sectionKey}"]`);
+        const emptyState = document.querySelector(`[data-empty-for="${sectionKey}"]`);
+
+        if (!container || !countBadge || !emptyState) {
+            return;
+        }
+
+        const visibleCount = getCards(container).filter((card) => !card.classList.contains("d-none")).length;
+
+        countBadge.textContent = visibleCount;
+        emptyState.classList.toggle("d-none", visibleCount > 0);
+    }
+
+    function updateHiddenState() {
+        const container = document.getElementById("hidden-match-results");
+        const countBadge = document.querySelector("[data-hidden-count]");
+        const emptyState = document.querySelector("[data-hidden-empty]");
+
+        if (!container || !countBadge || !emptyState) {
+            return;
+        }
+
+        const visibleCount = getCards(container).filter((card) => !card.classList.contains("d-none")).length;
+        const totalCount = getCards(container).length;
+
+        countBadge.textContent = visibleCount;
+        emptyState.classList.toggle("d-none", totalCount > 0);
+        container.classList.toggle("d-none", totalCount === 0);
+    }
+
+    function refreshMatchUi() {
+        getMatchResultsContainers().forEach((container) => {
+            applyContainerState(container);
+        });
+
+        ["full", "partial", "weak"].forEach(updateSectionState);
+        updateHiddenState();
+        syncViewButtons();
+    }
+
+    function syncViewButtons() {
+        document.querySelectorAll("[data-set-view-mode]").forEach((button) => {
+            const isActive = button.dataset.setViewMode === matchUiState.viewMode;
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function hideCard(card) {
+        const hiddenContainer = document.getElementById("hidden-match-results");
+        if (!hiddenContainer) {
+            return;
+        }
+
+        hiddenContainer.appendChild(card);
+        setCardHiddenState(card, true);
+        refreshMatchUi();
+    }
+
+    function restoreCard(card) {
+        const originSection = card.dataset.originSection;
+        const originContainer = document.querySelector(`[data-section-key="${originSection}"]`);
+
+        if (!originContainer) {
+            return;
+        }
+
+        originContainer.appendChild(card);
+        setCardHiddenState(card, false);
+        refreshMatchUi();
+    }
+
+    document.querySelectorAll("[data-set-view-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+            matchUiState.viewMode = button.dataset.setViewMode;
+            refreshMatchUi();
+        });
+    });
+
+    const sortSelect = document.getElementById("match-sort-mode");
+    if (sortSelect) {
+        sortSelect.addEventListener("change", () => {
+            matchUiState.sortMode = sortSelect.value;
+            refreshMatchUi();
+        });
+    }
+
+    const warningFilterSelect = document.getElementById("match-warning-filter");
+    if (warningFilterSelect) {
+        warningFilterSelect.addEventListener("change", () => {
+            matchUiState.warningFilter = warningFilterSelect.value;
+            refreshMatchUi();
+        });
+    }
+
+    document.addEventListener("click", (event) => {
+        const hideButton = event.target.closest("[data-hide-match]");
+        if (hideButton) {
+            const card = hideButton.closest("[data-match-card]");
+            if (card) {
+                hideCard(card);
+            }
+            return;
+        }
+
+        const restoreButton = event.target.closest("[data-restore-match]");
+        if (restoreButton) {
+            const card = restoreButton.closest("[data-match-card]");
+            if (card) {
+                restoreCard(card);
+            }
+        }
+    });
+
+    refreshMatchUi();
+</script>
+{% endblock %}
