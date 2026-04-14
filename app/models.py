@@ -85,3 +85,28 @@ class LanguageTandemRequest(db.Model):
     @property
     def requested_languages_list(self):
         return json.loads(self.requested_languages or "[]")
+
+
+class TandemDuplicateDecision(db.Model):
+    __tablename__ = "tandem_duplicate_decisions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    left_request_id = db.Column(db.Integer, nullable=False, index=True)
+    right_request_id = db.Column(db.Integer, nullable=False, index=True)
+    decision = db.Column(db.String(32), nullable=False, index=True)
+    note = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "left_request_id",
+            "right_request_id",
+            name="uq_tandem_duplicate_decision_pair",
+        ),
+    )

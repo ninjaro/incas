@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Duplicate Review · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 m-0">Duplicate Review</h1>
+        <div class="small text-muted">Request #{{ item.id }}</div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a
+            href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=return_to) }}"
+            class="btn btn-outline-secondary btn-sm"
+        >
+            Edit
+        </a>
+        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="small text-muted mb-2">Source Request</div>
+
+                <div class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</div>
+                <div class="small text-muted mb-3">{{ item.email }}</div>
+
+                <div class="small mb-1"><strong>Occupation:</strong> {{ item.occupation }}</div>
+                <div class="small mb-1"><strong>Gender:</strong> {{ item.gender }}</div>
+                <div class="small mb-1"><strong>Birth Year:</strong> {{ item.birth_year }}</div>
+                <div class="small mb-1"><strong>Country:</strong> {{ item.country_of_origin_display }}</div>
+                <div class="small mb-1"><strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}</div>
+                <div class="small mb-1"><strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}</div>
+                <div class="small mb-1"><strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}</div>
+
+                {% if item.comment %}
+                    <div class="small mt-2" style="white-space: pre-line;">
+                        <strong>Comment:</strong><br>
+                        {{ item.comment }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 m-0">Open Suggestions</h2>
+                    <span class="badge text-bg-dark">{{ active_candidates|length }}</span>
+                </div>
+
+                {% if active_candidates %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for entry in active_candidates %}
+                            {% set candidate = entry.candidate %}
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ candidate.first_name }} {{ candidate.last_name }}</div>
+                                        <div class="small text-muted">#{{ candidate.id }} · {{ candidate.email }}</div>
+                                    </div>
+
+                                    <span class="badge {% if entry.category == 'exact' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
+                                        {% if entry.category == "exact" %}Exact{% else %}Likely{% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="small mb-2">
+                                    <strong>Signal:</strong>
+                                    <span class="ms-1">{{ "▮" * entry.signal_level }}{{ "▯" * (4 - entry.signal_level) }}</span>
+                                    <span class="text-muted ms-2">{{ entry.score }}</span>
+                                </div>
+
+                                {% if entry.reasons %}
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        {% for reason in entry.reasons[:4] %}
+                                            <span class="badge text-bg-light border">{{ reason }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <a
+                                    href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, candidate_id=candidate.id, return_to=return_to) }}"
+                                    class="btn btn-sm btn-dark"
+                                >
+                                    Compare
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="mb-0 text-muted">No duplicate suggestions.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if suppressed_candidates %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 m-0">Suppressed Suggestions</h2>
+                        <span class="badge text-bg-secondary">{{ suppressed_candidates|length }}</span>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3">
+                        {% for entry in suppressed_candidates %}
+                            {% set candidate = entry.candidate %}
+                            <div class="border rounded p-3">
+                                <div class="fw-semibold">{{ candidate.first_name }} {{ candidate.last_name }}</div>
+                                <div class="small text-muted mb-2">#{{ candidate.id }} · {{ candidate.email }}</div>
+                                <div class="small mb-3">
+                                    <strong>Status:</strong> {{ entry.decision_label }}
+                                </div>
+
+                                <a
+                                    href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, candidate_id=candidate.id, return_to=return_to) }}"
+                                    class="btn btn-sm btn-outline-secondary"
+                                >
+                                    Open
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-xl-8">
+        {% if selected_entry %}
+            {% set candidate = selected_entry.candidate %}
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                        <div>
+                            <h2 class="h5 m-0">Compare with Request #{{ candidate.id }}</h2>
+                            <div class="small text-muted">{{ candidate.first_name }} {{ candidate.last_name }} · {{ candidate.email }}</div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge {% if selected_entry.category == 'exact' %}text-bg-warning{% else %}text-bg-secondary{% endif %}">
+                                {% if selected_entry.category == "exact" %}Exact{% else %}Likely{% endif %}
+                            </span>
+
+                            {% if selected_entry.decision_label %}
+                                <span class="badge text-bg-secondary">{{ selected_entry.decision_label }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="small mb-3">
+                        <strong>Signal:</strong>
+                        <span class="ms-1">{{ "▮" * selected_entry.signal_level }}{{ "▯" * (4 - selected_entry.signal_level) }}</span>
+                        <span class="text-muted ms-2">{{ selected_entry.score }}</span>
+                    </div>
+
+                    {% if selected_entry.reasons %}
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for reason in selected_entry.reasons %}
+                                <span class="badge text-bg-light border">{{ reason }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="small text-muted mb-3">
+                        Older request: #{{ older_item.id }} · {{ older_item.created_at.strftime("%Y-%m-%d %H:%M") }}<br>
+                        Newer request: #{{ newer_item.id }} · {{ newer_item.created_at.strftime("%Y-%m-%d %H:%M") }}
+                    </div>
+
+                    {% if unchanged_count > 0 %}
+                        <div class="small text-muted mb-3">
+                            {{ unchanged_count }} unchanged field{% if unchanged_count != 1 %}s{% endif %} hidden.
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <a
+                            href="{{ url_for('main.admin_language_tandem_duplicate_merge', request_id=item.id, candidate_id=candidate.id, return_to=return_to) }}"
+                            class="btn btn-dark btn-sm"
+                        >
+                            Open Merge
+                        </a>
+
+                        <form method="post" action="{{ url_for('main.admin_language_tandem_duplicate_decision', request_id=item.id) }}">
+                            <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+                            <input type="hidden" name="decision" value="different">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Mark Different</button>
+                        </form>
+
+                        <form method="post" action="{{ url_for('main.admin_language_tandem_duplicate_decision', request_id=item.id) }}">
+                            <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+                            <input type="hidden" name="decision" value="ignore">
+                            <input type="hidden" name="return_to" value="{{ return_to }}">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Ignore Suggestion</button>
+                        </form>
+
+                        {% if selected_entry.decision %}
+                            <form method="post" action="{{ url_for('main.admin_language_tandem_duplicate_decision_clear', request_id=item.id) }}">
+                                <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+                                <input type="hidden" name="return_to" value="{{ return_to }}">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Clear Decision</button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if diff_rows %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for row in diff_rows %}
+                                <div class="border rounded p-3 border-warning-subtle">
+                                    <div class="small text-muted mb-2">{{ row.label }}</div>
+
+                                    <div class="row g-2 align-items-start">
+                                        <div class="col-md-5">
+                                            <div class="small fw-semibold mb-1">Old</div>
+                                            <div class="small" style="white-space: pre-line;">{{ row.old_display }}</div>
+                                        </div>
+
+                                        <div class="col-md-2 text-center">
+                                            <div class="small text-muted">&rarr;</div>
+                                        </div>
+
+                                        <div class="col-md-5">
+                                            <div class="small fw-semibold mb-1">New</div>
+                                            <div class="small" style="white-space: pre-line;">{{ row.new_display }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mb-0 text-muted">No conflicting fields. You can merge directly.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <p class="mb-0 text-muted">Select a duplicate suggestion to compare.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

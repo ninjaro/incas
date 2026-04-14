@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Tandem Request · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 m-0">Edit Tandem Request</h1>
+        <div class="small text-muted">Request #{{ item.id }}</div>
+    </div>
+    <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<form method="post" class="card shadow-sm">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
+                <input class="form-control" id="first_name" name="first_name" required value="{{ values.first_name }}">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
+                <input class="form-control" id="last_name" name="last_name" required value="{{ values.last_name }}">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                <input class="form-control" id="email" name="email" type="email" required value="{{ values.email }}">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="occupation">Occupation <span class="text-danger">*</span></label>
+                <select class="form-select" id="occupation" name="occupation" required>
+                    <option value="">Select</option>
+                    <option value="Student at RWTH Aachen" {% if values.occupation == "Student at RWTH Aachen" %}selected{% endif %}>Student at RWTH Aachen</option>
+                    <option value="Student at FH Aachen" {% if values.occupation == "Student at FH Aachen" %}selected{% endif %}>Student at FH Aachen</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
+                <select class="form-select" id="gender" name="gender" required>
+                    <option value="">Select</option>
+                    <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
+                    <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
+                    <option value="Divers" {% if values.gender == "Divers" %}selected{% endif %}>Divers</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="birth_year">Year of Birth <span class="text-danger">*</span></label>
+                <input class="form-control" id="birth_year" name="birth_year" type="number" required value="{{ values.birth_year }}">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="departure_date">Departure Date <span class="text-danger">*</span></label>
+                <input class="form-control" id="departure_date" name="departure_date" type="date" required value="{{ values.departure_date }}">
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="country_of_origin">Country of Origin <span class="text-danger">*</span></label>
+                <select class="form-select" id="country_of_origin" name="country_of_origin" required>
+                    <option value="">Select</option>
+                    {% for country in country_options %}
+                        <option value="{{ country.code }}" {% if values.country_of_origin == country.code %}selected{% endif %}>
+                            {{ country.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="offered_languages">Offered Languages <span class="text-danger">*</span></label>
+                <select class="form-select" id="offered_languages" name="offered_languages" multiple size="12" required>
+                    {% for choice in offered_field.all_choices %}
+                        <option value="{{ choice.code }}" {% if choice.is_selected %}selected{% endif %}>
+                            {{ choice.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="requested_languages">Requested Languages <span class="text-danger">*</span></label>
+                <select class="form-select" id="requested_languages" name="requested_languages" multiple size="12" required>
+                    {% for choice in requested_field.all_choices %}
+                        <option value="{{ choice.code }}" {% if choice.is_selected %}selected{% endif %}>
+                            {{ choice.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
+                    <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" id="same_gender_only" name="same_gender_only" type="checkbox" {% if values.same_gender_only %}checked{% endif %}>
+                    <label class="form-check-label" for="same_gender_only">Same gender tandems only</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="comment">Comment</label>
+                <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer d-flex justify-content-end gap-2">
+        <a href="{{ return_to }}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-dark">Save Changes</button>
+    </div>
+</form>
+{% endblock %}

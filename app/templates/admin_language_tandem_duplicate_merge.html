@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Merge Requests · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 m-0">Merge Requests</h1>
+        <div class="small text-muted">Draft only. Nothing is saved until you confirm merge.</div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a
+            href="{{ url_for('main.admin_language_tandem_duplicates', request_id=source_item.id, candidate_id=candidate_id, return_to=return_to) }}"
+            class="btn btn-outline-secondary btn-sm"
+        >
+            Back
+        </a>
+        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="small text-muted mb-2">
+            Older request: #{{ older_item.id }} · {{ older_item.created_at.strftime("%Y-%m-%d %H:%M") }}<br>
+            Newer request: #{{ newer_item.id }} · {{ newer_item.created_at.strftime("%Y-%m-%d %H:%M") }}
+        </div>
+
+        {% if unchanged_count > 0 %}
+            <div class="small text-muted">
+                {{ unchanged_count }} unchanged field{% if unchanged_count != 1 %}s{% endif %} hidden.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post" class="d-flex flex-column gap-3">
+    <input type="hidden" name="candidate_id" value="{{ candidate_id }}">
+    <input type="hidden" name="return_to" value="{{ return_to }}">
+
+    {% if merge_rows %}
+        {% for row in merge_rows %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="small text-muted mb-2">{{ row.label }}</div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small fw-semibold mb-2">Old</div>
+                                <div class="small mb-3" style="white-space: pre-line;">{{ row.old_display }}</div>
+
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="merge_choice_{{ row.name }}"
+                                        id="{{ row.name }}_old"
+                                        value="old"
+                                        {% if selected_choices[row.name] == "old" %}checked{% endif %}
+                                    >
+                                    <label class="form-check-label" for="{{ row.name }}_old">
+                                        Use old
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-2 d-flex align-items-center justify-content-center">
+                            <div class="small text-muted">&rarr;</div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small fw-semibold mb-2">New</div>
+                                <div class="small mb-3" style="white-space: pre-line;">{{ row.new_display }}</div>
+
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="merge_choice_{{ row.name }}"
+                                        id="{{ row.name }}_new"
+                                        value="new"
+                                        {% if selected_choices[row.name] == "new" %}checked{% endif %}
+                                    >
+                                    <label class="form-check-label" for="{{ row.name }}_new">
+                                        Use new
+                                    </label>
+                                </div>
+
+                                {% for option in row.choices %}
+                                    {% if option.value == "append_old_to_new" %}
+                                        <div class="form-check mt-2">
+                                            <input
+                                                class="form-check-input"
+                                                type="radio"
+                                                name="merge_choice_{{ row.name }}"
+                                                id="{{ row.name }}_append"
+                                                value="append_old_to_new"
+                                                {% if selected_choices[row.name] == "append_old_to_new" %}checked{% endif %}
+                                            >
+                                            <label class="form-check-label" for="{{ row.name }}_append">
+                                                Append old to new
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <p class="mb-0">No conflicting fields. The newer request will be kept and the older request will be removed.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-end gap-2">
+        <a
+            href="{{ url_for('main.admin_language_tandem_duplicates', request_id=source_item.id, candidate_id=candidate_id, return_to=return_to) }}"
+            class="btn btn-outline-secondary"
+        >
+            Cancel
+        </a>
+        <button type="submit" class="btn btn-dark">Merge Requests</button>
+    </div>
+</form>
+{% endblock %}

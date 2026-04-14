@@ -3,12 +3,30 @@
 {% block title %}Language Tandem · INCAS{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <h1 class="h3 m-0">Language Tandem</h1>
-    <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-dark" data-set-request-view-mode="list">List</button>
+            <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid">Grid</button>
+        </div>
+
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-dark" data-set-request-density="compact">Compact</button>
+            <button type="button" class="btn btn-outline-secondary" data-set-request-density="expanded">Expanded</button>
+        </div>
+
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-dark" data-set-overview-density="compact">Hide Panels</button>
+            <button type="button" class="btn btn-outline-secondary" data-set-overview-density="expanded">Show Panels</button>
+        </div>
+
+        <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4" data-admin-overview-panel>
     <div class="col-md-3">
         <div class="card shadow-sm">
             <div class="card-body">
@@ -43,7 +61,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-4" data-admin-overview-panel>
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-4">
@@ -66,6 +84,17 @@
                     <option value="viewed" {% if filters.status == "viewed" %}selected{% endif %}>Viewed</option>
                 </select>
             </div>
+
+            {% if can_edit_requests %}
+                <div class="col-md-3">
+                    <label class="form-label" for="duplicate_status">Duplicates</label>
+                    <select class="form-select" id="duplicate_status" name="duplicate_status">
+                        <option value="">All</option>
+                        <option value="same_email" {% if filters.duplicate_status == "same_email" %}selected{% endif %}>Same email</option>
+                        <option value="likely" {% if filters.duplicate_status == "likely" %}selected{% endif %}>Likely duplicate</option>
+                    </select>
+                </div>
+            {% endif %}
 
             <div class="col-md-3">
                 <label class="form-label" for="gender">Gender</label>
@@ -138,12 +167,35 @@
             <div class="col-12 d-flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-dark btn-sm">Apply Filters</button>
                 <a href="{{ url_for('main.admin_language_tandem') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+
+                {% if stats.filtered_unviewed_requests > 0 %}
+                    <form method="post" action="{{ url_for('main.admin_language_tandem_mark_filtered_viewed') }}" class="d-inline">
+                        <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                        <input type="hidden" name="q" value="{{ filters.q }}">
+                        <input type="hidden" name="status" value="{{ filters.status }}">
+                        <input type="hidden" name="gender" value="{{ filters.gender }}">
+                        <input type="hidden" name="occupation" value="{{ filters.occupation }}">
+                        <input type="hidden" name="country" value="{{ filters.country }}">
+                        <input type="hidden" name="offered_language" value="{{ filters.offered_language }}">
+                        <input type="hidden" name="requested_language" value="{{ filters.requested_language }}">
+                        <input type="hidden" name="native_only" value="{{ filters.native_only }}">
+                        <input type="hidden" name="same_gender_only" value="{{ filters.same_gender_only }}">
+
+                        {% if can_edit_requests %}
+                            <input type="hidden" name="duplicate_status" value="{{ filters.duplicate_status }}">
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            Mark filtered viewed
+                        </button>
+                    </form>
+                {% endif %}
             </div>
         </form>
     </div>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-4" data-admin-overview-panel>
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
             <div class="card-body">
@@ -245,123 +297,148 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <div>
-            <div class="small text-muted">Requests View</div>
-            <div class="fw-semibold">Switch between compact list and grid</div>
-        </div>
-
-        <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-dark" data-set-request-view-mode="list">List</button>
-            <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid">Grid</button>
-        </div>
-    </div>
-</div>
-
 {% set sections = [
-    ("unviewed", "Unviewed Requests", "text-bg-dark", unviewed_items),
-    ("viewed", "Viewed Requests", "text-bg-secondary", viewed_items),
+    ("unviewed", "Unviewed Requests", "text-bg-dark", unviewed_groups, stats.filtered_unviewed_requests),
+    ("viewed", "Viewed Requests", "text-bg-secondary", viewed_groups, stats.filtered_viewed_requests),
 ] %}
 
-{% for section_key, section_title, section_badge_class, section_items in sections %}
+{% for section_key, section_title, section_badge_class, section_groups, section_count in sections %}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h5 m-0">{{ section_title }}</h2>
-                <span class="badge {{ section_badge_class }}">
-                    {{ section_items|length }}
-                </span>
+                <span class="badge {{ section_badge_class }}">{{ section_count }}</span>
             </div>
 
-            {% if section_items %}
-                <div
-                    id="tandem-request-results-{{ section_key }}"
-                    class="tandem-request-results"
-                    data-request-results
-                    data-view-mode="list"
-                >
-                    {% for item in section_items %}
-                        <div class="tandem-request-item">
-                            <div class="border rounded p-3 h-100 d-flex flex-column tandem-request-card">
-                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2 tandem-request-header">
-                                    <div class="min-w-0">
-                                        <div class="fw-semibold">
-                                            {{ item.first_name }} {{ item.last_name }}
+            {% if section_groups %}
+                <div class="tandem-request-results" data-request-results data-view-mode="list">
+                    {% for group in section_groups %}
+                        {% for item in group.requests %}
+                            <div class="tandem-request-item">
+                                <div class="border rounded p-3 h-100 d-flex flex-column tandem-request-card" data-request-card data-details-open="false">
+                                    <div class="mb-2 tandem-request-summary">
+                                        <div class="min-w-0">
+                                            <div class="fw-semibold">
+                                                {{ item.first_name }} {{ item.last_name }}
+                                            </div>
+                                            <div class="small text-muted">
+                                                #{{ item.id }}
+                                            </div>
                                         </div>
-                                        <div class="small text-muted text-break">
-                                            {{ item.email }} · {{ item.occupation }} · {{ item.gender }}
+
+                                        <div class="request-actions">
+                                            {% if item.is_viewed %}
+                                                <span class="badge text-bg-secondary">Viewed</span>
+                                            {% else %}
+                                                <span class="badge text-bg-dark">Unviewed</span>
+                                            {% endif %}
+
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-secondary"
+                                                data-toggle-request-details
+                                                aria-expanded="false"
+                                            >
+                                                Details
+                                            </button>
+
+                                            {% if can_edit_requests %}
+                                                <a
+                                                    href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                >
+                                                    Duplicates
+                                                </a>
+                                            {% endif %}
+
+                                            {% if can_edit_requests %}
+                                                <a
+                                                    href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                >
+                                                    Edit
+                                                </a>
+                                            {% endif %}
+
+                                            {% if can_open_matching %}
+                                                <a
+                                                    href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                    class="btn btn-sm btn-dark"
+                                                >
+                                                    Open Matching
+                                                </a>
+                                            {% endif %}
+
+                                            <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}" class="m-0">
+                                                <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                                    aria-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                                >
+                                                    <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
 
-                                    <div class="request-actions">
-                                        {% if item.is_viewed %}
-                                            <span class="badge text-bg-secondary">Viewed</span>
-                                        {% else %}
-                                            <span class="badge text-bg-dark">Unviewed</span>
+                                    <div class="tandem-request-details" data-request-details>
+                                        <div class="small text-muted mb-2">
+                                            Submitted {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Birth Year:</strong> {{ item.birth_year }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Country:</strong> {{ item.country_of_origin_display }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Native Only:</strong> {{ "Yes" if item.requested_native_only else "No" }}
+                                        </div>
+
+                                        <div class="small mb-1">
+                                            <strong>Same Gender Only:</strong> {{ "Yes" if item.same_gender_only else "No" }}
+                                        </div>
+
+                                        {% if can_edit_requests and item.same_email_other_ids %}
+                                            <div class="small mt-2">
+                                                <strong>Related request IDs:</strong>
+                                                {{ item.same_email_other_ids | join(", ") }}
+                                            </div>
                                         {% endif %}
 
-                                        <a
-                                            href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
-                                            class="btn btn-sm btn-dark"
-                                        >
-                                            Open Matching
-                                        </a>
+                                        {% if can_edit_requests %}
+                                            <div class="small mt-2">
+                                                <strong>Internal Group Size:</strong> {{ group.count }}
+                                            </div>
+                                        {% endif %}
 
-                                        <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}" class="m-0">
-                                            <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
-                                            <button
-                                                type="submit"
-                                                class="btn btn-sm btn-outline-secondary"
-                                                title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
-                                                aria-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
-                                            >
-                                                <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
-                                            </button>
-                                        </form>
+                                        {% if item.comment %}
+                                            <div class="small mt-2" style="white-space: pre-line;">
+                                                <strong>Comment:</strong><br>
+                                                {{ item.comment }}
+                                            </div>
+                                        {% endif %}
                                     </div>
                                 </div>
-
-                                <div class="small text-muted mb-2">
-                                    #{{ item.id }} · Submitted {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Birth Year:</strong> {{ item.birth_year }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Country:</strong> {{ item.country_of_origin_display }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Native Only:</strong> {{ "Yes" if item.requested_native_only else "No" }}
-                                </div>
-
-                                <div class="small mb-1">
-                                    <strong>Same Gender Only:</strong> {{ "Yes" if item.same_gender_only else "No" }}
-                                </div>
-
-                                {% if item.comment %}
-                                    <div class="small mt-2" style="white-space: pre-line;">
-                                        <strong>Comment:</strong><br>
-                                        {{ item.comment }}
-                                    </div>
-                                {% endif %}
                             </div>
-                        </div>
+                        {% endfor %}
                     {% endfor %}
                 </div>
             {% else %}
@@ -379,66 +456,180 @@
     }
 
     .tandem-request-results[data-view-mode="grid"] {
-        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
     }
 
-    .tandem-request-card .request-actions {
+    .tandem-request-card .tandem-request-summary {
         display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 0.5rem;
-        flex-shrink: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
     }
 
     .tandem-request-card .min-w-0 {
         min-width: 0;
     }
 
-    @media (max-width: 991.98px) {
-        .tandem-request-card .tandem-request-header {
-            flex-direction: column;
-            align-items: stretch !important;
+    .tandem-request-card .request-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tandem-request-card[data-density="compact"] .tandem-request-details {
+        display: none;
+    }
+
+    .tandem-request-card[data-density="expanded"] .tandem-request-details,
+    .tandem-request-card[data-details-open="true"] .tandem-request-details {
+        display: block;
+    }
+
+    .tandem-request-card[data-density="compact"] .tandem-request-summary {
+        gap: 0.5rem;
+    }
+
+    @media (min-width: 1200px) {
+        .tandem-request-results[data-view-mode="list"] .tandem-request-card[data-density="expanded"] .tandem-request-summary {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
         }
 
-        .tandem-request-card .request-actions {
-            justify-content: flex-start;
+        .tandem-request-results[data-view-mode="list"] .tandem-request-card[data-density="expanded"] .request-actions {
+            justify-content: flex-end;
         }
     }
 </style>
 
 <script>
-    const tandemRequestViewState = {
-        viewMode: "list",
+    const REQUEST_VIEW_MODE_STORAGE_KEY = "incas:tandem-request-view-mode";
+    const REQUEST_DENSITY_STORAGE_KEY = "incas:tandem-request-density";
+    const OVERVIEW_DENSITY_STORAGE_KEY = "incas:tandem-overview-density";
+
+    const tandemRequestUiState = {
+        viewMode: sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
+        density: sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
+        overviewDensity: sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
     };
 
     function getRequestResultsContainers() {
         return Array.from(document.querySelectorAll("[data-request-results]"));
     }
 
+    function getRequestCards() {
+        return Array.from(document.querySelectorAll("[data-request-card]"));
+    }
+
+    function getOverviewPanels() {
+        return Array.from(document.querySelectorAll("[data-admin-overview-panel]"));
+    }
+
     function syncRequestViewButtons() {
         document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
-            const isActive = button.dataset.setRequestViewMode === tandemRequestViewState.viewMode;
+            const isActive = button.dataset.setRequestViewMode === tandemRequestUiState.viewMode;
             button.classList.toggle("btn-dark", isActive);
             button.classList.toggle("btn-outline-secondary", !isActive);
         });
     }
 
-    function applyRequestViewMode() {
+    function syncRequestDensityButtons() {
+        document.querySelectorAll("[data-set-request-density]").forEach((button) => {
+            const isActive = button.dataset.setRequestDensity === tandemRequestUiState.density;
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function syncOverviewDensityButtons() {
+        document.querySelectorAll("[data-set-overview-density]").forEach((button) => {
+            const isActive = button.dataset.setOverviewDensity === tandemRequestUiState.overviewDensity;
+            button.classList.toggle("btn-dark", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+        });
+    }
+
+    function syncRequestDetailButtons() {
+        getRequestCards().forEach((card) => {
+            const button = card.querySelector("[data-toggle-request-details]");
+            if (!button) {
+                return;
+            }
+
+            const isOpen = card.dataset.detailsOpen === "true";
+            button.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            button.textContent = isOpen ? "Hide" : "Details";
+        });
+    }
+
+    function applyRequestUiState() {
         getRequestResultsContainers().forEach((container) => {
-            container.dataset.viewMode = tandemRequestViewState.viewMode;
+            container.dataset.viewMode = tandemRequestUiState.viewMode;
         });
 
+        getRequestCards().forEach((card) => {
+            card.dataset.density = tandemRequestUiState.density;
+
+            if (tandemRequestUiState.density === "expanded") {
+                card.dataset.detailsOpen = "true";
+            } else {
+                card.dataset.detailsOpen = "false";
+            }
+        });
+
+        getOverviewPanels().forEach((panel) => {
+            panel.classList.toggle("d-none", tandemRequestUiState.overviewDensity === "compact");
+        });
+
+        sessionStorage.setItem(REQUEST_VIEW_MODE_STORAGE_KEY, tandemRequestUiState.viewMode);
+        sessionStorage.setItem(REQUEST_DENSITY_STORAGE_KEY, tandemRequestUiState.density);
+        sessionStorage.setItem(OVERVIEW_DENSITY_STORAGE_KEY, tandemRequestUiState.overviewDensity);
+
         syncRequestViewButtons();
+        syncRequestDensityButtons();
+        syncOverviewDensityButtons();
+        syncRequestDetailButtons();
     }
 
     document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
         button.addEventListener("click", () => {
-            tandemRequestViewState.viewMode = button.dataset.setRequestViewMode;
-            applyRequestViewMode();
+            tandemRequestUiState.viewMode = button.dataset.setRequestViewMode;
+            applyRequestUiState();
         });
     });
 
-    applyRequestViewMode();
+    document.querySelectorAll("[data-set-request-density]").forEach((button) => {
+        button.addEventListener("click", () => {
+            tandemRequestUiState.density = button.dataset.setRequestDensity;
+            applyRequestUiState();
+        });
+    });
+
+    document.querySelectorAll("[data-set-overview-density]").forEach((button) => {
+        button.addEventListener("click", () => {
+            tandemRequestUiState.overviewDensity = button.dataset.setOverviewDensity;
+            applyRequestUiState();
+        });
+    });
+
+    document.addEventListener("click", (event) => {
+        const toggleButton = event.target.closest("[data-toggle-request-details]");
+        if (!toggleButton) {
+            return;
+        }
+
+        const card = toggleButton.closest("[data-request-card]");
+        if (!card || card.dataset.density === "expanded") {
+            return;
+        }
+
+        const isOpen = card.dataset.detailsOpen === "true";
+        card.dataset.detailsOpen = isOpen ? "false" : "true";
+        syncRequestDetailButtons();
+    });
+
+    applyRequestUiState();
 </script>
 {% endblock %}

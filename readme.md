@@ -25,6 +25,7 @@ python run.py
 ```bash
 dev-posts
 dev-language-tandem
+dev-language-tandem-corrections
 ```
 
 ## Docker deps
