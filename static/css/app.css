@@ -1,0 +1,11 @@
+body {
+    min-height: 100vh;
+}
+
+.navbar-nav {
+    gap: 0.25rem;
+}
+
+.pre-line {
+    white-space: pre-line;
+}

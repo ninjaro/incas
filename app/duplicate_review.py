@@ -1,7 +1,6 @@
+import json
 from datetime import datetime
 from difflib import SequenceMatcher
-import json
-
 
 DUPLICATE_REVIEW_CONFIG = {
     "weights": {

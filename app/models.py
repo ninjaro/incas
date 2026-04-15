@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, time, timedelta, date
+from datetime import datetime, time, timedelta
 
 from flask_sqlalchemy import SQLAlchemy
 

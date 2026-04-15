@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin/base.html" %}
 
 {% block title %}Duplicate Review · INCAS{% endblock %}
 
@@ -38,7 +38,7 @@
                 <div class="small mb-1"><strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}</div>
 
                 {% if item.comment %}
-                    <div class="small mt-2" style="white-space: pre-line;">
+                    <div class="small mt-2 pre-line">
                         <strong>Comment:</strong><br>
                         {{ item.comment }}
                     </div>
@@ -218,7 +218,7 @@
                                     <div class="row g-2 align-items-start">
                                         <div class="col-md-5">
                                             <div class="small fw-semibold mb-1">Old</div>
-                                            <div class="small" style="white-space: pre-line;">{{ row.old_display }}</div>
+                                            <div class="small pre-line">{{ row.old_display }}</div>
                                         </div>
 
                                         <div class="col-md-2 text-center">
@@ -227,7 +227,7 @@
 
                                         <div class="col-md-5">
                                             <div class="small fw-semibold mb-1">New</div>
-                                            <div class="small" style="white-space: pre-line;">{{ row.new_display }}</div>
+                                            <div class="small pre-line">{{ row.new_display }}</div>
                                         </div>
                                     </div>
                                 </div>

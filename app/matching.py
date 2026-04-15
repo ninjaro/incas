@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-
 MATCH_CONFIG = {
     "weights": {
         "requested_overlap": 60,

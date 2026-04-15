@@ -2,8 +2,7 @@ import json
 import random
 from datetime import datetime, time, timedelta
 
-from app.models import Post, LanguageTandemRequest, db
-
+from app.models import LanguageTandemRequest, Post, db
 
 DEMO_FIRST_NAMES = [
     "Anna", "Mariam", "Luca", "Noah", "Sofia", "Elena", "Yuki", "Omar",
