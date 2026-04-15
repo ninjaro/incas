@@ -72,6 +72,34 @@ def post_detail(slug):
     item = Post.query.filter_by(slug=slug).first_or_404()
     return render_template("post_detail.html", item=item)
 
+def get_public_forms():
+    return [
+        {
+            "slug": "language-tandem",
+            "title": "Language Tandem",
+            "nav_title": "Language Tandem",
+            "teaser": "Find a tandem partner for language exchange.",
+            "description": "Choose offered and requested languages and submit your tandem request.",
+            "url": url_for("main.language_tandem_form"),
+            "is_active": True,
+            "category": "Community",
+        },
+        # {
+        #     "slug": "housing",
+        #     "title": "Housing Support",
+        #     "nav_title": "Housing",
+        #     "teaser": "Ask for housing-related support.",
+        #     "description": "Longer description for the forms page.",
+        #     "url": "#",
+        #     "is_active": False,
+        #     "category": "Support",
+        # },
+    ]
+
+
+@bp.route("/forms")
+def forms_index():
+    return render_template("forms/index.html", forms=get_public_forms())
 
 @bp.route("/calendar")
 def calendar_view():
@@ -120,7 +148,6 @@ def calendar_view():
         next_month_value=f"{next_year:04d}-{next_month:02d}",
     )
 
-
 @bp.route("/language-tandem", methods=["GET", "POST"])
 def language_tandem_form():
     values = {
@@ -128,11 +155,13 @@ def language_tandem_form():
         "last_name": "",
         "email": "",
         "occupation": "",
+        "occupation_other": "",
         "gender": "",
         "birth_year": "",
         "departure_date": "",
         "country_of_origin": "",
         "offered_languages": [],
+        "offered_native_languages": [],
         "requested_languages": [],
         "requested_native_only": False,
         "same_gender_only": False,
@@ -144,11 +173,15 @@ def language_tandem_form():
         values["last_name"] = request.form.get("last_name", "").strip()
         values["email"] = request.form.get("email", "").strip()
         values["occupation"] = request.form.get("occupation", "").strip()
+        values["occupation_other"] = request.form.get("occupation_other", "").strip()
         values["gender"] = request.form.get("gender", "").strip()
         values["birth_year"] = request.form.get("birth_year", "").strip()
         values["departure_date"] = request.form.get("departure_date", "").strip()
         values["country_of_origin"] = normalize_country_code(request.form.get("country_of_origin"))
         values["offered_languages"] = normalize_language_codes(request.form.getlist("offered_languages"))
+        values["offered_native_languages"] = normalize_language_codes(
+            request.form.getlist("offered_native_languages")
+        )
         values["requested_languages"] = normalize_language_codes(request.form.getlist("requested_languages"))
         values["requested_native_only"] = request.form.get("requested_native_only") == "on"
         values["same_gender_only"] = request.form.get("same_gender_only") == "on"
@@ -157,12 +190,28 @@ def language_tandem_form():
         birth_year = parse_birth_year(values["birth_year"])
         departure_date = parse_departure_date(values["departure_date"])
 
+        resolved_occupation = (
+            values["occupation_other"]
+            if values["occupation"] == "other"
+            else values["occupation"]
+        )
+
+        offered_native_languages = [
+            code for code in values["offered_native_languages"]
+            if code in values["offered_languages"]
+        ]
+        values["offered_native_languages"] = offered_native_languages
+
         if not values["first_name"] or not values["last_name"] or not values["email"]:
             flash("First name, last name, and email are required.")
             return render_language_tandem_form_page(values)
 
         if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
             flash("Occupation, gender, and country of origin are required.")
+            return render_language_tandem_form_page(values)
+
+        if values["occupation"] == "other" and not values["occupation_other"]:
+            flash("Enter occupation.")
             return render_language_tandem_form_page(values)
 
         if birth_year is None:
@@ -185,12 +234,13 @@ def language_tandem_form():
             first_name=values["first_name"],
             last_name=values["last_name"],
             email=values["email"],
-            occupation=values["occupation"],
+            occupation=resolved_occupation,
             gender=values["gender"],
             birth_year=birth_year,
             departure_date=departure_date,
             country_of_origin=values["country_of_origin"],
             offered_languages=json.dumps(values["offered_languages"]),
+            offered_native_languages=json.dumps(offered_native_languages),
             requested_languages=json.dumps(values["requested_languages"]),
             requested_native_only=values["requested_native_only"],
             same_gender_only=values["same_gender_only"],

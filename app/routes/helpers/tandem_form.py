@@ -218,33 +218,45 @@ def format_language_codes(codes):
 
 
 def build_tandem_form_values(item=None):
+    known_occupations = {
+        "Student at RWTH Aachen",
+        "Student at FH Aachen",
+    }
+
     if item is None:
         return {
             "first_name": "",
             "last_name": "",
             "email": "",
             "occupation": "",
+            "occupation_other": "",
             "gender": "",
             "birth_year": "",
             "departure_date": "",
             "country_of_origin": "",
             "offered_languages": [],
+            "offered_native_languages": [],
             "requested_languages": [],
             "requested_native_only": False,
             "same_gender_only": False,
             "comment": "",
         }
 
+    raw_occupation = item.occupation or ""
+    is_known_occupation = raw_occupation in known_occupations
+
     return {
         "first_name": item.first_name,
         "last_name": item.last_name,
         "email": item.email,
-        "occupation": item.occupation,
+        "occupation": raw_occupation if is_known_occupation else "other",
+        "occupation_other": "" if is_known_occupation else raw_occupation,
         "gender": item.gender,
         "birth_year": str(item.birth_year or ""),
         "departure_date": item.departure_date.strftime("%Y-%m-%d") if item.departure_date else "",
         "country_of_origin": item.country_of_origin,
         "offered_languages": list(item.offered_languages_list),
+        "offered_native_languages": list(item.offered_native_languages_list),
         "requested_languages": list(item.requested_languages_list),
         "requested_native_only": bool(item.requested_native_only),
         "same_gender_only": bool(item.same_gender_only),
@@ -263,7 +275,7 @@ def render_admin_language_tandem_edit_page(item, values, return_to):
 
     requested_field = build_language_field_context(
         selected_codes=values["requested_languages"],
-        hint_codes=[code for code, _count in offered_counts.most_common(8)],
+        hint_codes=[],
         popularity_counts=offered_counts,
     )
 

@@ -84,11 +84,15 @@ def admin_language_tandem_edit(request_id):
             "last_name": request.form.get("last_name", "").strip(),
             "email": request.form.get("email", "").strip(),
             "occupation": request.form.get("occupation", "").strip(),
+            "occupation_other": request.form.get("occupation_other", "").strip(),
             "gender": request.form.get("gender", "").strip(),
             "birth_year": request.form.get("birth_year", "").strip(),
             "departure_date": request.form.get("departure_date", "").strip(),
             "country_of_origin": normalize_country_code(request.form.get("country_of_origin")),
             "offered_languages": normalize_language_codes(request.form.getlist("offered_languages")),
+            "offered_native_languages": normalize_language_codes(
+                request.form.getlist("offered_native_languages")
+            ),
             "requested_languages": normalize_language_codes(request.form.getlist("requested_languages")),
             "requested_native_only": request.form.get("requested_native_only") == "on",
             "same_gender_only": request.form.get("same_gender_only") == "on",
@@ -98,12 +102,28 @@ def admin_language_tandem_edit(request_id):
         birth_year = parse_birth_year(values["birth_year"])
         departure_date = parse_departure_date(values["departure_date"])
 
+        resolved_occupation = (
+            values["occupation_other"]
+            if values["occupation"] == "other"
+            else values["occupation"]
+        )
+
+        offered_native_languages = [
+            code for code in values["offered_native_languages"]
+            if code in values["offered_languages"]
+        ]
+        values["offered_native_languages"] = offered_native_languages
+
         if not values["first_name"] or not values["last_name"] or not values["email"]:
             flash("First name, last name, and email are required.")
             return render_admin_language_tandem_edit_page(item, values, return_to)
 
         if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
             flash("Occupation, gender, and country of origin are required.")
+            return render_admin_language_tandem_edit_page(item, values, return_to)
+
+        if values["occupation"] == "other" and not values["occupation_other"]:
+            flash("Enter occupation.")
             return render_admin_language_tandem_edit_page(item, values, return_to)
 
         if birth_year is None:
@@ -125,12 +145,13 @@ def admin_language_tandem_edit(request_id):
         item.first_name = values["first_name"]
         item.last_name = values["last_name"]
         item.email = values["email"]
-        item.occupation = values["occupation"]
+        item.occupation = resolved_occupation
         item.gender = values["gender"]
         item.birth_year = birth_year
         item.departure_date = departure_date
         item.country_of_origin = values["country_of_origin"]
         item.offered_languages = json.dumps(values["offered_languages"])
+        item.offered_native_languages = json.dumps(offered_native_languages)
         item.requested_languages = json.dumps(values["requested_languages"])
         item.requested_native_only = values["requested_native_only"]
         item.same_gender_only = values["same_gender_only"]

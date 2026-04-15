@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/language-picker.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -27,7 +28,6 @@
         <div class="navbar-nav me-auto">
             <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Corridor</a>
             <a class="nav-link" href="{{ url_for('main.admin_posts') }}">Posts</a>
-            <a class="nav-link" href="{{ url_for('main.admin_language_tandem') }}">Language Tandem</a>
             <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
         </div>
 
@@ -61,6 +61,7 @@
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

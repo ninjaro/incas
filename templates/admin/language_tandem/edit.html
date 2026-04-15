@@ -37,7 +37,20 @@
                     <option value="">Select</option>
                     <option value="Student at RWTH Aachen" {% if values.occupation == "Student at RWTH Aachen" %}selected{% endif %}>Student at RWTH Aachen</option>
                     <option value="Student at FH Aachen" {% if values.occupation == "Student at FH Aachen" %}selected{% endif %}>Student at FH Aachen</option>
+                    <option value="other" {% if values.occupation == "other" %}selected{% endif %}>Other</option>
                 </select>
+
+                <div id="occupation_other_wrapper" class="mt-2" {% if values.occupation != "other" %}style="display: none;"{% endif %}>
+                    <label class="form-label mb-1" for="occupation_other">Please specify <span class="text-danger">*</span></label>
+                    <input
+                        class="form-control"
+                        id="occupation_other"
+                        name="occupation_other"
+                        placeholder="e.g. Researcher, Staff, Alumni"
+                        value="{{ values.occupation_other }}"
+                        {% if values.occupation == "other" %}required{% endif %}
+                    >
+                </div>
             </div>
 
             <div class="col-md-4">
@@ -46,7 +59,7 @@
                     <option value="">Select</option>
                     <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
                     <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
-                    <option value="Divers" {% if values.gender == "Divers" %}selected{% endif %}>Divers</option>
+                    <option value="Non-binary / Diverse" {% if values.gender == "Non-binary / Diverse" or values.gender == "Divers" %}selected{% endif %}>Non-binary / Diverse</option>
                 </select>
             </div>
 
@@ -73,25 +86,114 @@
             </div>
 
             <div class="col-md-6">
-                <label class="form-label" for="offered_languages">Offered Languages <span class="text-danger">*</span></label>
-                <select class="form-select" id="offered_languages" name="offered_languages" multiple size="12" required>
-                    {% for choice in offered_field.all_choices %}
-                        <option value="{{ choice.code }}" {% if choice.is_selected %}selected{% endif %}>
-                            {{ choice.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label m-0" for="offered_language_lookup">Offered Languages <span class="text-danger">*</span></label>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="alpha">A–Z</button>
+                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="popularity">Popular</button>
+                    </div>
+                </div>
+
+                {% if offered_field.hint_choices %}
+                    <div class="mb-3">
+                        <div class="small text-muted mb-2">Recommended for this country</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for choice in offered_field.hint_choices %}
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary language-suggestion"
+                                    data-target-picker="offered"
+                                    data-target-value="{{ choice.code }}"
+                                    title="Add {{ choice.label }}"
+                                >
+                                    {{ choice.label }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="offered_language_lookup"
+                        data-target-picker="offered"
+                        placeholder="Filter languages"
+                        autocomplete="off"
+                    >
+                    <div id="offered_language_menu" class="language-lookup-menu" aria-live="polite"></div>
+                </div>
+
+                <div class="form-text mt-2">
+                    Filter the list, click to add, use ★ for native languages.
+                </div>
+
+                <div class="mt-3">
+                    <div class="small text-muted mb-2">Selected offered languages</div>
+                    <div id="offered_language_selected" class="language-chip-list"></div>
+                </div>
+
+                <div id="offered_language_inputs"></div>
+
+                <script type="application/json" id="offered_language_options_json">
+                    [
+                        {% for choice in offered_field.all_choices %}
+                            {
+                                "value": {{ choice.code|tojson }},
+                                "label": {{ choice.label|tojson }},
+                                "popularity": {{ choice.popularity|int }},
+                                "isHint": {{ choice.is_hint|tojson }}
+                            }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ]
+                </script>
             </div>
 
             <div class="col-md-6">
-                <label class="form-label" for="requested_languages">Requested Languages <span class="text-danger">*</span></label>
-                <select class="form-select" id="requested_languages" name="requested_languages" multiple size="12" required>
-                    {% for choice in requested_field.all_choices %}
-                        <option value="{{ choice.code }}" {% if choice.is_selected %}selected{% endif %}>
-                            {{ choice.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label m-0" for="requested_language_lookup">Requested Languages <span class="text-danger">*</span></label>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="alpha">A–Z</button>
+                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="popularity">Popular</button>
+                    </div>
+                </div>
+
+                <div>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="requested_language_lookup"
+                        data-target-picker="requested"
+                        placeholder="Filter languages"
+                        autocomplete="off"
+                    >
+                    <div id="requested_language_menu" class="language-lookup-menu" aria-live="polite"></div>
+                </div>
+
+                <div class="form-text mt-2">
+                    Filter the list and click to add the languages you want to practice.
+                </div>
+
+                <div class="mt-3">
+                    <div class="small text-muted mb-2">Selected requested languages</div>
+                    <div id="requested_language_selected" class="language-chip-list"></div>
+                </div>
+
+                <div id="requested_language_inputs"></div>
+
+                <script type="application/json" id="requested_language_options_json">
+                    [
+                        {% for choice in requested_field.all_choices %}
+                            {
+                                "value": {{ choice.code|tojson }},
+                                "label": {{ choice.label|tojson }},
+                                "popularity": {{ choice.popularity|int }},
+                                "isHint": {{ choice.is_hint|tojson }}
+                            }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ]
+                </script>
             </div>
 
             <div class="col-md-6">
@@ -120,4 +222,21 @@
         <button type="submit" class="btn btn-dark">Save Changes</button>
     </div>
 </form>
+
+<script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
+<script>
+    initOccupationOther();
+
+    initLanguagePicker({
+        offered: {
+            options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
+            selected: {{ values.offered_languages|tojson }},
+            native: {{ values.offered_native_languages|tojson }}
+        },
+        requested: {
+            options: JSON.parse(document.getElementById("requested_language_options_json").textContent),
+            selected: {{ values.requested_languages|tojson }}
+        }
+    });
+</script>
 {% endblock %}
