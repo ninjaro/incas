@@ -26,6 +26,8 @@ python run.py
 dev-posts
 dev-language-tandem
 dev-language-tandem-corrections
+dev-forms
+dev-access-keys
 ```
 
 ## Docker deps

@@ -1,15 +1,17 @@
 from flask import abort, flash, redirect, render_template, request, session, url_for
-
+from app.models import ContactRequest, EventSuggestion
 from app.routes import bp
 from app.routes.helpers.access import (
     ACCESS_LABELS,
     get_access_scopes,
     get_scope_target,
     grant_scope,
+    grant_scopes,
     has_any_access,
     has_scope,
     require_any_access,
     resolve_scope_by_phrase,
+    resolve_scopes_by_phrase,
 )
 
 
@@ -17,10 +19,10 @@ from app.routes.helpers.access import (
 def admin_login():
     if request.method == "POST":
         phrase = request.form.get("phrase", "").strip()
-        scope = resolve_scope_by_phrase(phrase)
+        scopes = resolve_scopes_by_phrase(phrase)
 
-        if scope is not None:
-            grant_scope(scope)
+        if scopes:
+            grant_scopes(scopes)
             return redirect(url_for("main.admin_corridor"))
 
         flash("Invalid access phrase.")
@@ -44,15 +46,16 @@ def admin_scope_access(scope):
 
     if request.method == "POST":
         phrase = request.form.get("phrase", "").strip()
-        resolved_scope = resolve_scope_by_phrase(phrase)
+        resolved_scopes = resolve_scopes_by_phrase(phrase)
 
-        if resolved_scope == scope:
-            grant_scope(scope)
+        if scope in resolved_scopes:
+            grant_scopes(resolved_scopes)
             return redirect(get_scope_target(scope))
 
-        if resolved_scope is not None:
+        if resolved_scopes:
+            labels = ", ".join(ACCESS_LABELS.get(item, item) for item in resolved_scopes)
             flash(
-                f"This phrase unlocks {ACCESS_LABELS.get(resolved_scope, resolved_scope)}, "
+                f"This phrase unlocks {labels}, "
                 f"not {ACCESS_LABELS[scope]}."
             )
         else:
@@ -72,7 +75,7 @@ def admin_corridor():
         return guard
 
     stats = {
-        "unread_forms": 0,
+        "unread_forms": ContactRequest.query.count() + EventSuggestion.query.count(),
         "posts_today": 0,
         "visits_today": 17,
     }
@@ -95,6 +98,18 @@ def admin_corridor():
             "scope": "language_tandem_corrections",
             "is_open": has_scope("language_tandem_corrections"),
             "url": url_for("main.admin_language_tandem") if has_scope("language_tandem_corrections") else None,
+        },
+        {
+            "label": "Forms",
+            "scope": "forms",
+            "is_open": has_scope("forms"),
+            "url": url_for("main.admin_forms") if has_scope("forms") else None,
+        },
+        {
+            "label": "Access Keys",
+            "scope": "access_keys",
+            "is_open": has_scope("access_keys"),
+            "url": url_for("main.admin_access_keys") if has_scope("access_keys") else None,
         },
     ]
 

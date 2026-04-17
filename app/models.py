@@ -41,6 +41,30 @@ class Post(db.Model):
         return datetime.utcnow() < self.ends_at
 
 
+class ContactRequest(db.Model):
+    __tablename__ = "contact_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    subject = db.Column(db.String(200), nullable=False, default="")
+    message = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+class EventSuggestion(db.Model):
+    __tablename__ = "event_suggestions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    kind = db.Column(db.String(64), nullable=False, index=True)
+    country = db.Column(db.String(120), nullable=False, default="")
+    contact_name = db.Column(db.String(160), nullable=False)
+    contact_email = db.Column(db.String(255), nullable=False, default="", index=True)
+    contact_phone = db.Column(db.String(80), nullable=False, default="")
+    comment = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+
+
 class LanguageTandemRequest(db.Model):
     __tablename__ = "language_tandem_requests"
 
@@ -112,3 +136,16 @@ class TandemDuplicateDecision(db.Model):
             name="uq_tandem_duplicate_decision_pair",
         ),
     )
+
+class AccessKey(db.Model):
+    __tablename__ = "access_keys"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    scopes = db.Column(db.Text, nullable=False, default="[]")
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    @property
+    def scopes_list(self):
+        return json.loads(self.scopes or "[]")

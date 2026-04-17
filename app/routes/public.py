@@ -4,7 +4,7 @@ from datetime import datetime
 
 from flask import flash, redirect, render_template, request, url_for
 
-from app.models import LanguageTandemRequest, Post, db
+from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db
 from app.routes import bp
 from app.routes.helpers.content import parse_calendar_month
 from app.routes.helpers.tandem_form import (
@@ -55,6 +55,39 @@ def about():
 def contacts():
     return render_template("contacts.html")
 
+@bp.route("/contact-form", methods=["GET", "POST"])
+def contact_form():
+    values = {
+        "name": "",
+        "email": "",
+        "subject": "",
+        "message": "",
+    }
+
+    if request.method == "POST":
+        values["name"] = request.form.get("name", "").strip()
+        values["email"] = request.form.get("email", "").strip()
+        values["subject"] = request.form.get("subject", "").strip()
+        values["message"] = request.form.get("message", "").strip()
+
+        if not values["name"] or not values["email"] or not values["message"]:
+            flash("Name, email, and message are required.")
+            return render_template("forms/contact.html", values=values)
+
+        item = ContactRequest(
+            name=values["name"],
+            email=values["email"],
+            subject=values["subject"],
+            message=values["message"],
+        )
+
+        db.session.add(item)
+        db.session.commit()
+
+        flash("Your message has been submitted.")
+        return redirect(url_for("main.contact_form"))
+
+    return render_template("forms/contact.html", values=values)
 
 @bp.route("/posts")
 def posts():
@@ -90,16 +123,26 @@ def get_public_forms():
             "is_active": True,
             "category": "Community",
         },
-        # {
-        #     "slug": "housing",
-        #     "title": "Housing Support",
-        #     "nav_title": "Housing",
-        #     "teaser": "Ask for housing-related support.",
-        #     "description": "Longer description for the forms page.",
-        #     "url": "#",
-        #     "is_active": False,
-        #     "category": "Support",
-        # },
+        {
+            "slug": "suggest-event",
+            "title": "Suggest an Event",
+            "nav_title": "Suggest an Event",
+            "teaser": "Suggest a country evening or international breakfast.",
+            "description": "Leave your contact details and we will get back to you.",
+            "url": url_for("main.suggest_event_form"),
+            "is_active": True,
+            "category": "Community",
+        },
+        {
+            "slug": "contact",
+            "title": "Contact / Questions",
+            "nav_title": "Contact",
+            "teaser": "Send a general question or contact request.",
+            "description": "Leave your message and we will get back to you.",
+            "url": url_for("main.contact_form"),
+            "is_active": True,
+            "category": "Support",
+        },
     ]
 
 
@@ -163,6 +206,58 @@ def calendar_view():
         archived_items=archived_items,
         now_utc=now_utc,
     )
+
+@bp.route("/suggest-event", methods=["GET", "POST"])
+def suggest_event_form():
+    values = {
+        "kind": "",
+        "country": "",
+        "contact_name": "",
+        "contact_email": "",
+        "contact_phone": "",
+        "comment": "",
+    }
+
+    if request.method == "POST":
+        values["kind"] = request.form.get("kind", "").strip()
+        values["country"] = request.form.get("country", "").strip()
+        values["contact_name"] = request.form.get("contact_name", "").strip()
+        values["contact_email"] = request.form.get("contact_email", "").strip()
+        values["contact_phone"] = request.form.get("contact_phone", "").strip()
+        values["comment"] = request.form.get("comment", "").strip()
+
+        if values["kind"] not in {"country_evening", "breakfast"}:
+            flash("Select a valid event type.")
+            return render_template("forms/suggest_event.html", values=values)
+
+        if not values["country"]:
+            flash("Country is required.")
+            return render_template("forms/suggest_event.html", values=values)
+
+        if not values["contact_name"]:
+            flash("Contact name is required.")
+            return render_template("forms/suggest_event.html", values=values)
+
+        if not values["contact_email"] and not values["contact_phone"]:
+            flash("Enter at least email or phone.")
+            return render_template("forms/suggest_event.html", values=values)
+
+        item = EventSuggestion(
+            kind=values["kind"],
+            country=values["country"],
+            contact_name=values["contact_name"],
+            contact_email=values["contact_email"],
+            contact_phone=values["contact_phone"],
+            comment=values["comment"],
+        )
+
+        db.session.add(item)
+        db.session.commit()
+
+        flash("Your event suggestion has been submitted.")
+        return redirect(url_for("main.suggest_event_form"))
+
+    return render_template("forms/suggest_event.html", values=values)
 
 @bp.route("/language-tandem", methods=["GET", "POST"])
 def language_tandem_form():

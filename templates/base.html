@@ -50,6 +50,16 @@
                             Language Tandem
                         </a>
                     </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('main.suggest_event_form') }}">
+                            Suggest an Event
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('main.contact_form') }}">
+                            Contact / Questions
+                        </a>
+                    </li>
                 </ul>
             </div>
             {% if session.get('access_scopes') %}

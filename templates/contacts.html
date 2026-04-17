@@ -3,6 +3,18 @@
 {% block title %}Contacts · INCAS{% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Contacts</h1>
-<p>Email, social links, and other contact details will appear here.</p>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="h3 mb-3">Contacts</h1>
+        <p class="text-muted mb-4">Email, social links, and other contact details will appear here.</p>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5 mb-2">Send a Message</h2>
+                <p class="mb-3">For general questions, use the contact form.</p>
+                <a href="{{ url_for('main.contact_form') }}" class="btn btn-dark">Open Contact Form</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

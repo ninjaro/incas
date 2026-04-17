@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Contact · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="h3 mb-4">Contact / Questions</h1>
+
+        <form method="post" class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="name">Name <span class="text-danger">*</span></label>
+                        <input class="form-control" id="name" name="name" required value="{{ values.name }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                        <input class="form-control" id="email" name="email" type="email" required value="{{ values.email }}">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="subject">Subject</label>
+                        <input class="form-control" id="subject" name="subject" value="{{ values.subject }}">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="message">Message <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="message" name="message" rows="6" required>{{ values.message }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end">
+                <button type="submit" class="btn btn-dark">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
