@@ -357,6 +357,7 @@ def seed_posts_demo_data():
         body="This is a regular post. It stays live until it is manually deactivated.",
         starts_at=None,
         is_active=True,
+        is_pinned=True,
     )
 
     post_2 = Post(

@@ -24,14 +24,20 @@ def index():
     live_posts = [item for item in items if not item.is_event and item.is_live]
     archived_items = [item for item in items if not item.is_live]
 
-    live_events.sort(key=lambda item: item.starts_at)
-    live_posts.sort(key=lambda item: item.updated_at, reverse=True)
+    active_items = live_events + live_posts
+    active_items.sort(
+        key=lambda item: (
+            not item.is_pinned,
+            0 if item.is_event else 1,
+            item.starts_at or datetime.max,
+            -item.updated_at.timestamp(),
+        )
+    )
+
     archived_items.sort(
         key=lambda item: item.ends_at if item.is_event else item.updated_at,
         reverse=True,
     )
-
-    active_items = live_events + live_posts
 
     return render_template(
         "index.html",
@@ -118,6 +124,13 @@ def calendar_view():
         .order_by(Post.starts_at.asc())
         .all()
     )
+    upcoming_items = [item for item in items if item.is_live]
+    archived_items = [item for item in items if not item.is_live]
+
+    upcoming_items.sort(key=lambda item: item.starts_at)
+    archived_items.sort(key=lambda item: item.ends_at, reverse=True)
+
+    now_utc = datetime.utcnow()
 
     events_by_day = {}
 
@@ -146,6 +159,9 @@ def calendar_view():
         month_label=datetime(year, month, 1).strftime("%B %Y"),
         prev_month_value=f"{prev_year:04d}-{prev_month:02d}",
         next_month_value=f"{next_year:04d}-{next_month:02d}",
+        upcoming_items=upcoming_items,
+        archived_items=archived_items,
+        now_utc=now_utc,
     )
 
 @bp.route("/language-tandem", methods=["GET", "POST"])

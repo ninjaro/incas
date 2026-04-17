@@ -28,6 +28,7 @@ def admin_post_create():
         "body": "",
         "starts_at": "",
         "is_active": True,
+        "is_pinned": False,
     }
 
     if request.method == "POST":
@@ -36,6 +37,7 @@ def admin_post_create():
         values["body"] = request.form.get("body", "").strip()
         values["starts_at"] = request.form.get("starts_at", "").strip()
         values["is_active"] = request.form.get("is_active") == "on"
+        values["is_pinned"] = request.form.get("is_pinned") == "on"
 
         if not values["title"]:
             flash("Title is required.")
@@ -48,6 +50,7 @@ def admin_post_create():
             body=values["body"],
             starts_at=parse_starts_at(values["starts_at"]),
             is_active=values["is_active"],
+            is_pinned=values["is_pinned"],
         )
         db.session.add(item)
         db.session.commit()
@@ -70,6 +73,7 @@ def admin_post_edit(post_id):
         body = request.form.get("body", "").strip()
         starts_at_raw = request.form.get("starts_at", "").strip()
         is_active = request.form.get("is_active") == "on"
+        is_pinned = request.form.get("is_pinned") == "on"
 
         if not title:
             flash("Title is required.")
@@ -79,6 +83,7 @@ def admin_post_edit(post_id):
                 "body": body,
                 "starts_at": starts_at_raw,
                 "is_active": is_active,
+                "is_pinned": is_pinned,
             }
             return render_template("admin/posts/form.html", values=values, item=item)
 
@@ -98,6 +103,7 @@ def admin_post_edit(post_id):
         "body": item.body,
         "starts_at": item.starts_at.strftime("%Y-%m-%dT%H:%M") if item.starts_at else "",
         "is_active": item.is_active,
+        "is_pinned": item.is_pinned,
     }
 
     return render_template("admin/posts/form.html", values=values, item=item)

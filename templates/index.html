@@ -16,7 +16,12 @@
             <div class="col-md-6 col-xl-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
-                        <h2 class="h5 mb-2">{{ item.title }}</h2>
+                        <h2 class="h5 mb-2 d-flex align-items-center gap-2">
+                            {% if item.is_pinned %}
+                                <i class="bi bi-pin-angle-fill small"></i>
+                            {% endif %}
+                            <span>{{ item.title }}</span>
+                        </h2>
 
                         {% if item.starts_at %}
                             <div class="small text-muted mb-2">
@@ -48,7 +53,12 @@
             <div class="col-md-6 col-xl-4">
                 <div class="card shadow-sm h-100 text-body-tertiary border-secondary-subtle">
                     <div class="card-body d-flex flex-column">
-                        <h2 class="h5 mb-2">{{ item.title }}</h2>
+                        <h2 class="h5 mb-2 d-flex align-items-center gap-2">
+                            {% if item.is_pinned %}
+                                <i class="bi bi-pin-angle-fill small"></i>
+                            {% endif %}
+                            <span>{{ item.title }}</span>
+                        </h2>
 
                         {% if item.starts_at %}
                             <div class="small text-muted mb-2">

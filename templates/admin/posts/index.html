@@ -31,7 +31,12 @@
                     {% for item in items %}
                         <tr>
                             <td>
-                                <div class="fw-semibold">{{ item.title }}</div>
+                                <div class="fw-semibold">
+                                    {{ item.title }}
+                                    {% if item.is_pinned %}
+                                        <span class="badge text-bg-warning ms-1">Pinned</span>
+                                    {% endif %}
+                                </div>
                                 <div class="small text-muted">{{ item.slug }}</div>
                             </td>
                             <td>
