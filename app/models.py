@@ -17,6 +17,7 @@ class Post(db.Model):
     starts_at = db.Column(db.DateTime, nullable=True, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     is_pinned = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    event_kind = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

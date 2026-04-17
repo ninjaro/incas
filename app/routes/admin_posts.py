@@ -29,6 +29,7 @@ def admin_post_create():
         "starts_at": "",
         "is_active": True,
         "is_pinned": False,
+        "event_kind": "",
     }
 
     if request.method == "POST":
@@ -38,6 +39,7 @@ def admin_post_create():
         values["starts_at"] = request.form.get("starts_at", "").strip()
         values["is_active"] = request.form.get("is_active") == "on"
         values["is_pinned"] = request.form.get("is_pinned") == "on"
+        values["event_kind"] = request.form.get("event_kind", "").strip()
 
         if not values["title"]:
             flash("Title is required.")
@@ -51,6 +53,7 @@ def admin_post_create():
             starts_at=parse_starts_at(values["starts_at"]),
             is_active=values["is_active"],
             is_pinned=values["is_pinned"],
+            event_kind=values["event_kind"] or None,
         )
         db.session.add(item)
         db.session.commit()
@@ -74,6 +77,7 @@ def admin_post_edit(post_id):
         starts_at_raw = request.form.get("starts_at", "").strip()
         is_active = request.form.get("is_active") == "on"
         is_pinned = request.form.get("is_pinned") == "on"
+        event_kind = request.form.get("event_kind", "").strip()
 
         if not title:
             flash("Title is required.")
@@ -84,6 +88,7 @@ def admin_post_edit(post_id):
                 "starts_at": starts_at_raw,
                 "is_active": is_active,
                 "is_pinned": is_pinned,
+                "event_kind": event_kind,
             }
             return render_template("admin/posts/form.html", values=values, item=item)
 
@@ -93,6 +98,8 @@ def admin_post_edit(post_id):
         item.body = body
         item.starts_at = parse_starts_at(starts_at_raw)
         item.is_active = is_active
+        item.is_pinned = is_pinned
+        item.event_kind = event_kind or None
 
         db.session.commit()
         return redirect(url_for("main.admin_posts"))
@@ -104,6 +111,7 @@ def admin_post_edit(post_id):
         "starts_at": item.starts_at.strftime("%Y-%m-%dT%H:%M") if item.starts_at else "",
         "is_active": item.is_active,
         "is_pinned": item.is_pinned,
+        "event_kind": item.event_kind or "",
     }
 
     return render_template("admin/posts/form.html", values=values, item=item)

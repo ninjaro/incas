@@ -13,7 +13,13 @@
             <div class="col-md-6 col-xl-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
-                        <h2 class="h5">{{ item.title }}</h2>
+                        {% set meta = event_kind_meta(item.event_kind) %}
+                        <h2 class="h5 d-flex align-items-center gap-2 flex-wrap">
+                            <span>{{ item.title }}</span>
+                            {% if meta %}
+                                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                            {% endif %}
+                        </h2>
                         {% if item.starts_at %}
                             <div class="small text-muted mb-2">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
                         {% endif %}

@@ -347,40 +347,84 @@ def seed_posts_demo_data():
 
     now = datetime.utcnow()
 
-    upcoming_event_date = (now + timedelta(days=3)).date()
-    past_event_date = (now - timedelta(days=10)).date()
+    days_until_tuesday = (1 - now.weekday()) % 7
+    if days_until_tuesday == 0:
+        days_until_tuesday = 7
 
-    post_1 = Post(
-        slug="incas-community-update",
-        title="INCAS Community Update",
-        summary="A regular post without a time slot.",
-        body="This is a regular post. It stays live until it is manually deactivated.",
-        starts_at=None,
-        is_active=True,
-        is_pinned=True,
-    )
+    days_until_saturday = (5 - now.weekday()) % 7
+    if days_until_saturday == 0:
+        days_until_saturday = 7
 
-    post_2 = Post(
-        slug="spring-gathering",
-        title="Spring Gathering",
-        summary="An upcoming event with the default evening slot.",
-        body="This is an event post. It is treated as live until 06:00 on the next day.",
-        starts_at=datetime.combine(upcoming_event_date, time(20, 0, 0)),
-        is_active=True,
-    )
+    next_tuesday = (now + timedelta(days=days_until_tuesday)).date()
+    next_saturday = (now + timedelta(days=days_until_saturday)).date()
+    previous_tuesday = next_tuesday - timedelta(days=7)
 
-    post_3 = Post(
-        slug="past-meeting",
-        title="Past Meeting",
-        summary="A past event that stays visible in the archive section.",
-        body="This event is no longer live, but it still opens normally from the wall.",
-        starts_at=datetime.combine(past_event_date, time(20, 0, 0)),
-        is_active=True,
-    )
+    items = [
+        Post(
+            slug="incas-community-update",
+            title="INCAS Community Update",
+            summary="A regular pinned post without a time slot.",
+            body="This is a regular post. It stays live until it is manually deactivated.",
+            starts_at=None,
+            is_active=True,
+            is_pinned=True,
+            event_kind=None,
+        ),
+        Post(
+            slug="karaoke-night",
+            title="Karaoke Night",
+            summary="A Tuesday evening with music and singing.",
+            body="Join us for an international karaoke evening.",
+            starts_at=datetime.combine(next_tuesday, time(19, 30, 0)),
+            is_active=True,
+            is_pinned=False,
+            event_kind="karaoke",
+        ),
+        Post(
+            slug="cafe-lingua",
+            title="Café Lingua",
+            summary="Practice languages in a relaxed small-group setting.",
+            body="Meet new people and switch between languages during the evening.",
+            starts_at=datetime.combine(next_tuesday, time(17, 30, 0)),
+            is_active=True,
+            is_pinned=False,
+            event_kind="cafe_lingua",
+        ),
+        Post(
+            slug="international-breakfast",
+            title="International Breakfast",
+            summary="A Saturday breakfast event with limited spots.",
+            body="Start the weekend with breakfast and conversation.",
+            starts_at=datetime.combine(next_saturday, time(10, 0, 0)),
+            is_active=True,
+            is_pinned=False,
+            event_kind="breakfast",
+        ),
+        Post(
+            slug="country-evening",
+            title="Country Evening",
+            summary="A past Tuesday event that stays visible in the archive.",
+            body="A themed evening focused on one country and its culture.",
+            starts_at=datetime.combine(previous_tuesday, time(19, 0, 0)),
+            is_active=True,
+            is_pinned=False,
+            event_kind="country_evening",
+        ),
+        Post(
+            slug="housing-hours",
+            title="Housing Consultation Hours",
+            summary="Currently inactive housing support slot.",
+            body="This support slot is currently not active.",
+            starts_at=datetime.combine(next_saturday, time(12, 0, 0)),
+            is_active=False,
+            is_pinned=False,
+            event_kind="housing",
+        ),
+    ]
 
-    db.session.add(post_1)
-    db.session.add(post_2)
-    db.session.add(post_3)
+    for item in items:
+        db.session.add(item)
+
     db.session.commit()
 
 def build_demo_offered_languages(country_code):

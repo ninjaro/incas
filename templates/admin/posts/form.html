@@ -63,6 +63,21 @@
                 >
             </div>
 
+            <div class="col-md-6">
+                <label for="event_kind" class="form-label">Event Type</label>
+                <select class="form-select" id="event_kind" name="event_kind">
+                    <option value="" {% if not values.event_kind %}selected{% endif %}>None</option>
+                    <option value="karaoke" {% if values.event_kind == "karaoke" %}selected{% endif %}>Karaoke</option>
+                    <option value="country_evening" {% if values.event_kind == "country_evening" %}selected{% endif %}>Country Evening</option>
+                    <option value="board_games" {% if values.event_kind == "board_games" %}selected{% endif %}>Board Games</option>
+                    <option value="cafe_lingua" {% if values.event_kind == "cafe_lingua" %}selected{% endif %}>Café Lingua</option>
+                    <option value="dance" {% if values.event_kind == "dance" %}selected{% endif %}>Dance</option>
+                    <option value="breakfast" {% if values.event_kind == "breakfast" %}selected{% endif %}>Breakfast</option>
+                    <option value="trip" {% if values.event_kind == "trip" %}selected{% endif %}>Trip</option>
+                    <option value="housing" {% if values.event_kind == "housing" %}selected{% endif %}>Housing</option>
+                </select>
+            </div>
+
             <div class="col-md-6 d-flex align-items-end">
                 <div class="form-check mb-2">
                     <input

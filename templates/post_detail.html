@@ -13,7 +13,13 @@
             {% endif %}
         </div>
 
-        <h1 class="h3 mb-2">{{ item.title }}</h1>
+        {% set meta = event_kind_meta(item.event_kind) %}
+        <h1 class="h3 mb-2 d-flex align-items-center gap-2 flex-wrap">
+            <span>{{ item.title }}</span>
+            {% if meta %}
+                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+            {% endif %}
+        </h1>
 
         {% if item.starts_at %}
             <div class="text-muted mb-3">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
