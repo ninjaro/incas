@@ -8,29 +8,25 @@
     <a href="{{ url_for('main.admin_logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Unread Forms</div>
-                <div class="fs-3">{{ stats.unread_forms }}</div>
-            </div>
+<div class="admin-layout mb-4" data-admin-layout>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="text-muted small">Unread Forms</div>
+            <div class="fs-3">{{ stats.unread_forms }}</div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Posts Today</div>
-                <div class="fs-3">{{ stats.posts_today }}</div>
-            </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="text-muted small">Posts Today</div>
+            <div class="fs-3">{{ stats.posts_today }}</div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="text-muted small">Visits Today</div>
-                <div class="fs-3">{{ stats.visits_today }}</div>
-            </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="text-muted small">Visits Today</div>
+            <div class="fs-3">{{ stats.visits_today }}</div>
         </div>
     </div>
 </div>

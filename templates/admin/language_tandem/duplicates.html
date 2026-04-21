@@ -54,7 +54,7 @@
                 </div>
 
                 {% if active_candidates %}
-                    <div class="d-flex flex-column gap-3">
+                    <div class="admin-layout" data-admin-layout>
                         {% for entry in active_candidates %}
                             {% set candidate = entry.candidate %}
                             <div class="border rounded p-3">
@@ -106,7 +106,7 @@
                         <span class="badge text-bg-secondary">{{ suppressed_candidates|length }}</span>
                     </div>
 
-                    <div class="d-flex flex-column gap-3">
+                    <div class="admin-layout" data-admin-layout>
                         {% for entry in suppressed_candidates %}
                             {% set candidate = entry.candidate %}
                             <div class="border rounded p-3">
@@ -210,7 +210,7 @@
                     </div>
 
                     {% if diff_rows %}
-                        <div class="d-flex flex-column gap-2">
+                        <div class="admin-layout" data-admin-layout>
                             {% for row in diff_rows %}
                                 <div class="border rounded p-3 border-warning-subtle">
                                     <div class="small text-muted mb-2">{{ row.label }}</div>

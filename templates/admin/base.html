@@ -44,6 +44,17 @@
                 <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
             </div>
 
+            <div class="btn-group btn-group-sm admin-layout-toggle me-lg-2 mb-2 mb-lg-0" role="group" aria-label="Admin layout">
+                <button type="button" class="btn btn-primary active" data-set-admin-layout="list" aria-pressed="true" title="List layout">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="visually-hidden">List layout</span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-set-admin-layout="grid" aria-pressed="false" title="Grid layout">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <span class="visually-hidden">Grid layout</span>
+                </button>
+            </div>
+
             <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary mb-3 mb-lg-0"
