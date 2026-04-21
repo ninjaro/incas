@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="{{ g.locale }}" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,57 +24,93 @@
         <a class="navbar-brand" href="{{ url_for('main.index') }}">{{ config.APP_NAME }}</a>
 
         <div class="navbar-nav me-auto">
-            <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
-            <a class="nav-link" href="{{ url_for('main.calendar_view') }}">Calendar</a>
-            <a class="nav-link" href="{{ url_for('main.about') }}">About</a>
-            <a class="nav-link" href="{{ url_for('main.contacts') }}">Contacts</a>
-            <div class="nav-item dropdown">
+            <a class="nav-link" href="{{ url_for('main.index') }}">{{ t("nav.home") }}</a>
+            <a class="nav-link" href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a>
+
+            <div class="nav-item dropdown d-flex align-items-center">
+                <a class="nav-link pe-1" href="{{ url_for('main.about') }}">
+                    {{ t("nav.about") }}
+                </a>
                 <a
-                    class="nav-link dropdown-toggle"
-                    href="{{ url_for('main.forms_index') }}"
+                    class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
+                    href="#"
                     role="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                 >
-                    Forms
+                    <span class="visually-hidden">Toggle About menu</span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('main.about') }}">{{ t("nav.about_us") }}</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.working_groups') }}">{{ t("nav.working_groups") }}</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main.team_meetings') }}">{{ t("nav.team_meetings") }}</a></li>
+                </ul>
+            </div>
+
+            <a class="nav-link" href="{{ url_for('main.contacts') }}">{{ t("nav.contacts") }}</a>
+
+            <div class="nav-item dropdown d-flex align-items-center">
+                <a class="nav-link pe-1" href="{{ url_for('main.offers') }}">
+                    {{ t("nav.forms") }}
+                </a>
+                <a
+                    class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
+                    href="#"
+                    role="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+                    <span class="visually-hidden">Toggle Offers menu</span>
                 </a>
                 <ul class="dropdown-menu">
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('main.forms_index') }}">
-                            All forms
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('main.language_tandem_form') }}">
-                            Language Tandem
+                        <a class="dropdown-item" href="{{ url_for('main.international_tuesday') }}">
+                            International Tuesday
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('main.suggest_event_form') }}">
-                            Suggest an Event
+                        <a class="dropdown-item" href="{{ url_for('main.international_breakfast') }}">
+                            International Breakfast
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="{{ url_for('main.contact_form') }}">
-                            Contact / Questions
+                        <a class="dropdown-item" href="{{ url_for('main.offer_language_tandem') }}">
+                            {{ t("nav.language_tandem") }}
                         </a>
                     </li>
                 </ul>
             </div>
+
             {% if session.get('access_scopes') %}
-                <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Admin</a>
+                <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">{{ t("nav.admin") }}</a>
             {% endif %}
         </div>
 
-        <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            id="theme-toggle"
-            aria-label="Toggle theme"
-        >
-            <i class="bi bi-moon-stars"></i>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Language switch">
+                <a
+                    href="{{ url_for('main.set_locale', locale='en') }}"
+                    class="btn btn-outline-secondary{% if g.locale == 'en' %} active{% endif %}"
+                >
+                    EN
+                </a>
+                <a
+                    href="{{ url_for('main.set_locale', locale='de') }}"
+                    class="btn btn-outline-secondary{% if g.locale == 'de' %} active{% endif %}"
+                >
+                    DE
+                </a>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                id="theme-toggle"
+                aria-label="Toggle theme"
+            >
+                <i class="bi bi-moon-stars"></i>
+            </button>
+        </div>
     </div>
 </nav>
 

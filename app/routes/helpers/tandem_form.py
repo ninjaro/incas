@@ -161,7 +161,9 @@ def build_language_field_context(selected_codes, hint_codes, popularity_counts):
         "all_choices": all_choices,
     }
 
-def render_language_tandem_form_page(values):
+
+
+def build_language_tandem_form_context(values):
     offered_counts = get_offered_language_counts()
 
     offered_field = build_language_field_context(
@@ -176,12 +178,20 @@ def render_language_tandem_form_page(values):
         popularity_counts=offered_counts,
     )
 
+    return {
+        "country_options": get_country_options(),
+        "offered_field": offered_field,
+        "requested_field": requested_field,
+    }
+
+
+def render_language_tandem_form_page(values):
+    context = build_language_tandem_form_context(values)
+
     return render_template(
         "forms/language_tandem.html",
         values=values,
-        country_options=get_country_options(),
-        offered_field=offered_field,
-        requested_field=requested_field,
+        **context,
     )
 
 

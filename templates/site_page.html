@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+
+        <div class="d-flex flex-wrap gap-2">
+            {% if page.form %}
+                <a href="#page-form" class="btn btn-outline-dark">
+                    Go to form
+                </a>
+
+                {% if page.form.type == "suggest_event" %}
+                    <a
+                        href="{{ url_for('main.suggest_event_form', kind=form_preset_kind) }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Open standalone
+                    </a>
+                {% elif page.form.type == "language_tandem" %}
+                    <a
+                        href="{{ url_for('main.language_tandem_form') }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Open standalone
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        {% if page.image %}
+            <img
+                src="{{ url_for('static', filename=page.image) }}"
+                alt="{{ page.title }}"
+                class="img-fluid rounded mb-4"
+            >
+        {% endif %}
+
+        <div>{{ page.body_html|safe }}</div>
+
+        {% if page.form %}
+            <div class="d-flex flex-wrap gap-2 mb-4">
+                {% if page.form.type == "suggest_event" %}
+                    <a
+                        href="{{ url_for('main.suggest_event_form', kind=form_preset_kind) }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Open standalone
+                    </a>
+                {% elif page.form.type == "language_tandem" %}
+                    <a
+                        href="{{ url_for('main.language_tandem_form') }}"
+                        class="btn btn-outline-secondary"
+                    >
+                        Open standalone
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if page.form %}
+            <hr class="my-5">
+
+            <div id="page-form" class="pt-2">
+                {% if page.form.type == "suggest_event" %}
+                    <h2 class="h4 mb-4">Suggest this event</h2>
+                    {% include "forms/_suggest_event_form.html" %}
+                {% elif page.form.type == "language_tandem" %}
+                    <h2 class="h4 mb-4">Language Tandem</h2>
+                    {% include "forms/_language_tandem_form.html" %}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if page.form %}
+    <button
+        type="button"
+        id="scroll-to-form"
+        class="btn btn-outline-dark rounded-circle position-fixed"
+        style="right: 1rem; bottom: 4.75rem; width: 3rem; height: 3rem; display: none; z-index: 1030;"
+        aria-label="Go to form"
+    >
+        <i class="bi bi-arrow-down"></i>
+    </button>
+{% endif %}
+
+<button
+    type="button"
+    id="scroll-to-top"
+    class="btn btn-dark rounded-circle position-fixed"
+    style="right: 1rem; bottom: 1rem; width: 3rem; height: 3rem; display: none; z-index: 1030;"
+    aria-label="Back to top"
+>
+    <i class="bi bi-arrow-up"></i>
+</button>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script>
+        (() => {
+            const topButton = document.getElementById("scroll-to-top");
+            const formButton = document.getElementById("scroll-to-form");
+            const formBlock = document.getElementById("page-form");
+
+            const toggleButtons = () => {
+                if (topButton) {
+                    topButton.style.display = window.scrollY > 400 ? "inline-flex" : "none";
+                }
+
+                if (formButton && formBlock) {
+                    const rect = formBlock.getBoundingClientRect();
+                    const formVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                    formButton.style.display = formVisible ? "none" : "inline-flex";
+                }
+            };
+
+            window.addEventListener("scroll", toggleButtons);
+            toggleButtons();
+
+            if (topButton) {
+                topButton.addEventListener("click", () => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
+            }
+
+            if (formButton && formBlock) {
+                formButton.addEventListener("click", () => {
+                    formBlock.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+            }
+        })();
+    </script>
+    {% if page.form and page.form.type == "language_tandem" %}
+        <script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
+        <script>
+            initOccupationOther();
+
+            initLanguagePicker({
+                offered: {
+                    options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
+                    selected: {{ values.offered_languages|tojson }},
+                    native: {{ values.offered_native_languages|tojson }}
+                },
+                requested: {
+                    options: JSON.parse(document.getElementById("requested_language_options_json").textContent),
+                    selected: {{ values.requested_languages|tojson }}
+                }
+            });
+        </script>
+    {% endif %}
+{% endblock %}

@@ -1,45 +1,58 @@
 {% extends "base.html" %}
 
-{% block title %}Forms · INCAS{% endblock %}
+{% block title %}{{ offers.title }} · INCAS{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-9 col-xl-8">
         <div class="mb-4">
-            <h1 class="h3 mb-1">Forms</h1>
-            <div class="text-muted">Choose the form you need.</div>
+            <h1 class="h3 mb-1">{{ offers.title }}</h1>
+            {% if offers.subtitle %}
+                <div class="text-muted">{{ offers.subtitle }}</div>
+            {% endif %}
         </div>
 
-        <div class="d-flex flex-column gap-3">
-            {% for form in forms %}
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
-                            <div>
-                                <h2 class="h4 mb-1">{{ form.title }}</h2>
-                                {% if form.teaser %}
-                                    <div class="text-muted">{{ form.teaser }}</div>
+        {% if offers.pages %}
+            <div class="mb-5">
+                <div class="d-flex flex-column gap-3">
+                    {% for item in offers.pages %}
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                                {% if item.subtitle %}
+                                    <div class="text-muted mb-3">{{ item.subtitle }}</div>
                                 {% endif %}
+
+                                <a href="{{ item.url }}" class="btn btn-dark">Open page</a>
                             </div>
-
-                            {% if form.category %}
-                                <span class="badge text-bg-light border">{{ form.category }}</span>
-                            {% endif %}
                         </div>
-
-                        {% if form.description %}
-                            <p class="mb-3">{{ form.description }}</p>
-                        {% endif %}
-
-                        {% if form.is_active %}
-                            <a href="{{ form.url }}" class="btn btn-dark">Open form</a>
-                        {% else %}
-                            <button class="btn btn-outline-secondary" disabled>Coming soon</button>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% endif %}
+
+        {% if offers.forms %}
+            <div class="mb-3">
+                <h2 class="h4 mb-1">Forms</h2>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                {% for item in offers.forms %}
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                            {% if item.subtitle %}
+                                <div class="text-muted mb-3">{{ item.subtitle }}</div>
+                            {% endif %}
+
+                            <a href="{{ item.url }}" class="btn btn-outline-dark">Open form</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

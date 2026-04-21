@@ -4,16 +4,26 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <h1 class="h3 mb-3">Contacts</h1>
-        <p class="text-muted mb-4">Email, social links, and other contact details will appear here.</p>
+    <div class="col-lg-9 col-xl-8">
+        <div class="mb-4">
+            <h1 class="h3 mb-1">Contacts</h1>
+            <div class="text-muted">Questions, contact options, and direct links.</div>
+        </div>
 
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h2 class="h5 mb-2">Send a Message</h2>
-                <p class="mb-3">For general questions, use the contact form.</p>
-                <a href="{{ url_for('main.contact_form') }}" class="btn btn-dark">Open Contact Form</a>
-            </div>
+        <div class="d-flex flex-column gap-3">
+            {% for item in links %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                        {% if item.description %}
+                            <div class="text-muted mb-3">{{ item.description }}</div>
+                        {% endif %}
+
+                        <a href="{{ item.url }}" class="btn btn-dark">Open</a>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </div>

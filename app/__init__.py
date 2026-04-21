@@ -1,5 +1,8 @@
 from flask import Flask
 
+from flask import g
+from app.site_content import t
+
 from app.demo_seed import seed_demo_data
 from app.models import db
 from config import Config
@@ -30,8 +33,11 @@ def create_app():
     db.init_app(app)
 
     @app.context_processor
-    def inject_event_kind_meta():
-        return {"event_kind_meta": event_kind_meta}
+    def inject_common_helpers():
+        return {
+            "event_kind_meta": event_kind_meta,
+            "t": lambda key: t(getattr(g, "locale", "en"), key),
+        }
 
     with app.app_context():
         db.create_all()
