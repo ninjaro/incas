@@ -25,20 +25,34 @@
     <div class="container">
         <a class="navbar-brand" href="{{ url_for('main.admin_corridor') }}">{{ config.APP_NAME }} Admin</a>
 
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Corridor</a>
-            <a class="nav-link" href="{{ url_for('main.admin_posts') }}">Posts</a>
-            <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
-        </div>
-
         <button
+            class="navbar-toggler"
             type="button"
-            class="btn btn-sm btn-outline-secondary"
-            id="theme-toggle"
-            aria-label="Toggle theme"
+            data-bs-toggle="collapse"
+            data-bs-target="#admin-navbar"
+            aria-controls="admin-navbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
         >
-            <i class="bi bi-moon-stars"></i>
+            <span class="navbar-toggler-icon"></span>
         </button>
+
+        <div class="collapse navbar-collapse" id="admin-navbar">
+            <div class="navbar-nav me-lg-auto py-3 py-lg-0">
+                <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Corridor</a>
+                <a class="nav-link" href="{{ url_for('main.admin_posts') }}">Posts</a>
+                <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-3 mb-lg-0"
+                id="theme-toggle"
+                aria-label="Toggle theme"
+            >
+                <i class="bi bi-moon-stars"></i>
+            </button>
+        </div>
     </div>
 </nav>
 

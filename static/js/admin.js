@@ -6,11 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const REQUEST_VIEW_MODE_STORAGE_KEY = "incas:tandem-request-view-mode";
         const REQUEST_DENSITY_STORAGE_KEY = "incas:tandem-request-density";
         const OVERVIEW_DENSITY_STORAGE_KEY = "incas:tandem-overview-density";
+        const hasRequestViewControls = Boolean(document.querySelector("[data-set-request-view-mode]"));
+        const hasRequestDensityControls = Boolean(document.querySelector("[data-set-request-density]"));
+        const hasOverviewDensityControls = Boolean(document.querySelector("[data-set-overview-density]"));
 
         const tandemRequestUiState = {
-            viewMode: sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
-                          density: sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
-                          overviewDensity: sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
+            viewMode: hasRequestViewControls && sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
+            density: hasRequestDensityControls && sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
+            overviewDensity: hasOverviewDensityControls && sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "compact" ? "compact" : "expanded",
         };
 
         function getRequestResultsContainers() {
@@ -71,12 +74,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             getOverviewPanels().forEach((panel) => {
-                panel.classList.toggle("d-none", tandemRequestUiState.overviewDensity === "compact");
+                panel.classList.toggle("d-none", hasOverviewDensityControls && tandemRequestUiState.overviewDensity === "compact");
             });
 
-            sessionStorage.setItem(REQUEST_VIEW_MODE_STORAGE_KEY, tandemRequestUiState.viewMode);
-            sessionStorage.setItem(REQUEST_DENSITY_STORAGE_KEY, tandemRequestUiState.density);
-            sessionStorage.setItem(OVERVIEW_DENSITY_STORAGE_KEY, tandemRequestUiState.overviewDensity);
+            if (hasRequestViewControls) {
+                sessionStorage.setItem(REQUEST_VIEW_MODE_STORAGE_KEY, tandemRequestUiState.viewMode);
+            }
+
+            if (hasRequestDensityControls) {
+                sessionStorage.setItem(REQUEST_DENSITY_STORAGE_KEY, tandemRequestUiState.density);
+            }
+
+            if (hasOverviewDensityControls) {
+                sessionStorage.setItem(OVERVIEW_DENSITY_STORAGE_KEY, tandemRequestUiState.overviewDensity);
+            }
 
             syncRequestViewButtons();
             syncRequestDensityButtons();
@@ -122,11 +133,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (hasMatchUi) {
         const MATCH_VIEW_MODE_STORAGE_KEY = "incas:tandem-match-view-mode";
+        const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
 
         const matchUiState = {
-            viewMode: sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
-                          sortMode: "score",
-                          warningFilter: "all",
+            viewMode: hasMatchViewControls && sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
+            sortMode: "score",
+            warningFilter: "all",
         };
 
         function getMatchResultsContainers() {
@@ -246,7 +258,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ["full", "partial", "weak"].forEach(updateSectionState);
             updateHiddenState();
             syncViewButtons();
-            sessionStorage.setItem(MATCH_VIEW_MODE_STORAGE_KEY, matchUiState.viewMode);
+
+            if (hasMatchViewControls) {
+                sessionStorage.setItem(MATCH_VIEW_MODE_STORAGE_KEY, matchUiState.viewMode);
+            }
         }
 
         function hideCard(card) {
