@@ -1,0 +1,36 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-incas}:${POSTGRES_PASSWORD:-incas}@db:5432/${POSTGRES_DB:-incas}
+      SECRET_KEY: ${SECRET_KEY:-dev-docker-secret}
+      INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
+      INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
+      INSTAGRAM_REDIRECT_URI: ${INSTAGRAM_REDIRECT_URI:-}
+      INSTAGRAM_SCOPES: ${INSTAGRAM_SCOPES:-instagram_business_basic,instagram_business_content_publish}
+    ports:
+      - "${INCAS_PORT:-5000}:5000"
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-incas}
+      POSTGRES_USER: ${POSTGRES_USER:-incas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-incas}
+    volumes:
+      - incas_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  incas_postgres_data:
