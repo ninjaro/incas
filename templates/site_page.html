@@ -6,9 +6,9 @@
 <div class="row justify-content-center">
     <div class="col-lg-9">
 
-        <div class="d-flex flex-wrap gap-2">
+        <div class="site-page-actions d-flex flex-wrap gap-2">
             {% if page.form %}
-                <a href="#page-form" class="btn btn-outline-dark">
+                <a href="#page-form" class="btn btn-primary">
                     Go to form
                 </a>
 
@@ -41,7 +41,7 @@
         <div class="site-content">{{ page.body_html|safe }}</div>
 
         {% if page.form %}
-            <div class="d-flex flex-wrap gap-2 mb-4">
+            <div class="site-page-actions d-flex flex-wrap gap-2 mb-4">
                 {% if page.form.type == "suggest_event" %}
                     <a
                         href="{{ url_for('main.suggest_event_form', kind=form_preset_kind) }}"
@@ -80,8 +80,7 @@
     <button
         type="button"
         id="scroll-to-form"
-        class="btn btn-outline-dark rounded-circle position-fixed"
-        style="right: 1rem; bottom: 4.75rem; width: 3rem; height: 3rem; display: none; z-index: 1030;"
+        class="scroll-action scroll-action-form"
         aria-label="Go to form"
     >
         <i class="bi bi-arrow-down"></i>
@@ -91,8 +90,7 @@
 <button
     type="button"
     id="scroll-to-top"
-    class="btn btn-dark rounded-circle position-fixed"
-    style="right: 1rem; bottom: 1rem; width: 3rem; height: 3rem; display: none; z-index: 1030;"
+    class="scroll-action scroll-action-top"
     aria-label="Back to top"
 >
     <i class="bi bi-arrow-up"></i>
