@@ -1,21 +1,42 @@
 (function () {
+    const LANG_LEVELS = ["1", "2", "3", "4", "5"];
+    const LEVEL_LABELS = ["Beginner", "Intermediate", "Advanced", "Fluent", "Native"];
+
+    let _tooltip = null;
+
+    function getTooltip() {
+        if (!_tooltip) {
+            _tooltip = document.createElement("div");
+            _tooltip.className = "lang-level-tooltip";
+            document.body.appendChild(_tooltip);
+        }
+        return _tooltip;
+    }
+
+    function showTooltip(el, text) {
+        const tip = getTooltip();
+        tip.textContent = text;
+        const rect = el.getBoundingClientRect();
+        tip.style.left = (rect.left + rect.width / 2 + window.scrollX) + "px";
+        tip.style.top = (rect.top - 30 + window.scrollY) + "px";
+        tip.classList.add("is-visible");
+    }
+
+    function hideTooltip() {
+        if (_tooltip) _tooltip.classList.remove("is-visible");
+    }
+
     window.initOccupationOther = function initOccupationOther() {
         const occupationSelect = document.getElementById("occupation");
         const occupationOtherWrapper = document.getElementById("occupation_other_wrapper");
         const occupationOtherInput = document.getElementById("occupation_other");
 
         function syncOccupationOther() {
-            if (!occupationSelect || !occupationOtherWrapper || !occupationOtherInput) {
-                return;
-            }
-
+            if (!occupationSelect || !occupationOtherWrapper || !occupationOtherInput) return;
             const isOther = occupationSelect.value === "other";
             occupationOtherWrapper.style.display = isOther ? "" : "none";
             occupationOtherInput.required = isOther;
-
-            if (!isOther) {
-                occupationOtherInput.value = "";
-            }
+            if (!isOther) occupationOtherInput.value = "";
         }
 
         if (occupationSelect) {
@@ -29,34 +50,33 @@
             offered: {
                 options: config.offered.options || [],
                 selected: config.offered.selected || [],
-                native: config.offered.native || [],
+                levels: config.offered.levels || {},
                 sortMode: "alpha",
                 query: "",
-                allowNative: true,
+                allowLevels: true,
             },
             requested: {
                 options: config.requested.options || [],
                 selected: config.requested.selected || [],
-                native: [],
+                levels: {},
                 sortMode: "alpha",
                 query: "",
-                allowNative: false,
+                allowLevels: false,
             },
         };
 
         function getPickerElements(kind) {
             return {
                 lookup: document.getElementById(`${kind}_language_lookup`),
- menu: document.getElementById(`${kind}_language_menu`),
- selectedContainer: document.getElementById(`${kind}_language_selected`),
- inputsContainer: document.getElementById(`${kind}_language_inputs`),
+                menu: document.getElementById(`${kind}_language_menu`),
+                selectedContainer: document.getElementById(`${kind}_language_selected`),
+                inputsContainer: document.getElementById(`${kind}_language_inputs`),
             };
         }
 
         function getAvailableItems(kind) {
             const state = languagePickerState[kind];
             const selectedSet = new Set(state.selected);
-
             let items = state.options.filter((item) => !selectedSet.has(item.value));
 
             if (state.query.trim()) {
@@ -67,9 +87,7 @@
             items.sort((a, b) => {
                 if (state.sortMode === "popularity") {
                     const diff = b.popularity - a.popularity;
-                    if (diff !== 0) {
-                        return diff;
-                    }
+                    if (diff !== 0) return diff;
                 }
                 return a.label.localeCompare(b.label);
             });
@@ -79,7 +97,6 @@
 
         function syncSortButtons(kind) {
             const state = languagePickerState[kind];
-
             document.querySelectorAll(`.language-sort[data-target-picker="${kind}"]`).forEach((button) => {
                 const isActive = button.dataset.sortMode === state.sortMode;
                 button.classList.toggle("btn-dark", isActive);
@@ -90,7 +107,6 @@
         function syncSuggestionButtons(kind) {
             const state = languagePickerState[kind];
             const selectedSet = new Set(state.selected);
-
             document.querySelectorAll(`.language-suggestion[data-target-picker="${kind}"]`).forEach((button) => {
                 const isSelected = selectedSet.has(button.dataset.targetValue);
                 button.disabled = isSelected;
@@ -102,9 +118,7 @@
         function renderLookupMenu(kind) {
             const state = languagePickerState[kind];
             const { menu } = getPickerElements(kind);
-            if (!menu) {
-                return;
-            }
+            if (!menu) return;
 
             const items = getAvailableItems(kind);
             menu.innerHTML = "";
@@ -131,20 +145,73 @@
             });
         }
 
+        function createLevelBar(kind, code, currentLevel) {
+            const bar = document.createElement("div");
+            bar.className = "lang-level-bar";
+
+            const currentIndex = currentLevel ? LANG_LEVELS.indexOf(currentLevel) : -1;
+            let hoveredIndex = -1;
+
+            function updatePips() {
+                const activeIndex = hoveredIndex >= 0 ? hoveredIndex : currentIndex;
+                pips.forEach((pip, i) => {
+                    pip.classList.toggle("is-active", activeIndex >= 0 && i <= activeIndex);
+                });
+            }
+
+            const pips = LANG_LEVELS.map((_level, i) => {
+                const pip = document.createElement("span");
+                pip.className = "lang-level-pip";
+                pip.dataset.levelIndex = i;
+
+                pip.addEventListener("mouseenter", () => {
+                    hoveredIndex = i;
+                    updatePips();
+                    showTooltip(pip, LEVEL_LABELS[i]);
+                });
+
+                bar.appendChild(pip);
+                return pip;
+            });
+
+            bar.addEventListener("mouseleave", () => {
+                hoveredIndex = -1;
+                updatePips();
+                hideTooltip();
+            });
+
+            bar.addEventListener("click", (e) => {
+                const pip = e.target.closest(".lang-level-pip");
+                if (!pip) return;
+                const i = parseInt(pip.dataset.levelIndex, 10);
+                const state = languagePickerState[kind];
+                if (!state.allowLevels || !state.selected.includes(code)) return;
+
+                if (currentIndex === i) {
+                    delete state.levels[code];
+                } else {
+                    state.levels[code] = LANG_LEVELS[i];
+                }
+
+                hideTooltip();
+                renderLanguagePicker(kind);
+            });
+
+            updatePips();
+            return bar;
+        }
+
         function renderSelected(kind) {
             const state = languagePickerState[kind];
             const { selectedContainer, inputsContainer } = getPickerElements(kind);
-
-            if (!selectedContainer || !inputsContainer) {
-                return;
-            }
+            if (!selectedContainer || !inputsContainer) return;
 
             selectedContainer.innerHTML = "";
             inputsContainer.innerHTML = "";
 
             const selectedItems = state.selected
-            .map((code) => state.options.find((item) => item.value === code))
-            .filter(Boolean);
+                .map((code) => state.options.find((item) => item.value === code))
+                .filter(Boolean);
 
             if (!selectedItems.length) {
                 const empty = document.createElement("div");
@@ -158,36 +225,13 @@
                 const chip = document.createElement("div");
                 chip.className = "language-selected-chip";
 
-                if (state.allowNative) {
-                    const isNative = state.native.includes(item.value);
+                const label = document.createElement("span");
+                label.className = "language-selected-label";
+                label.textContent = item.label;
+                chip.appendChild(label);
 
-                    const nativeToggle = document.createElement("button");
-                    nativeToggle.type = "button";
-                    nativeToggle.className = isNative
-                    ? "language-chip-toggle is-active"
-                    : "language-chip-toggle";
-                    nativeToggle.dataset.action = "toggle-native";
-                    nativeToggle.dataset.kind = kind;
-                    nativeToggle.dataset.value = item.value;
-                    nativeToggle.title = isNative ? "Marked as native" : "Mark as native";
-
-                    const label = document.createElement("span");
-                    label.className = "language-selected-label";
-                    label.textContent = item.label;
-
-                    const icon = document.createElement("i");
-                    icon.className = isNative
-                    ? "bi bi-star-fill language-chip-icon is-active"
-                    : "bi bi-star language-chip-icon";
-
-                    nativeToggle.appendChild(label);
-                    nativeToggle.appendChild(icon);
-                    chip.appendChild(nativeToggle);
-                } else {
-                    const label = document.createElement("span");
-                    label.className = "language-selected-label";
-                    label.textContent = item.label;
-                    chip.appendChild(label);
+                if (state.allowLevels) {
+                    chip.appendChild(createLevelBar(kind, item.value, state.levels[item.value] || null));
                 }
 
                 const removeButton = document.createElement("button");
@@ -209,7 +253,7 @@
                 valueInput.value = item.value;
                 inputsContainer.appendChild(valueInput);
 
-                if (state.allowNative && state.native.includes(item.value)) {
+                if (state.allowLevels && state.levels[item.value] === "5") {
                     const nativeInput = document.createElement("input");
                     nativeInput.type = "hidden";
                     nativeInput.name = "offered_native_languages";
@@ -217,6 +261,14 @@
                     inputsContainer.appendChild(nativeInput);
                 }
             });
+
+            if (state.allowLevels) {
+                const levelsInput = document.createElement("input");
+                levelsInput.type = "hidden";
+                levelsInput.name = "offered_language_levels";
+                levelsInput.value = JSON.stringify(state.levels);
+                inputsContainer.appendChild(levelsInput);
+            }
         }
 
         function renderLanguagePicker(kind) {
@@ -227,47 +279,21 @@
         }
 
         function addLanguage(kind, value) {
-            if (!value) {
-                return;
-            }
-
+            if (!value) return;
             const state = languagePickerState[kind];
-            if (state.selected.includes(value)) {
-                return;
-            }
-
+            if (state.selected.includes(value)) return;
             state.selected.push(value);
             state.query = "";
-
             const { lookup } = getPickerElements(kind);
-            if (lookup) {
-                lookup.value = "";
-            }
-
+            if (lookup) lookup.value = "";
             renderLanguagePicker(kind);
         }
 
         function removeLanguage(kind, value) {
             const state = languagePickerState[kind];
             state.selected = state.selected.filter((item) => item !== value);
-            state.native = state.native.filter((item) => item !== value);
+            delete state.levels[value];
             renderLanguagePicker(kind);
-        }
-
-        function toggleNativeLanguage(value) {
-            const state = languagePickerState.offered;
-
-            if (!state.selected.includes(value)) {
-                return;
-            }
-
-            if (state.native.includes(value)) {
-                state.native = state.native.filter((item) => item !== value);
-            } else {
-                state.native.push(value);
-            }
-
-            renderLanguagePicker("offered");
         }
 
         document.querySelectorAll(".language-sort").forEach((button) => {
@@ -304,12 +330,6 @@
             const removeButton = event.target.closest('[data-action="remove-language"]');
             if (removeButton) {
                 removeLanguage(removeButton.dataset.kind, removeButton.dataset.value);
-                return;
-            }
-
-            const nativeButton = event.target.closest('[data-action="toggle-native"]');
-            if (nativeButton) {
-                toggleNativeLanguage(nativeButton.dataset.value);
                 return;
             }
         });
