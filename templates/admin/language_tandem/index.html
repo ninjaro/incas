@@ -313,7 +313,7 @@
                                         </div>
 
                                         <div class="small mb-1">
-                                            <strong>Offered:</strong> {{ ", ".join(item.offered_languages_display) }}
+                                            <strong>Offered:</strong> {% for lang in item.offered_languages_with_levels %}{{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
                                         </div>
 
                                         <div class="small mb-1">

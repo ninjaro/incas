@@ -4,23 +4,23 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <a href="{{ url_for('main.calendar_view', month=prev_month_value) }}" class="btn btn-outline-secondary btn-sm">Previous</a>
+    <a href="{{ url_for('main.calendar_view', month=prev_month_value) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-chevron-left"></i>
+    </a>
     <h1 class="h3 m-0">{{ month_label }}</h1>
-    <a href="{{ url_for('main.calendar_view', month=next_month_value) }}" class="btn btn-outline-secondary btn-sm">Next</a>
+    <a href="{{ url_for('main.calendar_view', month=next_month_value) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-chevron-right"></i>
+    </a>
 </div>
 
-<div class="card shadow-sm">
+<div class="card shadow-sm mb-4 overflow-hidden">
     <div class="table-responsive">
         <table class="table table-bordered align-top mb-0">
             <thead>
                 <tr>
-                    <th class="text-center">Mon</th>
-                    <th class="text-center">Tue</th>
-                    <th class="text-center">Wed</th>
-                    <th class="text-center">Thu</th>
-                    <th class="text-center">Fri</th>
-                    <th class="text-center">Sat</th>
-                    <th class="text-center">Sun</th>
+                    {% for day_name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+                        <th class="text-center small {% if loop.index0 >= 5 %}text-body-secondary{% endif %}">{{ day_name }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
@@ -28,27 +28,28 @@
                     <tr>
                         {% for day in week %}
                             {% set day_items = events_by_day.get(day, []) %}
-                            <td class="{% if day.month != current_month %}bg-body-tertiary text-body-tertiary{% endif %}" style="width: 14.28%; min-height: 160px;">
-                                <div class="small fw-semibold mb-2">{{ day.day }}</div>
+                            {% set is_other_month = day.month != current_month %}
+                            {% set is_today = day == today %}
+                            {% set is_weekend = day.weekday() >= 5 %}
+                            <td class="cal-cell {% if is_other_month %}bg-body-tertiary text-body-tertiary{% elif is_weekend %}bg-body-tertiary{% endif %}">
+                                <div class="cal-cell-inner">
+                                    <div class="cal-day-number {% if is_today %}cal-day-today{% endif %}">{{ day.day }}</div>
 
-                                {% if day_items %}
-                                    <div class="d-flex flex-column gap-2">
-                                        {% for item in day_items %}
-                                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-decoration-none">
-                                                {% set meta = event_kind_meta(item.event_kind) %}
-                                                <div class="border rounded p-2 small">
-                                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                                                        <div class="fw-semibold">{{ item.starts_at.strftime("%H:%M") }}</div>
-                                                        {% if meta %}
-                                                            <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div>{{ item.title }}</div>
-                                                </div>
-                                            </a>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                                    {% if day_items %}
+                                        <div class="cal-events-scroll">
+                                            <div class="d-flex flex-column gap-1">
+                                                {% for item in day_items %}
+                                                    <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-decoration-none">
+                                                        {% set meta = event_kind_meta(item.event_kind) %}
+                                                        <div class="cal-event-chip small border-start border-2 {% if meta %}border-{{ meta.color }}{% else %}border-secondary{% endif %}">
+                                                            <div class="fw-semibold text-body">{{ item.starts_at.strftime("%H:%M") }} · {{ item.title }}</div>
+                                                        </div>
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </td>
                         {% endfor %}
                     </tr>
@@ -57,8 +58,14 @@
         </table>
     </div>
 </div>
+
 <div class="mt-4">
-    <h2 class="h4 mb-3">Upcoming this month</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Upcoming this month</h2>
+        <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg"></i> Suggest an event
+        </a>
+    </div>
 
     {% if upcoming_items %}
         <div class="row g-3 mb-5">
@@ -73,24 +80,22 @@
                                     <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
                                 {% endif %}
                             </h3>
-                            <div class="small text-muted mb-2">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
-
                             {% set seconds_left = ((item.starts_at - now_utc).total_seconds())|int %}
-                            {% if seconds_left > 0 %}
-                                <div class="small mb-2">
+                            <div class="small text-muted mb-2 d-flex align-items-center gap-2 flex-wrap">
+                                <span>{{ item.starts_at.strftime("%d %b · %H:%M") }}</span>
+                                {% if seconds_left > 0 %}
                                     {% if seconds_left < 3600 %}
-                                        {{ seconds_left // 60 }} min left
+                                        <span class="badge text-bg-danger">{{ seconds_left // 60 }} min left</span>
                                     {% elif seconds_left < 86400 %}
-                                        {{ seconds_left // 3600 }} h left
+                                        <span class="badge text-bg-warning">{{ seconds_left // 3600 }} h left</span>
                                     {% else %}
-                                        {{ seconds_left // 86400 }} d left
+                                        <span class="badge text-bg-secondary">{{ seconds_left // 86400 }} d left</span>
                                     {% endif %}
-                                </div>
-                            {% endif %}
-
-                            <div class="mt-auto">
-                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-dark">Open</a>
+                                {% endif %}
                             </div>
+
+                            <p class="mb-3 event-card-summary">{{ item.summary }}</p>
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-dark mt-auto align-self-start">Open</a>
                         </div>
                     </div>
                 </div>
@@ -101,35 +106,46 @@
     {% endif %}
 </div>
 
-<hr class="my-5">
+<div class="mt-5">
+    <button
+        class="btn btn-link text-body-secondary text-decoration-none ps-0 d-flex align-items-center gap-1"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#past-events"
+        aria-expanded="false"
+        aria-controls="past-events"
+    >
+        <i class="bi bi-chevron-right collapsed-icon"></i>
+        <span class="h6 mb-0">Past / Inactive this month{% if archived_items %} ({{ archived_items|length }}){% endif %}</span>
+    </button>
 
-<div>
-    <h2 class="h4 mb-3">Past / Inactive this month</h2>
-
-    {% if archived_items %}
-        <div class="row g-3">
-            {% for item in archived_items %}
-                <div class="col-md-6 col-xl-4">
-                    <div class="card shadow-sm h-100 text-body-tertiary border-secondary-subtle">
-                        <div class="card-body d-flex flex-column">
-                            {% set meta = event_kind_meta(item.event_kind) %}
-                            <h3 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
-                                <span>{{ item.title }}</span>
-                                {% if meta %}
-                                    <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                {% endif %}
-                            </h3>
-                            <div class="small text-muted mb-2">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
-                            <div class="mt-auto">
-                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
+    <div class="collapse mt-3" id="past-events">
+        {% if archived_items %}
+            <div class="row g-3">
+                {% for item in archived_items %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card shadow-sm h-100 text-body-tertiary border-secondary-subtle">
+                            <div class="card-body d-flex flex-column">
+                                {% set meta = event_kind_meta(item.event_kind) %}
+                                <h3 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ item.title }}</span>
+                                    {% if meta %}
+                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                    {% endif %}
+                                </h3>
+                                <div class="small text-muted mb-2">{{ item.starts_at.strftime("%d %b · %H:%M") }}</div>
+                                <p class="mb-3 event-card-summary">{{ item.summary }}</p>
+                                <div class="mt-auto">
+                                    <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p class="text-muted mb-0">Nothing here yet.</p>
-    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">Nothing here yet.</p>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

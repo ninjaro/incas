@@ -295,8 +295,12 @@ def build_counter_rows(counter, label_map=None, limit=8):
     return rows
 
 
+_LEVEL_LABELS = {"1": "Beginner", "2": "Intermediate", "3": "Advanced", "4": "Fluent", "5": "Native"}
+
+
 def hydrate_tandem_request_display(item, country_labels=None):
     country_labels = country_labels or get_country_label_map()
+    language_labels = get_language_label_map()
 
     item.country_of_origin_display = country_labels.get(
         item.country_of_origin,
@@ -304,6 +308,15 @@ def hydrate_tandem_request_display(item, country_labels=None):
     )
     item.offered_languages_display = format_language_codes(item.offered_languages_list)
     item.requested_languages_display = format_language_codes(item.requested_languages_list)
+
+    levels_dict = item.offered_language_levels_dict
+    item.offered_languages_with_levels = [
+        {
+            "name": language_labels.get(code, code),
+            "level_label": _LEVEL_LABELS.get(levels_dict.get(code, ""), ""),
+        }
+        for code in item.offered_languages_list
+    ]
 
     return item
 

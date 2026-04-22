@@ -78,8 +78,10 @@
             <div class="col-lg-6">
                 <div class="small text-muted mb-1">Offered Languages</div>
                 <div class="d-flex flex-wrap gap-2">
-                    {% for value in item.offered_languages_display %}
-                        <span class="badge text-bg-secondary">{{ value }}</span>
+                    {% for lang in item.offered_languages_with_levels %}
+                        <span class="badge text-bg-secondary">
+                            {{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}
+                        </span>
                     {% endfor %}
                 </div>
             </div>

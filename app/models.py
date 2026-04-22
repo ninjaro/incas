@@ -98,6 +98,7 @@ class LanguageTandemRequest(db.Model):
 
     offered_languages = db.Column(db.Text, nullable=False, default="[]")
     offered_native_languages = db.Column(db.Text, nullable=False, default="[]")
+    offered_language_levels = db.Column(db.Text, nullable=False, default="{}")
 
     requested_languages = db.Column(db.Text, nullable=False, default="[]")
     requested_native_only = db.Column(db.Boolean, nullable=False, default=False)
@@ -122,6 +123,14 @@ class LanguageTandemRequest(db.Model):
     @property
     def offered_native_languages_list(self):
         return json.loads(self.offered_native_languages or "[]")
+
+    @property
+    def offered_language_levels_dict(self):
+        try:
+            result = json.loads(self.offered_language_levels or "{}")
+            return result if isinstance(result, dict) else {}
+        except (TypeError, ValueError):
+            return {}
 
     @property
     def requested_languages_list(self):

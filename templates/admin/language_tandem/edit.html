@@ -128,7 +128,7 @@
                 </div>
 
                 <div class="form-text mt-2">
-                    Filter the list, click to add, use ★ for native languages.
+                    Filter the list and click to add. Use the bar on each chip to set the proficiency level.
                 </div>
 
                 <div class="mt-3">
@@ -233,7 +233,7 @@
         offered: {
             options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
             selected: {{ values.offered_languages|tojson }},
-            native: {{ values.offered_native_languages|tojson }}
+            levels: {{ values.offered_language_levels|tojson }}
         },
         requested: {
             options: JSON.parse(document.getElementById("requested_language_options_json").textContent),
