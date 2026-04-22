@@ -90,14 +90,32 @@ def admin_language_tandem_edit(request_id):
             "departure_date": request.form.get("departure_date", "").strip(),
             "country_of_origin": normalize_country_code(request.form.get("country_of_origin")),
             "offered_languages": normalize_language_codes(request.form.getlist("offered_languages")),
-            "offered_native_languages": normalize_language_codes(
-                request.form.getlist("offered_native_languages")
-            ),
+            "offered_native_languages": [],
+            "offered_language_levels": {},
             "requested_languages": normalize_language_codes(request.form.getlist("requested_languages")),
             "requested_native_only": request.form.get("requested_native_only") == "on",
             "same_gender_only": request.form.get("same_gender_only") == "on",
             "comment": request.form.get("comment", "").strip(),
         }
+
+        valid_levels = {"1", "2", "3", "4", "5"}
+        try:
+            raw_levels = json.loads(request.form.get("offered_language_levels", "{}"))
+            raw_levels = raw_levels if isinstance(raw_levels, dict) else {}
+        except (TypeError, ValueError):
+            raw_levels = {}
+        valid_offered = set(values["offered_languages"])
+        offered_language_levels = {
+            k: v for k, v in raw_levels.items()
+            if k in valid_offered and v in valid_levels
+        }
+        values["offered_language_levels"] = offered_language_levels
+
+        offered_native_languages = [
+            code for code in values["offered_languages"]
+            if offered_language_levels.get(code) == "5"
+        ]
+        values["offered_native_languages"] = offered_native_languages
 
         birth_year = parse_birth_year(values["birth_year"])
         departure_date = parse_departure_date(values["departure_date"])
@@ -107,12 +125,6 @@ def admin_language_tandem_edit(request_id):
             if values["occupation"] == "other"
             else values["occupation"]
         )
-
-        offered_native_languages = [
-            code for code in values["offered_native_languages"]
-            if code in values["offered_languages"]
-        ]
-        values["offered_native_languages"] = offered_native_languages
 
         if not values["first_name"] or not values["last_name"] or not values["email"]:
             flash("First name, last name, and email are required.")
@@ -152,6 +164,7 @@ def admin_language_tandem_edit(request_id):
         item.country_of_origin = values["country_of_origin"]
         item.offered_languages = json.dumps(values["offered_languages"])
         item.offered_native_languages = json.dumps(offered_native_languages)
+        item.offered_language_levels = json.dumps(offered_language_levels)
         item.requested_languages = json.dumps(values["requested_languages"])
         item.requested_native_only = values["requested_native_only"]
         item.same_gender_only = values["same_gender_only"]

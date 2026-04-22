@@ -33,9 +33,10 @@
     align-items: center;
     gap: 0.5rem;
     max-width: 100%;
+    border: 1px solid var(--bs-border-color);
     border-radius: 999px;
     padding: 0.35rem 0.6rem 0.35rem 0.75rem;
-    background: var(--bs-secondary-bg);
+    background: var(--bs-tertiary-bg);
 }
 
 .language-selected-label {
@@ -62,7 +63,28 @@
 }
 
 .lang-level-pip.is-active {
-    background: var(--bs-primary);
+    background: #ff6600;
+}
+
+.lang-level-tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(20, 20, 20, 0.82);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
+
+.lang-level-tooltip.is-visible {
+    opacity: 1;
 }
 
 .language-chip-remove {
