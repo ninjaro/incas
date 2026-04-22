@@ -3,20 +3,20 @@
 {% block title %}Duplicate Review · INCAS{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="admin-page-header mb-4">
     <div>
         <h1 class="h3 m-0">Duplicate Review</h1>
         <div class="small text-muted">Request #{{ item.id }}</div>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="admin-header-actions">
+        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
         <a
             href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=return_to) }}"
             class="btn btn-outline-secondary btn-sm"
         >
             Edit
         </a>
-        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
     </div>
 </div>
 
@@ -54,7 +54,7 @@
                 </div>
 
                 {% if active_candidates %}
-                    <div class="d-flex flex-column gap-3">
+                    <div class="admin-layout" data-admin-layout>
                         {% for entry in active_candidates %}
                             {% set candidate = entry.candidate %}
                             <div class="border rounded p-3">
@@ -106,7 +106,7 @@
                         <span class="badge text-bg-secondary">{{ suppressed_candidates|length }}</span>
                     </div>
 
-                    <div class="d-flex flex-column gap-3">
+                    <div class="admin-layout" data-admin-layout>
                         {% for entry in suppressed_candidates %}
                             {% set candidate = entry.candidate %}
                             <div class="border rounded p-3">
@@ -210,7 +210,7 @@
                     </div>
 
                     {% if diff_rows %}
-                        <div class="d-flex flex-column gap-2">
+                        <div class="admin-layout" data-admin-layout>
                             {% for row in diff_rows %}
                                 <div class="border rounded p-3 border-warning-subtle">
                                     <div class="small text-muted mb-2">{{ row.label }}</div>

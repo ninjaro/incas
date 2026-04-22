@@ -1,16 +1,57 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const ADMIN_LAYOUT_STORAGE_KEY = "incas:admin-layout-mode";
+    let adminLayoutMode = localStorage.getItem(ADMIN_LAYOUT_STORAGE_KEY) === "grid" ? "grid" : "list";
+
     const hasRequestUi = document.querySelector("[data-request-results]");
     const hasMatchUi = document.querySelector("[data-match-results]");
+
+    function getAdminLayoutContainers() {
+        return Array.from(document.querySelectorAll("[data-admin-layout], [data-request-results], [data-match-results]"));
+    }
+
+    function syncAdminLayoutButtons() {
+        document.querySelectorAll("[data-set-admin-layout]").forEach((button) => {
+            const isActive = button.dataset.setAdminLayout === adminLayoutMode;
+            button.classList.toggle("btn-primary", isActive);
+            button.classList.toggle("btn-outline-secondary", !isActive);
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+    }
+
+    function applyAdminLayoutMode() {
+        getAdminLayoutContainers().forEach((container) => {
+            container.dataset.viewMode = adminLayoutMode;
+        });
+
+        localStorage.setItem(ADMIN_LAYOUT_STORAGE_KEY, adminLayoutMode);
+        syncAdminLayoutButtons();
+    }
+
+    document.querySelectorAll("[data-set-admin-layout]").forEach((button) => {
+        button.addEventListener("click", () => {
+            adminLayoutMode = button.dataset.setAdminLayout === "grid" ? "grid" : "list";
+            applyAdminLayoutMode();
+            window.dispatchEvent(new CustomEvent("admin-layout-change", {
+                detail: { viewMode: adminLayoutMode },
+            }));
+        });
+    });
+
+    applyAdminLayoutMode();
 
     if (hasRequestUi) {
         const REQUEST_VIEW_MODE_STORAGE_KEY = "incas:tandem-request-view-mode";
         const REQUEST_DENSITY_STORAGE_KEY = "incas:tandem-request-density";
         const OVERVIEW_DENSITY_STORAGE_KEY = "incas:tandem-overview-density";
+        const hasRequestViewControls = Boolean(document.querySelector("[data-set-request-view-mode]"));
+        const hasRequestDensityControls = Boolean(document.querySelector("[data-set-request-density]"));
+        const hasOverviewDensityControls = Boolean(document.querySelector("[data-set-overview-density]"));
 
         const tandemRequestUiState = {
-            viewMode: sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
-                          density: sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
-                          overviewDensity: sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
+            viewMode: hasRequestViewControls && sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : adminLayoutMode,
+            density: hasRequestDensityControls && sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
+            overviewDensity: hasOverviewDensityControls && sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "compact" ? "compact" : "expanded",
         };
 
         function getRequestResultsContainers() {
@@ -28,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function syncRequestViewButtons() {
             document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
                 const isActive = button.dataset.setRequestViewMode === tandemRequestUiState.viewMode;
-                button.classList.toggle("btn-dark", isActive);
+                button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
             });
         }
@@ -36,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function syncRequestDensityButtons() {
             document.querySelectorAll("[data-set-request-density]").forEach((button) => {
                 const isActive = button.dataset.setRequestDensity === tandemRequestUiState.density;
-                button.classList.toggle("btn-dark", isActive);
+                button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
             });
         }
@@ -44,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function syncOverviewDensityButtons() {
             document.querySelectorAll("[data-set-overview-density]").forEach((button) => {
                 const isActive = button.dataset.setOverviewDensity === tandemRequestUiState.overviewDensity;
-                button.classList.toggle("btn-dark", isActive);
+                button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
             });
         }
@@ -71,12 +112,20 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             getOverviewPanels().forEach((panel) => {
-                panel.classList.toggle("d-none", tandemRequestUiState.overviewDensity === "compact");
+                panel.classList.toggle("d-none", hasOverviewDensityControls && tandemRequestUiState.overviewDensity === "compact");
             });
 
-            sessionStorage.setItem(REQUEST_VIEW_MODE_STORAGE_KEY, tandemRequestUiState.viewMode);
-            sessionStorage.setItem(REQUEST_DENSITY_STORAGE_KEY, tandemRequestUiState.density);
-            sessionStorage.setItem(OVERVIEW_DENSITY_STORAGE_KEY, tandemRequestUiState.overviewDensity);
+            if (hasRequestViewControls) {
+                sessionStorage.setItem(REQUEST_VIEW_MODE_STORAGE_KEY, tandemRequestUiState.viewMode);
+            }
+
+            if (hasRequestDensityControls) {
+                sessionStorage.setItem(REQUEST_DENSITY_STORAGE_KEY, tandemRequestUiState.density);
+            }
+
+            if (hasOverviewDensityControls) {
+                sessionStorage.setItem(OVERVIEW_DENSITY_STORAGE_KEY, tandemRequestUiState.overviewDensity);
+            }
 
             syncRequestViewButtons();
             syncRequestDensityButtons();
@@ -117,16 +166,22 @@ document.addEventListener("DOMContentLoaded", () => {
             syncRequestDetailButtons();
         });
 
+        window.addEventListener("admin-layout-change", (event) => {
+            tandemRequestUiState.viewMode = event.detail.viewMode;
+            applyRequestUiState();
+        });
+
         applyRequestUiState();
     }
 
     if (hasMatchUi) {
         const MATCH_VIEW_MODE_STORAGE_KEY = "incas:tandem-match-view-mode";
+        const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
 
         const matchUiState = {
-            viewMode: sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : "list",
-                          sortMode: "score",
-                          warningFilter: "all",
+            viewMode: hasMatchViewControls && sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : adminLayoutMode,
+            sortMode: "score",
+            warningFilter: "all",
         };
 
         function getMatchResultsContainers() {
@@ -233,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function syncViewButtons() {
             document.querySelectorAll("[data-set-view-mode]").forEach((button) => {
                 const isActive = button.dataset.setViewMode === matchUiState.viewMode;
-                button.classList.toggle("btn-dark", isActive);
+                button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
             });
         }
@@ -246,7 +301,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ["full", "partial", "weak"].forEach(updateSectionState);
             updateHiddenState();
             syncViewButtons();
-            sessionStorage.setItem(MATCH_VIEW_MODE_STORAGE_KEY, matchUiState.viewMode);
+
+            if (hasMatchViewControls) {
+                sessionStorage.setItem(MATCH_VIEW_MODE_STORAGE_KEY, matchUiState.viewMode);
+            }
         }
 
         function hideCard(card) {
@@ -304,6 +362,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const card = restoreButton.closest("[data-match-card]");
                 if (card) restoreCard(card);
             }
+        });
+
+        window.addEventListener("admin-layout-change", (event) => {
+            matchUiState.viewMode = event.detail.viewMode;
+            refreshMatchUi();
         });
 
         refreshMatchUi();

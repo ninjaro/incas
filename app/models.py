@@ -20,6 +20,9 @@ class Post(db.Model):
     event_kind = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    image_url = db.Column(db.String(500), nullable=False, default="")
+    instagram_media_id = db.Column(db.String(64), nullable=False, default="", index=True)
+    instagram_permalink = db.Column(db.String(500), nullable=False, default="")
 
     @property
     def is_event(self):
@@ -40,6 +43,18 @@ class Post(db.Model):
             return True
         return datetime.utcnow() < self.ends_at
 
+
+class InstagramConnection(db.Model):
+    __tablename__ = "instagram_connections"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ig_user_id = db.Column(db.String(64), nullable=False, default="", index=True)
+    username = db.Column(db.String(120), nullable=False, default="")
+    access_token = db.Column(db.Text, nullable=False, default="")
+    token_expires_at = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class ContactRequest(db.Model):
     __tablename__ = "contact_requests"

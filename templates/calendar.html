@@ -88,7 +88,6 @@
                                 </div>
                             {% endif %}
 
-                            <p class="mb-3">{{ item.summary }}</p>
                             <div class="mt-auto">
                                 <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-dark">Open</a>
                             </div>
@@ -121,7 +120,6 @@
                                 {% endif %}
                             </h3>
                             <div class="small text-muted mb-2">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
-                            <p class="mb-3">{{ item.summary }}</p>
                             <div class="mt-auto">
                                 <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
                             </div>
