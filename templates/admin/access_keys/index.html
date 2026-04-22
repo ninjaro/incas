@@ -1,0 +1,104 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Access Keys · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 m-0">Access Keys</h1>
+    <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Create Key</h2>
+
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Scopes</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for scope in available_scopes %}
+                            <div class="form-check">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="scope_{{ scope.value }}"
+                                    name="scopes"
+                                    value="{{ scope.value }}"
+                                    {% if scope.value in values.scopes %}checked{% endif %}
+                                >
+                                <label class="form-check-label" for="scope_{{ scope.value }}">
+                                    {{ scope.label }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="expires_at">Expires At</label>
+                    <input
+                        class="form-control"
+                        type="datetime-local"
+                        id="expires_at"
+                        name="expires_at"
+                        required
+                        value="{{ values.expires_at }}"
+                    >
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-dark">Create Key</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Existing Keys</h2>
+
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Scopes</th>
+                            <th>Expires</th>
+                            <th>Created</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td><code>{{ item.key }}</code></td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for scope in item.scopes_list %}
+                                            <span class="badge text-bg-dark">
+                                                {{ ACCESS_LABELS.get(scope, scope) }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td>{{ item.expires_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                <td class="text-end">
+                                    <form method="post" action="{{ url_for('main.admin_access_key_delete', key_id=item.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No access keys yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

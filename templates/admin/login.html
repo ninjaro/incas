@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Access · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <h1 class="h3 mb-3">Add Access</h1>
+        <form method="post" class="card card-body shadow-sm">
+            <div class="mb-3">
+                <label for="phrase" class="form-label">Access Phrase</label>
+                <input type="password" class="form-control" id="phrase" name="phrase" required>
+            </div>
+            <button type="submit" class="btn btn-dark">Add Access</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

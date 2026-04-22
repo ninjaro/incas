@@ -1,0 +1,77 @@
+.language-lookup-menu {
+    margin-top: 0.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    height: 18rem;
+    overflow-y: auto;
+}
+
+.language-lookup-item {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0.65rem 0.85rem;
+}
+
+.language-lookup-item:hover,
+.language-lookup-item:focus {
+    background: var(--bs-tertiary-bg);
+}
+
+.language-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.language-selected-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    padding: 0.35rem 0.55rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.language-selected-label {
+    line-height: 1.2;
+}
+
+.language-chip-icon {
+    font-size: 0.95rem;
+    opacity: 0.5;
+}
+
+.language-chip-icon.is-active {
+    opacity: 1;
+}
+
+.language-chip-remove {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    line-height: 1;
+    font-size: 0.95rem;
+}
+
+.language-chip-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+}
+
+.language-chip-toggle:hover .language-chip-icon,
+.language-chip-toggle:focus .language-chip-icon,
+.language-chip-toggle.is-active .language-chip-icon {
+    opacity: 1;
+}

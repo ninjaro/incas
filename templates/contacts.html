@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Contacts · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-xl-8">
+        <div class="mb-4">
+            <h1 class="h3 mb-1">Contacts</h1>
+            <div class="text-muted">Questions, contact options, and direct links.</div>
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+            {% for item in links %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                        {% if item.description %}
+                            <div class="text-muted mb-3">{{ item.description }}</div>
+                        {% endif %}
+
+                        <a href="{{ item.url }}" class="btn btn-dark">Open</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} · INCAS{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="mb-3 d-flex gap-2">
+            <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary">Back to Home</a>
+
+            {% if 'posts' in session.get('access_scopes', []) %}
+                <a href="{{ url_for('main.admin_post_edit', post_id=item.id) }}" class="btn btn-sm btn-dark">Edit</a>
+            {% endif %}
+        </div>
+
+        {% set meta = event_kind_meta(item.event_kind) %}
+        <h1 class="h3 mb-2 d-flex align-items-center gap-2 flex-wrap">
+            <span>{{ item.title }}</span>
+            {% if meta %}
+                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+            {% endif %}
+        </h1>
+
+        {% if item.starts_at %}
+            <div class="text-muted mb-3">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
+        {% endif %}
+
+        <p class="lead">{{ item.summary }}</p>
+        <div>{{ item.body }}</div>
+    </div>
+</div>
+{% endblock %}

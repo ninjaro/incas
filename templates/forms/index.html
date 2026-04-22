@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ offers.title }} · INCAS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-xl-8">
+        <div class="mb-4">
+            <h1 class="h3 mb-1">{{ offers.title }}</h1>
+            {% if offers.subtitle %}
+                <div class="text-muted">{{ offers.subtitle }}</div>
+            {% endif %}
+        </div>
+
+        {% if offers.pages %}
+            <div class="mb-5">
+                <div class="d-flex flex-column gap-3">
+                    {% for item in offers.pages %}
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                                {% if item.subtitle %}
+                                    <div class="text-muted mb-3">{{ item.subtitle }}</div>
+                                {% endif %}
+
+                                <a href="{{ item.url }}" class="btn btn-dark">Open page</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if offers.forms %}
+            <div class="mb-3">
+                <h2 class="h4 mb-1">Forms</h2>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                {% for item in offers.forms %}
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h4 mb-2">{{ item.title }}</h2>
+
+                            {% if item.subtitle %}
+                                <div class="text-muted mb-3">{{ item.subtitle }}</div>
+                            {% endif %}
+
+                            <a href="{{ item.url }}" class="btn btn-outline-dark">Open form</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

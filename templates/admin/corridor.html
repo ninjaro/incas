@@ -1,0 +1,90 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Admin Corridor · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 m-0">Admin Corridor</h1>
+    <a href="{{ url_for('main.admin_logout') }}" class="btn btn-outline-secondary btn-sm">Logout</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Unread Forms</div>
+                <div class="fs-3">{{ stats.unread_forms }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Posts Today</div>
+                <div class="fs-3">{{ stats.posts_today }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small">Visits Today</div>
+                <div class="fs-3">{{ stats.visits_today }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Collected Access</h2>
+
+        {% if access_scopes %}
+            <div class="d-flex flex-wrap gap-2">
+                {% for scope in access_scopes %}
+                    <span class="badge text-bg-dark">{{ access_labels.get(scope, scope) }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No access collected.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Add Another Access Phrase</h2>
+        <form method="post" action="{{ url_for('main.admin_login') }}">
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <input type="password" class="form-control" name="phrase" placeholder="Access phrase" required>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-dark w-100">Add Access</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Doors</h2>
+        <div class="list-group">
+            {% for door in doors %}
+                {% if door.is_open %}
+                    <a href="{{ door.url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span>{{ door.label }}</span>
+                        <span class="badge text-bg-dark">Open</span>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('main.admin_scope_access', scope=door.scope) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span>{{ door.label }}</span>
+                        <span class="badge text-bg-secondary">Locked</span>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Match Helper · Language Tandem · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 m-0">Match Helper</h1>
+        <div class="text-muted small">Request #{{ item.id }}</div>
+    </div>
+    {% if can_edit_requests %}
+        <a
+            href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=return_to) }}"
+            class="btn btn-outline-secondary btn-sm"
+        >
+            Duplicates
+        </a>
+    {% endif %}
+    {% if can_edit_requests %}
+        <a
+            href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=return_to) }}"
+            class="btn btn-outline-secondary btn-sm"
+        >
+            Edit
+        </a>
+    {% endif %}
+    <div class="d-flex gap-2">
+        <a href="{{ return_to }}" class="btn btn-outline-secondary btn-sm">Back</a>
+
+        <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
+            <input type="hidden" name="return_to" value="{{ return_to }}">
+            <button
+                type="submit"
+                class="btn btn-outline-secondary btn-sm"
+                title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                aria-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+            >
+                <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {% if item.is_viewed %}
+                <span class="badge text-bg-secondary">Viewed</span>
+            {% else %}
+                <span class="badge text-bg-dark">Unviewed</span>
+            {% endif %}
+
+            {% if item.requested_native_only %}
+                <span class="badge text-bg-warning">Native Only</span>
+            {% endif %}
+
+            {% if item.same_gender_only %}
+                <span class="badge text-bg-warning">Same Gender Only</span>
+            {% endif %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</div>
+                <div class="small text-muted">{{ item.email }}</div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small"><strong>Occupation:</strong> {{ item.occupation }}</div>
+                <div class="small"><strong>Gender:</strong> {{ item.gender }}</div>
+                <div class="small"><strong>Birth Year:</strong> {{ item.birth_year }}</div>
+                <div class="small"><strong>Country:</strong> {{ item.country_of_origin_display }}</div>
+                <div class="small"><strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}</div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small text-muted mb-1">Offered Languages</div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for value in item.offered_languages_display %}
+                        <span class="badge text-bg-secondary">{{ value }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="small text-muted mb-1">Requested Languages</div>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for value in item.requested_languages_display %}
+                        <span class="badge text-bg-dark">{{ value }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if item.comment %}
+                <div class="col-12">
+                    <div class="small text-muted mb-1">Comment</div>
+                    <div class="small pre-line">{{ item.comment }}</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <div class="small text-muted mb-2">View</div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-dark" data-set-view-mode="list">List</button>
+                    <button type="button" class="btn btn-outline-secondary" data-set-view-mode="grid">Grid</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="match-sort-mode">Sort</label>
+                <select class="form-select form-select-sm" id="match-sort-mode">
+                    <option value="score">Best first</option>
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="name_asc">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="match-warning-filter">Warnings</label>
+                <select class="form-select form-select-sm" id="match-warning-filter">
+                    <option value="all">All</option>
+                    <option value="warning_free">No warnings</option>
+                    <option value="with_warnings">With warnings</option>
+                    <option value="same_country">Same country</option>
+                    <option value="gender_mismatch">Gender mismatch</option>
+                    <option value="native_unconfirmed">Native preference not confirmed</option>
+                    <option value="departure_gap">Departure gap</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% set sections = [
+    ("full", "Full Matches", "text-bg-dark"),
+    ("partial", "Partial Matches", "text-bg-secondary"),
+    ("weak", "Weak Matches", "text-bg-warning")
+] %}
+
+{% for key, title, badge_class in sections %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 m-0">{{ title }}</h2>
+                <span class="badge {{ badge_class }}" data-count-for="{{ key }}">{{ match_groups[key]|length }}</span>
+            </div>
+
+            <p class="text-muted mb-0 {% if match_groups[key] %}d-none{% endif %}" data-empty-for="{{ key }}">
+                No visible candidates in this group.
+            </p>
+
+            <div class="match-results" data-match-results data-section-key="{{ key }}" data-view-mode="list">
+                {% for match in match_groups[key] %}
+                    {% set candidate = match.candidate %}
+                    <div
+                        class="match-card-wrapper"
+                        data-match-card
+                        data-origin-section="{{ key }}"
+                        data-score="{{ match.score }}"
+                        data-created-at="{{ candidate.created_at.strftime('%Y-%m-%dT%H:%M:%S') }}"
+                        data-name="{{ (candidate.last_name ~ ' ' ~ candidate.first_name)|lower }}"
+                        data-warning-keys="{{ match.warning_keys|join(',') }}"
+                    >
+                        <div class="border rounded p-3 h-100 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ candidate.first_name }} {{ candidate.last_name }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        {{ candidate.email }} · {{ candidate.occupation }} · {{ candidate.gender }} · {{ candidate.country_of_origin_display }}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                                    <span class="badge {{ badge_class }}">
+                                        {% if key == "full" %}Full{% elif key == "partial" %}Partial{% else %}Weak{% endif %}
+                                    </span>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>
+                                        Hide
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-restore-match>
+                                        Restore
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="small text-muted mb-2">
+                                Submitted {{ candidate.created_at.strftime("%Y-%m-%d %H:%M") }}
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Signal:</strong>
+                                <span class="ms-1">{{ "▮" * match.signal_level }}{{ "▯" * (4 - match.signal_level) }}</span>
+                                <span class="text-muted ms-2">
+                                    {{ match.total_overlap_count }} overlap{% if match.total_overlap_count != 1 %}s{% endif %}
+                                </span>
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Offered:</strong> {{ ", ".join(candidate.offered_languages_display) }}
+                            </div>
+
+                            <div class="small mb-2">
+                                <strong>Requested:</strong> {{ ", ".join(candidate.requested_languages_display) }}
+                            </div>
+
+                            {% if match.reasons %}
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    {% for reason in match.reasons %}
+                                        <span class="badge text-bg-light border">{{ reason }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            {% if match.warnings %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for warning in match.warnings %}
+                                        <span class="badge text-bg-warning">{{ warning }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endfor %}
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 m-0">Hidden Matches</h2>
+            <span class="badge text-bg-secondary" data-hidden-count>0</span>
+        </div>
+
+        <p class="text-muted mb-0" data-hidden-empty>No hidden matches.</p>
+
+        <div class="match-results d-none" id="hidden-match-results" data-match-results data-view-mode="list"></div>
+    </div>
+</div>
+
+{% endblock %}
