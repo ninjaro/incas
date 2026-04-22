@@ -3,13 +3,13 @@
 {% block title %}Merge Requests · INCAS{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="admin-page-header mb-4">
     <div>
         <h1 class="h3 m-0">Merge Requests</h1>
         <div class="small text-muted">Draft only. Nothing is saved until you confirm merge.</div>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="admin-header-actions">
         <a
             href="{{ url_for('main.admin_language_tandem_duplicates', request_id=source_item.id, candidate_id=candidate_id, return_to=return_to) }}"
             class="btn btn-outline-secondary btn-sm"
@@ -40,79 +40,81 @@
     <input type="hidden" name="return_to" value="{{ return_to }}">
 
     {% if merge_rows %}
-        {% for row in merge_rows %}
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="small text-muted mb-2">{{ row.label }}</div>
+        <div class="admin-layout" data-admin-layout>
+            {% for row in merge_rows %}
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="small text-muted mb-2">{{ row.label }}</div>
 
-                    <div class="row g-3">
-                        <div class="col-lg-5">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small fw-semibold mb-2">Old</div>
-                                <div class="small mb-3 pre-line">{{ row.old_display }}</div>
+                        <div class="row g-3">
+                            <div class="col-lg-5">
+                                <div class="border rounded p-3 h-100">
+                                    <div class="small fw-semibold mb-2">Old</div>
+                                    <div class="small mb-3 pre-line">{{ row.old_display }}</div>
 
-                                <div class="form-check">
-                                    <input
-                                        class="form-check-input"
-                                        type="radio"
-                                        name="merge_choice_{{ row.name }}"
-                                        id="{{ row.name }}_old"
-                                        value="old"
-                                        {% if selected_choices[row.name] == "old" %}checked{% endif %}
-                                    >
-                                    <label class="form-check-label" for="{{ row.name }}_old">
-                                        Use old
-                                    </label>
+                                    <div class="form-check">
+                                        <input
+                                            class="form-check-input"
+                                            type="radio"
+                                            name="merge_choice_{{ row.name }}"
+                                            id="{{ row.name }}_old"
+                                            value="old"
+                                            {% if selected_choices[row.name] == "old" %}checked{% endif %}
+                                        >
+                                        <label class="form-check-label" for="{{ row.name }}_old">
+                                            Use old
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="col-lg-2 d-flex align-items-center justify-content-center">
-                            <div class="small text-muted">&rarr;</div>
-                        </div>
+                            <div class="col-lg-2 d-flex align-items-center justify-content-center">
+                                <div class="small text-muted">&rarr;</div>
+                            </div>
 
-                        <div class="col-lg-5">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small fw-semibold mb-2">New</div>
-                                <div class="small mb-3 pre-line">{{ row.new_display }}</div>
+                            <div class="col-lg-5">
+                                <div class="border rounded p-3 h-100">
+                                    <div class="small fw-semibold mb-2">New</div>
+                                    <div class="small mb-3 pre-line">{{ row.new_display }}</div>
 
-                                <div class="form-check">
-                                    <input
-                                        class="form-check-input"
-                                        type="radio"
-                                        name="merge_choice_{{ row.name }}"
-                                        id="{{ row.name }}_new"
-                                        value="new"
-                                        {% if selected_choices[row.name] == "new" %}checked{% endif %}
-                                    >
-                                    <label class="form-check-label" for="{{ row.name }}_new">
-                                        Use new
-                                    </label>
+                                    <div class="form-check">
+                                        <input
+                                            class="form-check-input"
+                                            type="radio"
+                                            name="merge_choice_{{ row.name }}"
+                                            id="{{ row.name }}_new"
+                                            value="new"
+                                            {% if selected_choices[row.name] == "new" %}checked{% endif %}
+                                        >
+                                        <label class="form-check-label" for="{{ row.name }}_new">
+                                            Use new
+                                        </label>
+                                    </div>
+
+                                    {% for option in row.choices %}
+                                        {% if option.value == "append_old_to_new" %}
+                                            <div class="form-check mt-2">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="radio"
+                                                    name="merge_choice_{{ row.name }}"
+                                                    id="{{ row.name }}_append"
+                                                    value="append_old_to_new"
+                                                    {% if selected_choices[row.name] == "append_old_to_new" %}checked{% endif %}
+                                                >
+                                                <label class="form-check-label" for="{{ row.name }}_append">
+                                                    Append old to new
+                                                </label>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
-
-                                {% for option in row.choices %}
-                                    {% if option.value == "append_old_to_new" %}
-                                        <div class="form-check mt-2">
-                                            <input
-                                                class="form-check-input"
-                                                type="radio"
-                                                name="merge_choice_{{ row.name }}"
-                                                id="{{ row.name }}_append"
-                                                value="append_old_to_new"
-                                                {% if selected_choices[row.name] == "append_old_to_new" %}checked{% endif %}
-                                            >
-                                            <label class="form-check-label" for="{{ row.name }}_append">
-                                                Append old to new
-                                            </label>
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
     {% else %}
         <div class="card shadow-sm">
             <div class="card-body">

@@ -9,8 +9,8 @@ __pycache__/
 .coverage
 htmlcov/
 
-.env
-.env.*
+#.env
+#.env.*
 instance/
 *.db
 *.sqlite

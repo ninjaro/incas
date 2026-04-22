@@ -23,93 +23,107 @@
     <div class="container">
         <a class="navbar-brand" href="{{ url_for('main.index') }}">{{ config.APP_NAME }}</a>
 
-        <div class="navbar-nav me-auto">
-            <a class="nav-link" href="{{ url_for('main.index') }}">{{ t("nav.home") }}</a>
-            <a class="nav-link" href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a>
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#site-navbar"
+            aria-controls="site-navbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-            <div class="nav-item dropdown d-flex align-items-center">
-                <a class="nav-link pe-1" href="{{ url_for('main.about') }}">
-                    {{ t("nav.about") }}
-                </a>
-                <a
-                    class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
-                    href="#"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                >
-                    <span class="visually-hidden">Toggle About menu</span>
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('main.about') }}">{{ t("nav.about_us") }}</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.working_groups') }}">{{ t("nav.working_groups") }}</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main.team_meetings') }}">{{ t("nav.team_meetings") }}</a></li>
-                </ul>
+        <div class="collapse navbar-collapse" id="site-navbar">
+            <div class="navbar-nav me-lg-auto py-3 py-lg-0">
+                <a class="nav-link" href="{{ url_for('main.index') }}">{{ t("nav.home") }}</a>
+                <a class="nav-link" href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a>
+
+                <div class="nav-item dropdown d-flex align-items-center">
+                    <a class="nav-link pe-1" href="{{ url_for('main.about') }}">
+                        {{ t("nav.about") }}
+                    </a>
+                    <a
+                        class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <span class="visually-hidden">Toggle About menu</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('main.about') }}">{{ t("nav.about_us") }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.working_groups') }}">{{ t("nav.working_groups") }}</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.team_meetings') }}">{{ t("nav.team_meetings") }}</a></li>
+                    </ul>
+                </div>
+
+                <a class="nav-link" href="{{ url_for('main.contacts') }}">{{ t("nav.contacts") }}</a>
+
+                <div class="nav-item dropdown d-flex align-items-center">
+                    <a class="nav-link pe-1" href="{{ url_for('main.offers') }}">
+                        {{ t("nav.forms") }}
+                    </a>
+                    <a
+                        class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <span class="visually-hidden">Toggle Offers menu</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.international_tuesday') }}">
+                                International Tuesday
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.international_breakfast') }}">
+                                International Breakfast
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.offer_language_tandem') }}">
+                                {{ t("nav.language_tandem") }}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                {% if session.get('access_scopes') %}
+                    <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">{{ t("nav.admin") }}</a>
+                {% endif %}
             </div>
 
-            <a class="nav-link" href="{{ url_for('main.contacts') }}">{{ t("nav.contacts") }}</a>
+            <div class="site-nav-actions d-flex align-items-center gap-2 mt-2 mt-lg-0">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Language switch">
+                    <a
+                        href="{{ url_for('main.set_locale', locale='en') }}"
+                        class="btn btn-outline-secondary{% if g.locale == 'en' %} active{% endif %}"
+                    >
+                        EN
+                    </a>
+                    <a
+                        href="{{ url_for('main.set_locale', locale='de') }}"
+                        class="btn btn-outline-secondary{% if g.locale == 'de' %} active{% endif %}"
+                    >
+                        DE
+                    </a>
+                </div>
 
-            <div class="nav-item dropdown d-flex align-items-center">
-                <a class="nav-link pe-1" href="{{ url_for('main.offers') }}">
-                    {{ t("nav.forms") }}
-                </a>
-                <a
-                    class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
-                    href="#"
-                    role="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    id="theme-toggle"
+                    aria-label="Toggle theme"
                 >
-                    <span class="visually-hidden">Toggle Offers menu</span>
-                </a>
-                <ul class="dropdown-menu">
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('main.international_tuesday') }}">
-                            International Tuesday
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('main.international_breakfast') }}">
-                            International Breakfast
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item" href="{{ url_for('main.offer_language_tandem') }}">
-                            {{ t("nav.language_tandem") }}
-                        </a>
-                    </li>
-                </ul>
+                    <i class="bi bi-moon-stars"></i>
+                </button>
             </div>
-
-            {% if session.get('access_scopes') %}
-                <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">{{ t("nav.admin") }}</a>
-            {% endif %}
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-            <div class="btn-group btn-group-sm" role="group" aria-label="Language switch">
-                <a
-                    href="{{ url_for('main.set_locale', locale='en') }}"
-                    class="btn btn-outline-secondary{% if g.locale == 'en' %} active{% endif %}"
-                >
-                    EN
-                </a>
-                <a
-                    href="{{ url_for('main.set_locale', locale='de') }}"
-                    class="btn btn-outline-secondary{% if g.locale == 'de' %} active{% endif %}"
-                >
-                    DE
-                </a>
-            </div>
-
-            <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                id="theme-toggle"
-                aria-label="Toggle theme"
-            >
-                <i class="bi bi-moon-stars"></i>
-            </button>
         </div>
     </div>
 </nav>
@@ -128,6 +142,64 @@
         {% block content %}{% endblock %}
     </div>
 </main>
+
+<footer class="site-footer border-top">
+    <div class="container py-4 py-md-5">
+        <div class="row gy-4">
+            <div class="col-md-5">
+                <a class="footer-brand" href="{{ url_for('main.index') }}">{{ config.APP_NAME }}</a>
+                <p class="footer-copy mt-2 mb-3">
+                    Intercultural Centre of Aachen Students.
+                </p>
+                <div class="footer-socials" aria-label="Social media">
+                    <a
+                        class="footer-social"
+                        href="https://www.facebook.com/INCASAachen/"
+                        target="_blank"
+                        rel="noopener"
+                        aria-label="INCAS on Facebook"
+                    >
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a
+                        class="footer-social"
+                        href="https://www.instagram.com/incas_aachen/"
+                        target="_blank"
+                        rel="noopener"
+                        aria-label="INCAS on Instagram"
+                    >
+                        <i class="bi bi-instagram"></i>
+                    </a>
+                    <span class="footer-social footer-social-placeholder" aria-label="YouTube placeholder">
+                        <i class="bi bi-youtube"></i>
+                    </span>
+                    <span class="footer-social footer-social-placeholder" aria-label="LinkedIn placeholder">
+                        <i class="bi bi-linkedin"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <h2 class="footer-heading">Links</h2>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('main.about') }}">{{ t("nav.about_us") }}</a></li>
+                    <li><a href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a></li>
+                    <li><a href="{{ url_for('main.contacts') }}">{{ t("nav.contacts") }}</a></li>
+                </ul>
+            </div>
+
+            <div class="col-6 col-md-4">
+                <h2 class="footer-heading">{{ t("nav.forms") }}</h2>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('main.international_tuesday') }}">International Tuesday</a></li>
+                    <li><a href="{{ url_for('main.international_breakfast') }}">International Breakfast</a></li>
+                    <li><a href="{{ url_for('main.offer_language_tandem') }}">{{ t("nav.language_tandem") }}</a></li>
+                    <li><a href="{{ url_for('main.contact_form') }}">{{ t("nav.contact_questions") }}</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
 
 <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
