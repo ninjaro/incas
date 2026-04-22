@@ -70,6 +70,40 @@ DEMO_COMMENTS = [
     "I am open to online or in-person meetings.",
 ]
 
+DEMO_LANGUAGE_LEVELS = {"1", "2", "3", "4", "5"}
+
+def build_demo_offered_language_levels(country_code, offered_languages):
+    native_languages = set(DEMO_COUNTRY_LANGUAGES.get(country_code, []))
+    levels = {}
+
+    for code in offered_languages:
+        if code in native_languages:
+            levels[code] = "5"
+        elif code == "en":
+            levels[code] = random.choice(["3", "4"])
+        else:
+            levels[code] = random.choice(["2", "3", "4"])
+
+    return levels
+
+def normalize_demo_offered_language_levels(country_code, offered_languages, offered_language_levels=None):
+    native_languages = set(DEMO_COUNTRY_LANGUAGES.get(country_code, []))
+    offered_language_levels = offered_language_levels or {}
+    levels = {}
+
+    for code in offered_languages:
+        raw_level = str(offered_language_levels.get(code, "")).strip()
+        if raw_level in DEMO_LANGUAGE_LEVELS:
+            levels[code] = raw_level
+        elif code in native_languages:
+            levels[code] = "5"
+        elif code == "en":
+            levels[code] = "4"
+        else:
+            levels[code] = "3"
+
+    return levels
+
 def create_demo_tandem_request(
     *,
     first_name,
@@ -81,6 +115,7 @@ def create_demo_tandem_request(
     departure_date,
     country_of_origin,
     offered_languages,
+    offered_language_levels=None,
     requested_languages,
     requested_native_only=False,
     same_gender_only=False,
@@ -89,6 +124,15 @@ def create_demo_tandem_request(
     created_at=None,
 ):
     created_at = created_at or datetime.utcnow()
+    offered_language_levels = normalize_demo_offered_language_levels(
+        country_of_origin,
+        offered_languages,
+        offered_language_levels=offered_language_levels,
+    )
+    offered_native_languages = [
+        code for code in offered_languages
+        if offered_language_levels.get(code) == "5"
+    ]
 
     return LanguageTandemRequest(
         first_name=first_name,
@@ -100,6 +144,8 @@ def create_demo_tandem_request(
         departure_date=departure_date,
         country_of_origin=country_of_origin,
         offered_languages=json.dumps(offered_languages),
+        offered_native_languages=json.dumps(offered_native_languages),
+        offered_language_levels=json.dumps(offered_language_levels),
         requested_languages=json.dumps(requested_languages),
         requested_native_only=requested_native_only,
         same_gender_only=same_gender_only,
@@ -122,6 +168,7 @@ def add_demo_request_pair(
     departure_date,
     country_of_origin,
     offered_languages,
+    offered_language_levels=None,
     requested_languages,
     requested_native_only=False,
     same_gender_only=False,
@@ -131,6 +178,7 @@ def add_demo_request_pair(
     second_first_name=None,
     second_last_name=None,
     second_offered_languages=None,
+    second_offered_language_levels=None,
     second_requested_languages=None,
     second_requested_native_only=None,
     second_same_gender_only=None,
@@ -148,6 +196,7 @@ def add_demo_request_pair(
             departure_date=departure_date,
             country_of_origin=country_of_origin,
             offered_languages=offered_languages,
+            offered_language_levels=offered_language_levels,
             requested_languages=requested_languages,
             requested_native_only=requested_native_only,
             same_gender_only=same_gender_only,
@@ -168,6 +217,7 @@ def add_demo_request_pair(
             departure_date=second_departure_date or departure_date,
             country_of_origin=country_of_origin,
             offered_languages=second_offered_languages or offered_languages,
+            offered_language_levels=second_offered_language_levels or offered_language_levels,
             requested_languages=second_requested_languages or requested_languages,
             requested_native_only=(
                 requested_native_only
@@ -185,66 +235,189 @@ def add_demo_request_pair(
         )
     )
 
-def build_structured_duplicate_demo_requests(now):
-    items = []
+def build_structured_tandem_demo_requests(now):
+    examples = [
+        {
+            "first_name": "Anna",
+            "last_name": "Meyer",
+            "email": "anna.meyer@example.com",
+            "occupation": "Student at RWTH Aachen",
+            "gender": "Female",
+            "birth_year": 2001,
+            "departure_date": (now + timedelta(days=120)).date(),
+            "country_of_origin": "DE",
+            "offered_languages": ["de", "en"],
+            "offered_language_levels": {"de": "5", "en": "4"},
+            "requested_languages": ["es"],
+            "comment": "Strong example: native German for Spanish practice.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=1, hours=2),
+        },
+        {
+            "first_name": "Lucia",
+            "last_name": "Garcia",
+            "email": "lucia.garcia@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Female",
+            "birth_year": 2000,
+            "departure_date": (now + timedelta(days=118)).date(),
+            "country_of_origin": "ES",
+            "offered_languages": ["es", "de"],
+            "offered_language_levels": {"es": "5", "de": "2"},
+            "requested_languages": ["de"],
+            "comment": "Full match with Anna: native Spanish, wants German.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=1, hours=1, minutes=20),
+        },
+        {
+            "first_name": "Diego",
+            "last_name": "Alvarez",
+            "email": "diego.alvarez@example.com",
+            "occupation": "Student at RWTH Aachen",
+            "gender": "Male",
+            "birth_year": 1999,
+            "departure_date": (now + timedelta(days=125)).date(),
+            "country_of_origin": "ES",
+            "offered_languages": ["es", "en"],
+            "offered_language_levels": {"es": "2", "en": "3"},
+            "requested_languages": ["de"],
+            "comment": "Partial example: Spanish is intermediate, so the score should be lower.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=2, hours=3),
+        },
+        {
+            "first_name": "Paula",
+            "last_name": "Martin",
+            "email": "paula.martin@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Female",
+            "birth_year": 2002,
+            "departure_date": (now + timedelta(days=128)).date(),
+            "country_of_origin": "ES",
+            "offered_languages": ["es", "en"],
+            "offered_language_levels": {"es": "1", "en": "4"},
+            "requested_languages": ["en"],
+            "comment": "Weak example for Spanish seekers: Spanish is only beginner.",
+            "is_viewed": True,
+            "created_at": now - timedelta(days=2, hours=1),
+        },
+        {
+            "first_name": "Claire",
+            "last_name": "Dubois",
+            "email": "claire.dubois@example.com",
+            "occupation": "Student at RWTH Aachen",
+            "gender": "Female",
+            "birth_year": 2001,
+            "departure_date": (now + timedelta(days=95)).date(),
+            "country_of_origin": "FR",
+            "offered_languages": ["fr", "en"],
+            "offered_language_levels": {"fr": "5", "en": "3"},
+            "requested_languages": ["de"],
+            "comment": "Full French/German exchange candidate.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=3, hours=5),
+        },
+        {
+            "first_name": "Jonas",
+            "last_name": "Schmidt",
+            "email": "jonas.schmidt@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Male",
+            "birth_year": 1998,
+            "departure_date": (now + timedelta(days=98)).date(),
+            "country_of_origin": "DE",
+            "offered_languages": ["de", "fr"],
+            "offered_language_levels": {"de": "5", "fr": "2"},
+            "requested_languages": ["fr"],
+            "comment": "Good match with Claire, but his French offer is only intermediate.",
+            "is_viewed": True,
+            "created_at": now - timedelta(days=3, hours=3),
+        },
+        {
+            "first_name": "Mei",
+            "last_name": "Chen",
+            "email": "mei.chen@example.com",
+            "occupation": "Student at RWTH Aachen",
+            "gender": "Female",
+            "birth_year": 2003,
+            "departure_date": (now + timedelta(days=75)).date(),
+            "country_of_origin": "CN",
+            "offered_languages": ["zh", "en"],
+            "offered_language_levels": {"zh": "5", "en": "4"},
+            "requested_languages": ["de"],
+            "comment": "One-way example: wants German and offers native Chinese.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=4, hours=2),
+        },
+        {
+            "first_name": "Noah",
+            "last_name": "Brown",
+            "email": "noah.brown@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Male",
+            "birth_year": 1997,
+            "departure_date": (now + timedelta(days=82)).date(),
+            "country_of_origin": "US",
+            "offered_languages": ["en", "de"],
+            "offered_language_levels": {"en": "5", "de": "3"},
+            "requested_languages": ["zh"],
+            "comment": "Reverse exchange with Mei, but German is advanced, not native.",
+            "is_viewed": True,
+            "created_at": now - timedelta(days=4, hours=1),
+        },
+        {
+            "first_name": "Omar",
+            "last_name": "Khan",
+            "email": "omar.khan@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Male",
+            "birth_year": 1998,
+            "departure_date": (now + timedelta(days=90)).date(),
+            "country_of_origin": "IN",
+            "offered_languages": ["hi", "en", "de"],
+            "offered_language_levels": {"hi": "5", "en": "4", "de": "2"},
+            "requested_languages": ["de"],
+            "requested_native_only": True,
+            "comment": "Native-only request: non-native German offers should be capped.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=5, hours=2),
+        },
+        {
+            "first_name": "Luca",
+            "last_name": "Rossi",
+            "email": "luca.rossi@example.com",
+            "occupation": "Student at RWTH Aachen",
+            "gender": "Male",
+            "birth_year": 2000,
+            "departure_date": (now + timedelta(days=150)).date(),
+            "country_of_origin": "IT",
+            "offered_languages": ["it", "en"],
+            "offered_language_levels": {"it": "5", "en": "4"},
+            "requested_languages": ["de", "es"],
+            "requested_native_only": True,
+            "comment": "Multiple requested languages and native-speaker preference.",
+            "is_viewed": True,
+            "created_at": now - timedelta(days=6, hours=6),
+        },
+        {
+            "first_name": "Yuki",
+            "last_name": "Tanaka",
+            "email": "yuki.tanaka@example.com",
+            "occupation": "Student at FH Aachen",
+            "gender": "Non-binary / Diverse",
+            "birth_year": 2002,
+            "departure_date": (now + timedelta(days=165)).date(),
+            "country_of_origin": "JP",
+            "offered_languages": ["ja", "en"],
+            "offered_language_levels": {"ja": "5", "en": "2"},
+            "requested_languages": ["de"],
+            "comment": "One-way Japanese/German example with a later departure date.",
+            "is_viewed": False,
+            "created_at": now - timedelta(days=7, hours=4),
+        },
+    ]
 
-    add_demo_request_pair(
-        items,
-        base_created_at=now - timedelta(days=2, hours=3),
-        first_name="Anna",
-        last_name="Meyer",
-        email="anna.meyer@example.com",
-        occupation="Student at RWTH Aachen",
-        gender="Female",
-        birth_year=2001,
-        departure_date=(now + timedelta(days=120)).date(),
-        country_of_origin="DE",
-        offered_languages=["de", "en"],
-        requested_languages=["es"],
-        comment="I am available on weekdays after classes.",
-        second_comment="I am available on weekdays after classes.",
-    )
-
-    add_demo_request_pair(
-        items,
-        base_created_at=now - timedelta(days=4, hours=1),
-        first_name="Omar",
-        last_name="Khan",
-        email="omar.khan@example.com",
-        occupation="Student at FH Aachen",
-        gender="Male",
-        birth_year=1998,
-        departure_date=(now + timedelta(days=90)).date(),
-        country_of_origin="IN",
-        offered_languages=["hi", "en"],
-        requested_languages=["de"],
-        requested_native_only=False,
-        same_gender_only=False,
-        comment="I would like to practice conversation regularly.",
-        second_requested_languages=["de", "fr"],
-        second_comment="Adding French too after talking to the office.",
-    )
-
-    add_demo_request_pair(
-        items,
-        base_created_at=now - timedelta(days=6, hours=6),
-        first_name="Luca",
-        last_name="Rossi",
-        email="luca.rossi@example.com",
-        occupation="Student at RWTH Aachen",
-        gender="Male",
-        birth_year=2000,
-        departure_date=(now + timedelta(days=150)).date(),
-        country_of_origin="IT",
-        offered_languages=["it", "en"],
-        requested_languages=["de"],
-        requested_native_only=True,
-        same_gender_only=False,
-        comment="I prefer evening meetings.",
-        second_requested_languages=["de", "es"],
-        second_requested_native_only=True,
-        second_comment="Updated request after orientation week.",
-    )
+    items = [create_demo_tandem_request(**example) for example in examples]
 
     add_demo_request_pair(
         items,
@@ -258,49 +431,36 @@ def build_structured_duplicate_demo_requests(now):
         departure_date=(now + timedelta(days=80)).date(),
         country_of_origin="UA",
         offered_languages=["uk", "en"],
+        offered_language_levels={"uk": "5", "en": "4"},
         requested_languages=["de"],
         same_gender_only=True,
-        comment="I prefer a same gender tandem.",
+        comment="Duplicate review example: same request with a typo.",
         second_email="sara.petrovva@example.com",
         second_last_name="Petrovva",
         second_requested_languages=["de"],
+        second_offered_language_levels={"uk": "5", "en": "4"},
         second_comment="Resubmitted after email typo.",
     )
 
-    items.append(
-        create_demo_tandem_request(
-            first_name="Mariam",
-            last_name="Yilmaz",
-            email="mariam.yilmaz@example.com",
-            occupation="Student at FH Aachen",
-            gender="Female",
-            birth_year=1999,
-            departure_date=(now + timedelta(days=110)).date(),
-            country_of_origin="TR",
-            offered_languages=["tr", "en"],
-            requested_languages=["de"],
-            comment="Morning meetings are better for me.",
-            is_viewed=False,
-            created_at=now - timedelta(days=3, hours=2),
-        )
-    )
-
-    items.append(
-        create_demo_tandem_request(
-            first_name="Mariam",
-            last_name="Ylmaz",
-            email="mariam.yilmaz+2@example.com",
-            occupation="Student at FH Aachen",
-            gender="Female",
-            birth_year=1999,
-            departure_date=(now + timedelta(days=112)).date(),
-            country_of_origin="TR",
-            offered_languages=["tr", "en"],
-            requested_languages=["de"],
-            comment="Morning meetings are better for me.",
-            is_viewed=False,
-            created_at=now - timedelta(days=3, hours=1, minutes=30),
-        )
+    add_demo_request_pair(
+        items,
+        base_created_at=now - timedelta(days=9, hours=1),
+        first_name="Mariam",
+        last_name="Yilmaz",
+        email="mariam.yilmaz@example.com",
+        occupation="Student at FH Aachen",
+        gender="Female",
+        birth_year=1999,
+        departure_date=(now + timedelta(days=110)).date(),
+        country_of_origin="TR",
+        offered_languages=["tr", "en", "de"],
+        offered_language_levels={"tr": "5", "en": "3", "de": "2"},
+        requested_languages=["de"],
+        comment="Likely duplicate example with a small name change.",
+        second_email="mariam.yilmaz+2@example.com",
+        second_last_name="Ylmaz",
+        second_offered_language_levels={"tr": "5", "en": "3", "de": "2"},
+        second_comment="Morning meetings are better for me.",
     )
 
     return items
@@ -313,6 +473,7 @@ def build_random_demo_tandem_request(now, index):
     country_code = random.choice(country_codes)
 
     offered_languages = build_demo_offered_languages(country_code)
+    offered_language_levels = build_demo_offered_language_levels(country_code, offered_languages)
     requested_languages = build_demo_requested_languages(offered_languages)
 
     created_at = now - timedelta(
@@ -333,6 +494,7 @@ def build_random_demo_tandem_request(now, index):
         departure_date=departure_date,
         country_of_origin=country_code,
         offered_languages=offered_languages,
+        offered_language_levels=offered_language_levels,
         requested_languages=requested_languages,
         requested_native_only=random.random() < 0.35,
         same_gender_only=random.random() < 0.20,
@@ -455,9 +617,10 @@ def seed_language_tandem_demo_data(total=28):
         return
 
     now = datetime.utcnow()
+    random.seed(20260422)
     items = []
 
-    items.extend(build_structured_duplicate_demo_requests(now))
+    items.extend(build_structured_tandem_demo_requests(now))
 
     random_total = max(0, total - len(items))
     for index in range(random_total):
@@ -473,4 +636,3 @@ def seed_language_tandem_demo_data(total=28):
 def seed_demo_data():
     seed_posts_demo_data()
     seed_language_tandem_demo_data()
-

@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import url_for
 
+from app.matching import MATCH_CONFIG, build_match_counts
 from app.models import LanguageTandemRequest
 from app.routes.helpers.tandem_form import (
     format_language_codes,
@@ -95,6 +96,22 @@ def build_tandem_email_groups(items):
     )
 
     return result
+
+def annotate_tandem_match_counts(items, candidate_items, language_labels):
+    counts_by_id = build_match_counts(
+        source_items=items,
+        candidate_items=candidate_items,
+        language_labels=language_labels,
+        config=MATCH_CONFIG,
+    )
+
+    for item in items:
+        item.match_counts = counts_by_id.get(item.id, {
+            "full": 0,
+            "partial": 0,
+            "weak": 0,
+            "total": 0,
+        })
 
 def matches_tandem_query(item, query):
     query = (query or "").strip().lower()
@@ -195,6 +212,12 @@ def build_tandem_admin_context(filters, allow_duplicate_filters=False):
         items,
         filters=filters,
         allow_duplicate_filters=allow_duplicate_filters,
+    )
+
+    annotate_tandem_match_counts(
+        filtered_items,
+        candidate_items=items,
+        language_labels=language_labels,
     )
 
     unviewed_items = [item for item in filtered_items if not item.is_viewed]

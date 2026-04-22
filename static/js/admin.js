@@ -1,6 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
     const ADMIN_LAYOUT_STORAGE_KEY = "incas:admin-layout-mode";
-    let adminLayoutMode = localStorage.getItem(ADMIN_LAYOUT_STORAGE_KEY) === "grid" ? "grid" : "list";
+    const VIEW_MODES = ["list", "grid", "table"];
+    const CARD_VIEW_MODES = ["list", "grid"];
+
+    function readViewMode(storage, fallback = "list", modes = VIEW_MODES) {
+        return modes.includes(storage) ? storage : fallback;
+    }
+
+    let adminLayoutMode = readViewMode(localStorage.getItem(ADMIN_LAYOUT_STORAGE_KEY), "list");
 
     const hasRequestUi = document.querySelector("[data-request-results]");
     const hasMatchUi = document.querySelector("[data-match-results]");
@@ -30,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll("[data-set-admin-layout]").forEach((button) => {
         button.addEventListener("click", () => {
-            adminLayoutMode = button.dataset.setAdminLayout === "grid" ? "grid" : "list";
+            adminLayoutMode = readViewMode(button.dataset.setAdminLayout, "list");
             applyAdminLayoutMode();
             window.dispatchEvent(new CustomEvent("admin-layout-change", {
                 detail: { viewMode: adminLayoutMode },
@@ -49,7 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const hasOverviewDensityControls = Boolean(document.querySelector("[data-set-overview-density]"));
 
         const tandemRequestUiState = {
-            viewMode: hasRequestViewControls && sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : adminLayoutMode,
+            viewMode: hasRequestViewControls
+                ? readViewMode(sessionStorage.getItem(REQUEST_VIEW_MODE_STORAGE_KEY), adminLayoutMode)
+                : adminLayoutMode,
             density: hasRequestDensityControls && sessionStorage.getItem(REQUEST_DENSITY_STORAGE_KEY) === "expanded" ? "expanded" : "compact",
             overviewDensity: hasOverviewDensityControls && sessionStorage.getItem(OVERVIEW_DENSITY_STORAGE_KEY) === "compact" ? "compact" : "expanded",
         };
@@ -71,6 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const isActive = button.dataset.setRequestViewMode === tandemRequestUiState.viewMode;
                 button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-pressed", isActive ? "true" : "false");
             });
         }
 
@@ -135,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.querySelectorAll("[data-set-request-view-mode]").forEach((button) => {
             button.addEventListener("click", () => {
-                tandemRequestUiState.viewMode = button.dataset.setRequestViewMode;
+                tandemRequestUiState.viewMode = readViewMode(button.dataset.setRequestViewMode, "list");
                 applyRequestUiState();
             });
         });
@@ -167,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         window.addEventListener("admin-layout-change", (event) => {
-            tandemRequestUiState.viewMode = event.detail.viewMode;
+            tandemRequestUiState.viewMode = readViewMode(event.detail.viewMode, "list");
             applyRequestUiState();
         });
 
@@ -179,7 +190,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
 
         const matchUiState = {
-            viewMode: hasMatchViewControls && sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY) === "grid" ? "grid" : adminLayoutMode,
+            viewMode: hasMatchViewControls
+                ? readViewMode(sessionStorage.getItem(MATCH_VIEW_MODE_STORAGE_KEY), adminLayoutMode)
+                : readViewMode(adminLayoutMode, "list", CARD_VIEW_MODES),
             sortMode: "score",
             warningFilter: "all",
         };
@@ -290,6 +303,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const isActive = button.dataset.setViewMode === matchUiState.viewMode;
                 button.classList.toggle("btn-primary", isActive);
                 button.classList.toggle("btn-outline-secondary", !isActive);
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-pressed", isActive ? "true" : "false");
             });
         }
 
@@ -328,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.querySelectorAll("[data-set-view-mode]").forEach((button) => {
             button.addEventListener("click", () => {
-                matchUiState.viewMode = button.dataset.setViewMode;
+                matchUiState.viewMode = readViewMode(button.dataset.setViewMode, "list");
                 refreshMatchUi();
             });
         });
@@ -365,10 +380,93 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         window.addEventListener("admin-layout-change", (event) => {
-            matchUiState.viewMode = event.detail.viewMode;
+            matchUiState.viewMode = readViewMode(event.detail.viewMode, "list", hasMatchViewControls ? VIEW_MODES : CARD_VIEW_MODES);
             refreshMatchUi();
         });
 
         refreshMatchUi();
     }
+
+    function parseSortValue(value, type) {
+        const rawValue = value || "";
+
+        if (type === "number") {
+            const parsed = Number(rawValue);
+            return Number.isNaN(parsed) ? 0 : parsed;
+        }
+
+        if (type === "date") {
+            const parsed = Date.parse(rawValue);
+            return Number.isNaN(parsed) ? 0 : parsed;
+        }
+
+        return rawValue.toLocaleLowerCase();
+    }
+
+    function updateSortableHeaders(table) {
+        const activeKey = table.dataset.sortKey || "";
+        const direction = table.dataset.sortDirection || "";
+
+        table.querySelectorAll("[data-sort-key]").forEach((button) => {
+            const isActive = button.dataset.sortKey === activeKey;
+            const header = button.closest("th");
+            const icon = button.querySelector("[data-sort-icon]");
+
+            if (header) {
+                header.setAttribute("aria-sort", isActive ? (direction === "desc" ? "descending" : "ascending") : "none");
+            }
+
+            if (icon) {
+                icon.className = isActive
+                    ? `bi ${direction === "desc" ? "bi-caret-down-fill" : "bi-caret-up-fill"} ms-1`
+                    : "bi bi-arrow-down-up ms-1";
+            }
+        });
+    }
+
+    function sortTable(table, button) {
+        const key = button.dataset.sortKey;
+        const type = button.dataset.sortType || "string";
+        const defaultDirection = button.dataset.sortDefaultDirection || "asc";
+        const currentDirection = table.dataset.sortDirection || "";
+        let direction = defaultDirection;
+        const body = table.querySelector("tbody");
+
+        if (!key || !body) return;
+
+        if (table.dataset.sortKey === key) {
+            direction = currentDirection === "asc" ? "desc" : "asc";
+        }
+
+        const rows = Array.from(body.querySelectorAll("tr"));
+        const multiplier = direction === "desc" ? -1 : 1;
+
+        rows.sort((a, b) => {
+            const valueA = parseSortValue(a.getAttribute(`data-sort-${key}`), type);
+            const valueB = parseSortValue(b.getAttribute(`data-sort-${key}`), type);
+
+            if (valueA < valueB) return -1 * multiplier;
+            if (valueA > valueB) return 1 * multiplier;
+
+            const fallbackA = parseSortValue(a.getAttribute("data-sort-id"), "number");
+            const fallbackB = parseSortValue(b.getAttribute("data-sort-id"), "number");
+            return (fallbackB - fallbackA);
+        }).forEach((row) => {
+            body.appendChild(row);
+        });
+
+        table.dataset.sortKey = key;
+        table.dataset.sortDirection = direction;
+        updateSortableHeaders(table);
+    }
+
+    document.querySelectorAll("[data-sortable-table]").forEach(updateSortableHeaders);
+
+    document.addEventListener("click", (event) => {
+        const sortButton = event.target.closest("[data-sortable-table] [data-sort-key]");
+        if (!sortButton) return;
+
+        const table = sortButton.closest("[data-sortable-table]");
+        if (table) sortTable(table, sortButton);
+    });
 });

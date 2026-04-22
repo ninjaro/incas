@@ -187,6 +187,24 @@
     </div>
 </div>
 
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="small text-muted">{{ stats.filtered_requests }} request{% if stats.filtered_requests != 1 %}s{% endif %}</div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Request view">
+        <button type="button" class="btn btn-primary active" data-set-request-view-mode="list" aria-pressed="true" title="List layout">
+            <i class="bi bi-list-ul"></i>
+            <span class="visually-hidden">List layout</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid" aria-pressed="false" title="Grid layout">
+            <i class="bi bi-grid-3x3-gap"></i>
+            <span class="visually-hidden">Grid layout</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="table" aria-pressed="false" title="Table layout">
+            <i class="bi bi-table"></i>
+            <span class="visually-hidden">Table layout</span>
+        </button>
+    </div>
+</div>
+
 {% set sections = [
     ("unviewed", "Unviewed Requests", "text-bg-dark", unviewed_groups, stats.filtered_unviewed_requests),
     ("viewed", "Viewed Requests", "text-bg-secondary", viewed_groups, stats.filtered_viewed_requests),
@@ -224,6 +242,11 @@
                                             </div>
                                             <div class="small">
                                                 <span class="fw-semibold">Wants:</span> {{ ", ".join(item.requested_languages_display) }}
+                                            </div>
+                                            <div class="tandem-match-counts mt-2" aria-label="Match counts">
+                                                <span class="badge text-bg-dark">{{ item.match_counts.full }} full</span>
+                                                <span class="badge text-bg-secondary">{{ item.match_counts.partial }} partial</span>
+                                                <span class="badge text-bg-warning">{{ item.match_counts.weak }} weak</span>
                                             </div>
                                         </div>
 
@@ -352,6 +375,198 @@
                             </div>
                         {% endfor %}
                     {% endfor %}
+                </div>
+                <div class="tandem-request-table-view">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 tandem-request-table" data-sortable-table>
+                            <thead>
+                                <tr>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="id" data-sort-type="number" data-sort-default-direction="desc">
+                                            ID <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="created" data-sort-type="date" data-sort-default-direction="desc">
+                                            Submitted <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="name">
+                                            Name <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="email">
+                                            Email <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="country">
+                                            Country <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="occupation">
+                                            Occupation <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="gender">
+                                            Gender <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="birth" data-sort-type="number">
+                                            Birth <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="departure" data-sort-type="date">
+                                            Departure <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="offered">
+                                            Offered <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="requested">
+                                            Requested <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="full" data-sort-type="number" data-sort-default-direction="desc">
+                                            Full <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="partial" data-sort-type="number" data-sort-default-direction="desc">
+                                            Partial <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col" aria-sort="none">
+                                        <button type="button" class="table-sort-button" data-sort-key="weak" data-sort-type="number" data-sort-default-direction="desc">
+                                            Weak <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+                                        </button>
+                                    </th>
+                                    <th scope="col">Flags</th>
+                                    <th scope="col">Comment</th>
+                                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in section_groups %}
+                                    {% for item in group.requests %}
+                                        <tr
+                                            data-sort-id="{{ item.id }}"
+                                            data-sort-created="{{ item.created_at.isoformat() }}"
+                                            data-sort-name="{{ (item.last_name ~ ' ' ~ item.first_name)|lower }}"
+                                            data-sort-email="{{ item.email|lower }}"
+                                            data-sort-country="{{ item.country_of_origin_display|lower }}"
+                                            data-sort-occupation="{{ item.occupation|lower }}"
+                                            data-sort-gender="{{ item.gender|lower }}"
+                                            data-sort-birth="{{ item.birth_year }}"
+                                            data-sort-departure="{{ item.departure_date.isoformat() }}"
+                                            data-sort-offered="{{ ', '.join(item.offered_languages_display)|lower }}"
+                                            data-sort-requested="{{ ', '.join(item.requested_languages_display)|lower }}"
+                                            data-sort-full="{{ item.match_counts.full }}"
+                                            data-sort-partial="{{ item.match_counts.partial }}"
+                                            data-sort-weak="{{ item.match_counts.weak }}"
+                                            data-sort-total="{{ item.match_counts.total }}"
+                                        >
+                                            <td class="text-nowrap">#{{ item.id }}</td>
+                                            <td class="text-nowrap">{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                            <td class="text-nowrap">
+                                                <span class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</span>
+                                                <span class="d-block small text-muted">
+                                                    {% if item.is_viewed %}Viewed{% else %}Unviewed{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ item.email }}</td>
+                                            <td>{{ item.country_of_origin_display }}</td>
+                                            <td>{{ item.occupation }}</td>
+                                            <td>{{ item.gender }}</td>
+                                            <td>{{ item.birth_year }}</td>
+                                            <td class="text-nowrap">{{ item.departure_date.strftime("%Y-%m-%d") }}</td>
+                                            <td class="tandem-table-languages">
+                                                {% for lang in item.offered_languages_with_levels %}
+                                                    {{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                            <td class="tandem-table-languages">{{ ", ".join(item.requested_languages_display) }}</td>
+                                            <td class="text-end fw-semibold">{{ item.match_counts.full }}</td>
+                                            <td class="text-end fw-semibold">{{ item.match_counts.partial }}</td>
+                                            <td class="text-end fw-semibold">{{ item.match_counts.weak }}</td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    {% if item.requested_native_only %}
+                                                        <span class="badge text-bg-warning">Native</span>
+                                                    {% endif %}
+                                                    {% if item.same_gender_only %}
+                                                        <span class="badge text-bg-warning">Same gender</span>
+                                                    {% endif %}
+                                                    {% if can_edit_requests and item.has_same_email_group %}
+                                                        <span class="badge text-bg-light border">Same email</span>
+                                                    {% endif %}
+                                                    {% if can_edit_requests and item.has_likely_duplicate %}
+                                                        <span class="badge text-bg-light border">Likely duplicate</span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                            <td class="tandem-table-comment pre-line">{{ item.comment }}</td>
+                                            <td class="text-end">
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Request actions">
+                                                    {% if can_open_matching %}
+                                                        <a
+                                                            href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                            class="btn btn-dark"
+                                                            title="Match"
+                                                        >
+                                                            <i class="bi bi-arrow-left-right"></i>
+                                                            <span class="visually-hidden">Match</span>
+                                                        </a>
+                                                    {% endif %}
+
+                                                    {% if can_edit_requests %}
+                                                        <a
+                                                            href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                            class="btn btn-outline-secondary"
+                                                            title="Edit"
+                                                        >
+                                                            <i class="bi bi-pencil"></i>
+                                                            <span class="visually-hidden">Edit</span>
+                                                        </a>
+                                                        <a
+                                                            href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                            class="btn btn-outline-secondary"
+                                                            title="Duplicates"
+                                                        >
+                                                            <i class="bi bi-files"></i>
+                                                            <span class="visually-hidden">Duplicates</span>
+                                                        </a>
+                                                    {% endif %}
+
+                                                    <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
+                                                        <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                                                        <button
+                                                            type="submit"
+                                                            class="btn btn-outline-secondary"
+                                                            title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                                        >
+                                                            <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
+                                                            <span class="visually-hidden">{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             {% else %}
                 <p class="mb-0 text-muted">No requests in this section.</p>

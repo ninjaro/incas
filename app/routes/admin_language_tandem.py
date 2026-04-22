@@ -20,6 +20,7 @@ from app.routes.helpers.access import (
     require_tandem_any_access,
 )
 from app.routes.helpers.tandem_admin import (
+    annotate_tandem_match_counts,
     build_tandem_admin_context,
     get_safe_tandem_return_url,
     get_tandem_admin_filters,
@@ -249,6 +250,13 @@ def admin_language_tandem_detail(request_id):
 
     for candidate in candidate_items:
         hydrate_tandem_request_display(candidate, country_labels=country_labels)
+
+    all_match_items = [item, *candidate_items]
+    annotate_tandem_match_counts(
+        all_match_items,
+        candidate_items=all_match_items,
+        language_labels=language_labels,
+    )
 
     match_groups = build_match_groups(
         source_item=item,
@@ -507,4 +515,3 @@ def admin_language_tandem_duplicate_merge(request_id):
         return_to=return_to,
         candidate_id=candidate.id,
     )
-
