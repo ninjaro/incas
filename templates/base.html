@@ -16,6 +16,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/language-picker.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -82,8 +83,28 @@
                             </a>
                         </li>
                         <li>
+                            <a class="dropdown-item" href="{{ url_for('main.country_evening') }}">
+                                Country Evening
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.cafe_lingua') }}">
+                                Café Lingua
+                            </a>
+                        </li>
+                        <li>
                             <a class="dropdown-item" href="{{ url_for('main.international_breakfast') }}">
                                 International Breakfast
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.international_weekend') }}">
+                                International Weekend
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.incas_active') }}">
+                                INCAS Active
                             </a>
                         </li>
                         <li>
@@ -192,7 +213,11 @@
                 <h2 class="footer-heading">{{ t("nav.forms") }}</h2>
                 <ul class="footer-links">
                     <li><a href="{{ url_for('main.international_tuesday') }}">International Tuesday</a></li>
+                    <li><a href="{{ url_for('main.country_evening') }}">Country Evening</a></li>
+                    <li><a href="{{ url_for('main.cafe_lingua') }}">Café Lingua</a></li>
                     <li><a href="{{ url_for('main.international_breakfast') }}">International Breakfast</a></li>
+                    <li><a href="{{ url_for('main.international_weekend') }}">International Weekend</a></li>
+                    <li><a href="{{ url_for('main.incas_active') }}">INCAS Active</a></li>
                     <li><a href="{{ url_for('main.offer_language_tandem') }}">{{ t("nav.language_tandem") }}</a></li>
                     <li><a href="{{ url_for('main.contact_form') }}">{{ t("nav.contact_questions") }}</a></li>
                 </ul>

@@ -387,6 +387,51 @@ document.addEventListener("DOMContentLoaded", () => {
         refreshMatchUi();
     }
 
+    function fallbackCopyText(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.top = "-1000px";
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        try {
+            document.execCommand("copy");
+        } finally {
+            textarea.remove();
+        }
+    }
+
+    document.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-copy-text]");
+        if (!button) return;
+
+        const text = button.dataset.copyText || "";
+        const label = button.querySelector("[data-copy-label]");
+        const originalLabel = label ? label.textContent : "";
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                fallbackCopyText(text);
+            }
+
+            if (label) label.textContent = "Copied";
+            button.classList.add("btn-success");
+            button.classList.remove("btn-outline-secondary");
+        } catch (_error) {
+            if (label) label.textContent = "Failed";
+        }
+
+        window.setTimeout(() => {
+            if (label) label.textContent = originalLabel;
+            button.classList.remove("btn-success");
+            button.classList.add("btn-outline-secondary");
+        }, 1400);
+    });
+
     function parseSortValue(value, type) {
         const rawValue = value || "";
 

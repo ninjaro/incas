@@ -142,7 +142,7 @@
                 offered: {
                     options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
                     selected: {{ values.offered_languages|tojson }},
-                    native: {{ values.offered_native_languages|tojson }}
+                    levels: {{ values.offered_language_levels|tojson }}
                 },
                 requested: {
                     options: JSON.parse(document.getElementById("requested_language_options_json").textContent),

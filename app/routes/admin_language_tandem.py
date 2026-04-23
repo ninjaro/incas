@@ -231,6 +231,7 @@ def admin_language_tandem_detail(request_id):
 
     item = LanguageTandemRequest.query.get_or_404(request_id)
     return_to = get_safe_tandem_return_url(request.args.get("return_to"))
+    auto_marked_viewed = not item.is_viewed
 
     if not item.is_viewed:
         item.is_viewed = True
@@ -269,6 +270,8 @@ def admin_language_tandem_detail(request_id):
         "admin/language_tandem/detail.html",
         item=item,
         match_groups=match_groups,
+        match_limits=MATCH_CONFIG["limits"],
+        auto_marked_viewed=auto_marked_viewed,
         return_to=return_to,
         can_edit_requests=has_tandem_correction_access(),
     )

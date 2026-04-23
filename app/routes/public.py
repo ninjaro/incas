@@ -15,7 +15,7 @@ from app.routes.helpers.tandem_form import (
     parse_departure_date,
     render_language_tandem_form_page,
 )
-from app.site_content import get_site_offers, get_site_page
+from app.site_content import get_site_page
 
 SUPPORTED_LOCALES = {"en", "de"}
 DEFAULT_LOCALE = "en"
@@ -196,6 +196,7 @@ def render_site_content_page(page_key):
             "country_of_origin": "",
             "offered_languages": [],
             "offered_native_languages": [],
+            "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
             "same_gender_only": False,
@@ -223,6 +224,26 @@ def international_breakfast():
     return render_site_content_page("international_breakfast")
 
 
+@bp.route("/offers/international-weekend")
+def international_weekend():
+    return render_site_content_page("international_weekend")
+
+
+@bp.route("/offers/cafe-lingua")
+def cafe_lingua():
+    return render_site_content_page("cafe_lingua")
+
+
+@bp.route("/offers/incas-active")
+def incas_active():
+    return render_site_content_page("incas_active")
+
+
+@bp.route("/offers/country-evening")
+def country_evening():
+    return render_site_content_page("country_evening")
+
+
 @bp.route("/offers/international-tuesday")
 def international_tuesday():
     return render_site_content_page("international_tuesday")
@@ -236,20 +257,25 @@ def calendar_view():
     year, month = parse_calendar_month(request.args.get("month"))
 
     month_matrix = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
-    month_start = datetime(year, month, 1)
-    month_end_day = calendar.monthrange(year, month)[1]
-    month_end = datetime(year, month, month_end_day, 23, 59, 59)
+    visible_start = month_matrix[0][0]
+    visible_end = month_matrix[-1][-1]
+    visible_start_at = datetime(visible_start.year, visible_start.month, visible_start.day)
+    visible_end_at = datetime(visible_end.year, visible_end.month, visible_end.day, 23, 59, 59)
 
     items = (
         Post.query
         .filter(Post.starts_at.isnot(None))
-        .filter(Post.starts_at >= month_start)
-        .filter(Post.starts_at <= month_end)
+        .filter(Post.starts_at >= visible_start_at)
+        .filter(Post.starts_at <= visible_end_at)
         .order_by(Post.starts_at.asc())
         .all()
     )
-    upcoming_items = [item for item in items if item.is_live]
-    archived_items = [item for item in items if not item.is_live]
+    month_items = [
+        item for item in items
+        if item.starts_at.year == year and item.starts_at.month == month
+    ]
+    upcoming_items = [item for item in month_items if item.is_live]
+    archived_items = [item for item in month_items if not item.is_live]
 
     upcoming_items.sort(key=lambda item: item.starts_at)
     archived_items.sort(key=lambda item: item.ends_at, reverse=True)
@@ -261,6 +287,13 @@ def calendar_view():
     for item in items:
         key = item.starts_at.date()
         events_by_day.setdefault(key, []).append(item)
+
+    agenda_days = [
+        {"date": day, "items": events_by_day.get(day, [])}
+        for week in month_matrix
+        for day in week
+        if day.month == month and events_by_day.get(day)
+    ]
 
     prev_year = year
     prev_month = month - 1
@@ -281,8 +314,11 @@ def calendar_view():
         current_year=year,
         current_month=month,
         month_label=datetime(year, month, 1).strftime("%B %Y"),
+        current_month_value=f"{year:04d}-{month:02d}",
         prev_month_value=f"{prev_year:04d}-{prev_month:02d}",
         next_month_value=f"{next_year:04d}-{next_month:02d}",
+        today_month_value=f"{date.today().year:04d}-{date.today().month:02d}",
+        agenda_days=agenda_days,
         upcoming_items=upcoming_items,
         archived_items=archived_items,
         now_utc=now_utc,

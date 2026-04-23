@@ -1,4 +1,4 @@
-<form method="post" action="{{ form_action or url_for('main.suggest_event_form') }}" class="card shadow-sm">
+<form method="post" action="{{ form_action or url_for('main.suggest_event_form') }}" class="card shadow-sm incas-form">
     {% if form_return_to %}
         <input type="hidden" name="return_to" value="{{ form_return_to }}">
     {% endif %}
@@ -19,22 +19,22 @@
 
             <div class="col-md-6">
                 <label class="form-label" for="country">Country <span class="text-danger">*</span></label>
-                <input class="form-control" id="country" name="country" required value="{{ values.country }}">
+                <input class="form-control" id="country" name="country" autocomplete="country-name" required value="{{ values.country }}">
             </div>
 
             <div class="col-12">
                 <label class="form-label" for="contact_name">Contact Name <span class="text-danger">*</span></label>
-                <input class="form-control" id="contact_name" name="contact_name" required value="{{ values.contact_name }}">
+                <input class="form-control" id="contact_name" name="contact_name" autocomplete="name" required value="{{ values.contact_name }}">
             </div>
 
             <div class="col-md-6">
                 <label class="form-label" for="contact_email">Email</label>
-                <input class="form-control" id="contact_email" name="contact_email" type="email" value="{{ values.contact_email }}">
+                <input class="form-control" id="contact_email" name="contact_email" type="email" inputmode="email" autocomplete="email" value="{{ values.contact_email }}">
             </div>
 
             <div class="col-md-6">
                 <label class="form-label" for="contact_phone">Phone</label>
-                <input class="form-control" id="contact_phone" name="contact_phone" value="{{ values.contact_phone }}">
+                <input class="form-control" id="contact_phone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" value="{{ values.contact_phone }}">
             </div>
 
             <div class="col-12">
@@ -48,7 +48,11 @@
         </div>
     </div>
 
-    <div class="card-footer d-flex justify-content-end">
+    <div class="card-footer form-submit-footer d-flex justify-content-end">
+        <button type="submit" class="btn btn-dark">Submit</button>
+    </div>
+
+    <div class="mobile-sticky-submit">
         <button type="submit" class="btn btn-dark">Submit</button>
     </div>
 </form>

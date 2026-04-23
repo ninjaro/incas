@@ -194,6 +194,101 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
 }
 
+.match-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+}
+
+.match-person-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.match-person-meta span {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.15rem 0.45rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    overflow-wrap: anywhere;
+}
+
+.match-reason-list {
+    display: grid;
+    gap: 0.45rem;
+    font-size: 0.875rem;
+}
+
+.match-reason-list > div {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.match-actions-cell .btn-group {
+    flex-wrap: wrap;
+}
+
+.match-results[data-view-mode="table"] {
+    display: block;
+    overflow-x: auto;
+}
+
+.match-results[data-view-mode="table"] .match-card-wrapper {
+    min-width: 82rem;
+}
+
+.match-results[data-view-mode="table"] .match-card-wrapper + .match-card-wrapper {
+    margin-top: 0.75rem;
+}
+
+.match-results[data-view-mode="table"] .match-card {
+    grid-template-columns: minmax(16rem, 1.3fr) 9rem 11rem 15rem 15rem 14rem;
+    align-items: start;
+    min-height: 100%;
+}
+
+.match-results[data-view-mode="table"] .match-explanation-cell {
+    grid-column: 1 / -1;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.match-results[data-view-mode="table"] .match-actions-cell {
+    justify-self: end;
+}
+
+@media (min-width: 992px) {
+    .match-results[data-view-mode="list"] .match-card {
+        grid-template-columns: minmax(0, 1.2fr) minmax(11rem, 0.6fr);
+    }
+
+    .match-results[data-view-mode="list"] .match-strength-cell {
+        grid-column: 1;
+    }
+
+    .match-results[data-view-mode="list"] .match-counts-cell {
+        grid-column: 2;
+    }
+
+    .match-results[data-view-mode="list"] .match-actions-cell {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+    }
+
+    .match-results[data-view-mode="list"] .match-language-cell,
+    .match-results[data-view-mode="list"] .match-explanation-cell {
+        grid-column: 1 / -1;
+    }
+}
+
 @media (max-width: 767.98px) {
     .admin-page-header,
     .admin-header-actions {
