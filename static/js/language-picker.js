@@ -45,6 +45,173 @@
         }
     };
 
+    window.initCountryLookup = function initCountryLookup(config) {
+        const lookup = document.getElementById(config.lookupId || "country_of_origin_lookup");
+        const hidden = document.getElementById(config.hiddenId || "country_of_origin");
+        const menu = document.getElementById(config.menuId || "country_of_origin_menu");
+
+        if (!lookup || !hidden || !menu) return;
+
+        const options = (config.options || []).map((item) => ({
+            value: item.value || item.code,
+            label: item.label,
+        })).filter((item) => item.value && item.label);
+
+        let query = "";
+        let isOpen = false;
+
+        if (!hidden.value && config.selected) {
+            hidden.value = config.selected;
+        }
+
+        function getSelectedOption() {
+            return options.find((item) => item.value === hidden.value);
+        }
+
+        function getFilteredOptions() {
+            const normalizedQuery = query.trim().toLowerCase();
+            if (!normalizedQuery) return options;
+
+            return options.filter((item) => item.label.toLowerCase().includes(normalizedQuery));
+        }
+
+        function syncTypedValue() {
+            const typedValue = lookup.value.trim().toLowerCase();
+
+            if (!typedValue) {
+                hidden.value = "";
+                return;
+            }
+
+            const exactMatch = options.find((item) => item.label.toLowerCase() === typedValue);
+            hidden.value = exactMatch ? exactMatch.value : "";
+        }
+
+        function selectCountry(value) {
+            const option = options.find((item) => item.value === value);
+            hidden.value = option ? option.value : "";
+            lookup.value = option ? option.label : "";
+            query = "";
+            isOpen = false;
+            renderCountryMenu();
+        }
+
+        function renderCountryMenu() {
+            lookup.setAttribute("role", "combobox");
+            lookup.setAttribute("aria-autocomplete", "list");
+            lookup.setAttribute("aria-controls", menu.id);
+            lookup.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+            menu.setAttribute("role", "listbox");
+            menu.classList.toggle("is-open", isOpen);
+            menu.innerHTML = "";
+
+            if (!isOpen) return;
+
+            const items = getFilteredOptions();
+
+            if (!items.length) {
+                const empty = document.createElement("button");
+                empty.type = "button";
+                empty.className = "language-lookup-item";
+                empty.disabled = true;
+                empty.setAttribute("role", "option");
+                empty.textContent = "No countries found";
+                menu.appendChild(empty);
+                return;
+            }
+
+            items.forEach((item) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "language-lookup-item";
+                button.dataset.countryValue = item.value;
+                button.setAttribute("role", "option");
+                button.setAttribute("aria-selected", hidden.value === item.value ? "true" : "false");
+                button.textContent = item.label;
+                menu.appendChild(button);
+            });
+        }
+
+        const selectedOption = getSelectedOption();
+        if (selectedOption) {
+            lookup.value = selectedOption.label;
+        }
+
+        lookup.addEventListener("input", () => {
+            query = lookup.value || "";
+            isOpen = true;
+            syncTypedValue();
+            renderCountryMenu();
+        });
+
+        lookup.addEventListener("focus", () => {
+            query = lookup.value || "";
+            isOpen = true;
+            renderCountryMenu();
+        });
+
+        lookup.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                isOpen = false;
+                renderCountryMenu();
+                return;
+            }
+
+            if (event.key === "Enter") {
+                const firstItem = getFilteredOptions()[0];
+                if (firstItem) {
+                    event.preventDefault();
+                    selectCountry(firstItem.value);
+                }
+                return;
+            }
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                isOpen = true;
+                renderCountryMenu();
+                menu.querySelector(".language-lookup-item:not(:disabled)")?.focus();
+            }
+        });
+
+        menu.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-country-value]");
+            if (!button) return;
+            selectCountry(button.dataset.countryValue);
+            lookup.focus();
+        });
+
+        menu.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                isOpen = false;
+                renderCountryMenu();
+                lookup.focus();
+                return;
+            }
+
+            if (event.key === "Enter") {
+                const button = event.target.closest("[data-country-value]");
+                if (button) {
+                    event.preventDefault();
+                    selectCountry(button.dataset.countryValue);
+                    lookup.focus();
+                }
+            }
+        });
+
+        lookup.form?.addEventListener("submit", syncTypedValue);
+
+        document.addEventListener("click", (event) => {
+            if (lookup.contains(event.target) || menu.contains(event.target)) return;
+            if (!isOpen) return;
+            isOpen = false;
+            renderCountryMenu();
+        });
+
+        renderCountryMenu();
+    };
+
     window.initLanguagePicker = function initLanguagePicker(config) {
         const languagePickerState = {
             offered: {

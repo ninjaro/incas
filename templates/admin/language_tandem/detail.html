@@ -118,7 +118,7 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="row g-3 align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-6 col-xl-3">
                 <label class="form-label" for="match-sort-mode">Sort</label>
                 <select class="form-select form-select-sm" id="match-sort-mode">
                     <option value="score">Best first</option>
@@ -129,7 +129,7 @@
                 </select>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-6 col-xl-3">
                 <label class="form-label" for="match-warning-filter">Warnings</label>
                 <select class="form-select form-select-sm" id="match-warning-filter">
                     <option value="all">All</option>
@@ -141,6 +141,25 @@
                     <option value="departure_gap">Departure gap</option>
                 </select>
             </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-mutual-filter">Exchange</label>
+                <select class="form-select form-select-sm" id="match-mutual-filter">
+                    <option value="all">All</option>
+                    <option value="mutual">Mutual only</option>
+                    <option value="one_way">One-way only</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-level-filter">Offered Level</label>
+                <select class="form-select form-select-sm" id="match-level-filter">
+                    <option value="all">Any level</option>
+                    <option value="3">Advanced or better</option>
+                    <option value="4">Fluent or better</option>
+                    <option value="5">Native only</option>
+                </select>
+            </div>
         </div>
     </div>
 </div>
@@ -150,7 +169,7 @@
     ("weak", "Weak Matches", "text-bg-warning")
 ] %}
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" data-match-source-id="{{ item.id }}">
     <div class="small text-muted">
         Match count badges show how many full, partial, and weak matches each request currently has.
     </div>
@@ -193,9 +212,15 @@
                         data-match-card
                         data-origin-section="{{ key }}"
                         data-score="{{ match.score }}"
+                        data-category="{{ key }}"
+                        data-candidate-id="{{ candidate.id }}"
+                        data-candidate-name="{{ candidate.first_name }} {{ candidate.last_name }}"
+                        data-candidate-email="{{ candidate.email }}"
                         data-created-at="{{ candidate.created_at.strftime('%Y-%m-%dT%H:%M:%S') }}"
                         data-name="{{ (candidate.last_name ~ ' ' ~ candidate.first_name)|lower }}"
                         data-warning-keys="{{ match.warning_keys|join(',') }}"
+                        data-is-mutual="{{ 'true' if match.is_mutual else 'false' }}"
+                        data-best-requested-level="{{ match.best_requested_level }}"
                     >
                         <div class="match-card border rounded p-3 h-100">
                             <div class="match-candidate-cell">
@@ -266,6 +291,11 @@
                                 </div>
 
                                 <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-warning" data-toggle-shortlist>
+                                        <i class="bi bi-star"></i>
+                                        <span data-shortlist-label>Shortlist</span>
+                                    </button>
+
                                     <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>
                                         Hide
                                     </button>
@@ -324,6 +354,19 @@
         </div>
     </div>
 {% endfor %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 m-0">Shortlist</h2>
+            <span class="badge text-bg-warning" data-shortlist-count>0</span>
+        </div>
+
+        <p class="text-muted mb-0" data-shortlist-empty>No shortlisted candidates.</p>
+
+        <div class="match-shortlist-list" data-shortlist-list></div>
+    </div>
+</div>
 
 <div class="card shadow-sm">
     <div class="card-body">

@@ -21,7 +21,7 @@
                             {% if item.is_pinned %}
                                 <i class="bi bi-pin-angle-fill small"></i>
                             {% endif %}
-                            <span>{{ item.title }}</span>
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
                             {% if meta %}
                                 <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
                             {% endif %}
@@ -33,9 +33,6 @@
                             </div>
                         {% endif %}
 
-                        <div class="mt-auto">
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-dark">Open</a>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -60,7 +57,7 @@
                             {% if item.is_pinned %}
                                 <i class="bi bi-pin-angle-fill small"></i>
                             {% endif %}
-                            <span>{{ item.title }}</span>
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
                             {% if meta %}
                                 <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
                             {% endif %}
@@ -72,9 +69,6 @@
                             </div>
                         {% endif %}
 
-                        <div class="mt-auto">
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
-                        </div>
                     </div>
                 </div>
             </div>

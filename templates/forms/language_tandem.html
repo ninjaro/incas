@@ -17,6 +17,10 @@
     <script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
     <script>
         initOccupationOther();
+        initCountryLookup({
+            options: JSON.parse(document.getElementById("country_options_json").textContent),
+            selected: {{ values.country_of_origin|tojson }}
+        });
 
         initLanguagePicker({
             offered: {

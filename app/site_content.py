@@ -239,11 +239,10 @@ SITE_PAGES = {
     <div class="row g-3">
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Language Tandem</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/language-tandem">Language Tandem</a></h2>
                 <p>Practice a language with a suitable tandem partner. You offer a language you know well and request a language you want to improve.</p>
                 <p class="mb-3">More than 300 participants are matched each year.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/language-tandem">Open offer</a>
                     <a class="btn btn-sm btn-outline-secondary" href="/language-tandem">Registration form</a>
                 </div>
             </div>
@@ -251,29 +250,26 @@ SITE_PAGES = {
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">International Tuesday</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-tuesday">International Tuesday</a></h2>
                 <p>Every Tuesday evening, you can meet students from many countries, play games, talk in a relaxed atmosphere and enjoy inexpensive warm and cold drinks.</p>
-                <p class="mb-3"><strong>Every Tuesday from 8 pm to midnight</strong><br>Humboldt-Haus, Pontstraße 41</p>
-                <a class="btn btn-sm btn-dark" href="/offers/international-tuesday">Open offer</a>
+                <p class="mb-0"><strong>Every Tuesday from 8 pm to midnight</strong><br>Humboldt-Haus, Pontstraße 41</p>
             </div>
         </article>
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">International Weekend</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-weekend">International Weekend</a></h2>
                 <p>Once a month, INCAS offers a day trip to a city or sight in Germany, Belgium, the Netherlands, France or Luxembourg.</p>
-                <p class="mb-3">Trips are announced in advance and usually include a guided city tour, museum visit or local sight.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/international-weekend">Open offer</a>
+                <p class="mb-0">Trips are announced in advance and usually include a guided city tour, museum visit or local sight.</p>
             </div>
         </article>
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">International Breakfast</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-breakfast">International Breakfast</a></h2>
                 <p>Our monthly breakfast buffet lets you start the day in a relaxed way while meeting people from all over the world.</p>
                 <p class="mb-3">Depending on the event, we serve dishes from different countries or a classic breakfast.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/international-breakfast">Open offer</a>
                     <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=breakfast">Suggest breakfast</a>
                 </div>
             </div>
@@ -281,29 +277,26 @@ SITE_PAGES = {
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Café Lingua</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/cafe-lingua">Café Lingua</a></h2>
                 <p>Usually on the second Tuesday of each month, INCAS organizes a multilingual café where you can practice languages at different tables.</p>
-                <p class="mb-3">You do not need to be registered for Language Tandem to join.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/cafe-lingua">Open offer</a>
+                <p class="mb-0">You do not need to be registered for Language Tandem to join.</p>
             </div>
         </article>
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">INCAS Active</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/incas-active">INCAS Active</a></h2>
                 <p>Besides public activities, we also organize team activities such as hiking trips, festivals, barbecues, ice cream in the park or escape rooms.</p>
-                <p class="mb-3">Join the team if you want to take part and help shape new activities.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/incas-active">Open offer</a>
+                <p class="mb-0">Join the team if you want to take part and help shape new activities.</p>
             </div>
         </article>
 
         <article class="col-md-6">
             <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Country Evening</h2>
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/country-evening">Country Evening</a></h2>
                 <p>Every month, one International Tuesday is dedicated to presenting a country through stories, photos, food, music and conversation.</p>
                 <p class="mb-3">You are welcome to present your own country. The presentation language should be English or German.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/country-evening">Open offer</a>
                     <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=country_evening">Suggest evening</a>
                 </div>
             </div>

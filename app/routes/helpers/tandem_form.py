@@ -185,12 +185,13 @@ def build_language_tandem_form_context(values):
     }
 
 
-def render_language_tandem_form_page(values):
+def render_language_tandem_form_page(values, errors=None):
     context = build_language_tandem_form_context(values)
 
     return render_template(
         "forms/language_tandem.html",
         values=values,
+        errors=errors or {},
         **context,
     )
 

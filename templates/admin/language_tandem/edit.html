@@ -76,15 +76,27 @@
             </div>
 
             <div class="col-12">
-                <label class="form-label" for="country_of_origin">Country of Origin <span class="text-danger">*</span></label>
-                <select class="form-select" id="country_of_origin" name="country_of_origin" required>
-                    <option value="">Select</option>
-                    {% for country in country_options %}
-                        <option value="{{ country.code }}" {% if values.country_of_origin == country.code %}selected{% endif %}>
-                            {{ country.label }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <label class="form-label" for="country_of_origin_lookup">Country of Origin <span class="text-danger">*</span></label>
+                <input type="hidden" id="country_of_origin" name="country_of_origin" value="{{ values.country_of_origin }}">
+                <input
+                    class="form-control"
+                    id="country_of_origin_lookup"
+                    autocomplete="country-name"
+                    placeholder="Search country"
+                    required
+                    aria-controls="country_of_origin_menu"
+                >
+                <div id="country_of_origin_menu" class="language-lookup-menu country-lookup-menu" role="listbox" aria-live="polite"></div>
+                <script type="application/json" id="country_options_json">
+                    [
+                        {% for country in country_options %}
+                            {
+                                "value": {{ country.code|tojson }},
+                                "label": {{ country.label|tojson }}
+                            }{% if not loop.last %},{% endif %}
+                        {% endfor %}
+                    ]
+                </script>
             </div>
 
             <div class="col-md-6">
@@ -228,6 +240,10 @@
 <script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
 <script>
     initOccupationOther();
+    initCountryLookup({
+        options: JSON.parse(document.getElementById("country_options_json").textContent),
+        selected: {{ values.country_of_origin|tojson }}
+    });
 
     initLanguagePicker({
         offered: {

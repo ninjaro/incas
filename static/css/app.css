@@ -119,6 +119,20 @@ main {
     font-weight: 700;
 }
 
+.navbar-brand-logo-link {
+    display: inline-flex;
+    align-items: center;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.navbar-brand-logo {
+    display: block;
+    width: auto;
+    height: 2.4rem;
+    object-fit: contain;
+}
+
 .navbar {
     --bs-navbar-toggler-border-color: rgba(var(--bs-body-color-rgb), 0.35);
     --bs-navbar-toggler-focus-width: 0.12rem;
@@ -145,7 +159,7 @@ main {
 
 .cal-events-scroll {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     min-height: 0;
 }
 
@@ -182,6 +196,11 @@ main {
     line-height: 1.3;
 }
 
+.cal-more-count {
+    padding-left: 0.45rem;
+    line-height: 1.3;
+}
+
 .calendar-toolbar {
     gap: 0.75rem;
 }
@@ -196,6 +215,53 @@ main {
 
 .calendar-agenda-view {
     display: none;
+}
+
+.calendar-filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.calendar-filter-chip {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.65rem;
+    color: var(--bs-body-color);
+    text-decoration: none;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+}
+
+.calendar-filter-chip:hover,
+.calendar-filter-chip:focus,
+.calendar-filter-chip.is-active {
+    color: var(--bs-body-color);
+    border-color: rgba(var(--bs-primary-rgb), 0.7);
+    box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.14);
+}
+
+.calendar-filter-chip.is-active {
+    background: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.calendar-filter-swatch {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-left-width: 0.3rem !important;
+    border-radius: 999px;
+    background: var(--bs-tertiary-bg);
+}
+
+.calendar-filter-count {
+    color: var(--bs-secondary-color);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
 }
 
 .calendar-next-strip {
@@ -304,6 +370,13 @@ main {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.card-heading-link:hover,
+.card-heading-link:focus {
+    text-decoration: underline !important;
+    text-decoration-thickness: 0.08em !important;
+    text-underline-offset: 0.16em;
 }
 
 .navbar-nav {

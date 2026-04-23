@@ -235,6 +235,37 @@
     flex-wrap: wrap;
 }
 
+.match-shortlist-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.match-shortlist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    background: var(--bs-tertiary-bg);
+}
+
+.match-shortlist-summary {
+    min-width: 0;
+}
+
+.match-shortlist-summary .small {
+    overflow-wrap: anywhere;
+}
+
+.match-shortlist-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
 .match-results[data-view-mode="table"] {
     display: block;
     overflow-x: auto;
@@ -308,6 +339,15 @@
 
     .tandem-request-card .request-actions {
         align-items: stretch;
+    }
+
+    .match-shortlist-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .match-shortlist-actions .btn {
+        flex: 1 1 auto;
     }
 
     .tandem-request-card .request-actions > .btn,

@@ -1,8 +1,9 @@
 import calendar
 import json
-from datetime import date, datetime
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from flask import abort, flash, g, make_response, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, g, make_response, redirect, render_template, request, url_for
 
 from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db
 from app.routes import bp
@@ -19,6 +20,27 @@ from app.site_content import get_site_page
 
 SUPPORTED_LOCALES = {"en", "de"}
 DEFAULT_LOCALE = "en"
+EVENT_KIND_ORDER = [
+    "country_evening",
+    "cafe_lingua",
+    "breakfast",
+    "board_games",
+    "dance",
+    "trip",
+    "karaoke",
+    "housing",
+]
+
+
+def get_local_now():
+    timezone_name = current_app.config.get("LOCAL_TIMEZONE", "Europe/Berlin")
+
+    try:
+        timezone = ZoneInfo(timezone_name)
+    except Exception:
+        timezone = ZoneInfo("Europe/Berlin")
+
+    return datetime.now(timezone).replace(tzinfo=None)
 
 
 @bp.route("/")
@@ -115,6 +137,7 @@ def contact_form():
         "subject": "",
         "message": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["name"] = request.form.get("name", "").strip()
@@ -122,9 +145,15 @@ def contact_form():
         values["subject"] = request.form.get("subject", "").strip()
         values["message"] = request.form.get("message", "").strip()
 
-        if not values["name"] or not values["email"] or not values["message"]:
-            flash("Name, email, and message are required.")
-            return render_template("forms/contact.html", values=values)
+        if not values["name"]:
+            errors["name"] = "Name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
+        if not values["message"]:
+            errors["message"] = "Message is required."
+
+        if errors:
+            return render_template("forms/contact.html", values=values, errors=errors)
 
         item = ContactRequest(
             name=values["name"],
@@ -139,7 +168,7 @@ def contact_form():
         flash("Your message has been submitted.")
         return redirect(url_for("main.contact_form"))
 
-    return render_template("forms/contact.html", values=values)
+    return render_template("forms/contact.html", values=values, errors=errors)
 
 @bp.route("/posts")
 def posts():
@@ -254,7 +283,15 @@ def offer_language_tandem():
 
 @bp.route("/calendar")
 def calendar_view():
-    year, month = parse_calendar_month(request.args.get("month"))
+    now_local = get_local_now()
+    today = now_local.date()
+
+    raw_month = request.args.get("month")
+    if (raw_month or "").strip():
+        year, month = parse_calendar_month(raw_month)
+    else:
+        year, month = now_local.year, now_local.month
+    event_kind_filter = (request.args.get("kind") or "").strip()
 
     month_matrix = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
     visible_start = month_matrix[0][0]
@@ -270,17 +307,45 @@ def calendar_view():
         .order_by(Post.starts_at.asc())
         .all()
     )
+    unfiltered_month_items = [
+        item for item in items
+        if item.starts_at.year == year and item.starts_at.month == month
+    ]
+
+    event_kind_counts = {}
+    for item in unfiltered_month_items:
+        if not item.event_kind:
+            continue
+        event_kind_counts[item.event_kind] = event_kind_counts.get(item.event_kind, 0) + 1
+
+    if event_kind_filter not in event_kind_counts:
+        event_kind_filter = ""
+
+    event_kind_options = [
+        {"kind": kind, "count": count}
+        for kind, count in event_kind_counts.items()
+    ]
+    event_kind_options.sort(
+        key=lambda option: (
+            EVENT_KIND_ORDER.index(option["kind"])
+            if option["kind"] in EVENT_KIND_ORDER
+            else len(EVENT_KIND_ORDER),
+            option["kind"],
+        )
+    )
+
+    if event_kind_filter:
+        items = [item for item in items if item.event_kind == event_kind_filter]
+
     month_items = [
         item for item in items
         if item.starts_at.year == year and item.starts_at.month == month
     ]
-    upcoming_items = [item for item in month_items if item.is_live]
-    archived_items = [item for item in month_items if not item.is_live]
+    upcoming_items = [item for item in month_items if now_local < item.ends_at]
+    archived_items = [item for item in month_items if now_local >= item.ends_at]
 
     upcoming_items.sort(key=lambda item: item.starts_at)
     archived_items.sort(key=lambda item: item.ends_at, reverse=True)
-
-    now_utc = datetime.utcnow()
 
     events_by_day = {}
 
@@ -317,12 +382,15 @@ def calendar_view():
         current_month_value=f"{year:04d}-{month:02d}",
         prev_month_value=f"{prev_year:04d}-{prev_month:02d}",
         next_month_value=f"{next_year:04d}-{next_month:02d}",
-        today_month_value=f"{date.today().year:04d}-{date.today().month:02d}",
+        today_month_value=f"{today.year:04d}-{today.month:02d}",
+        event_kind_filter=event_kind_filter,
+        event_kind_options=event_kind_options,
+        event_kind_total_count=len(unfiltered_month_items),
         agenda_days=agenda_days,
         upcoming_items=upcoming_items,
         archived_items=archived_items,
-        now_utc=now_utc,
-        today=date.today(),
+        now_local=now_local,
+        today=today,
     )
 
 @bp.route("/suggest-event", methods=["GET", "POST"])
@@ -336,6 +404,7 @@ def suggest_event_form():
         "contact_phone": "",
         "comment": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["kind"] = request.form.get("kind", "").strip()
@@ -346,20 +415,20 @@ def suggest_event_form():
         values["comment"] = request.form.get("comment", "").strip()
 
         if values["kind"] not in {"country_evening", "breakfast"}:
-            flash("Select a valid event type.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["kind"] = "Select a valid event type."
 
         if not values["country"]:
-            flash("Country is required.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["country"] = "Country is required."
 
         if not values["contact_name"]:
-            flash("Contact name is required.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["contact_name"] = "Contact name is required."
 
         if not values["contact_email"] and not values["contact_phone"]:
-            flash("Enter at least email or phone.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["contact_email"] = "Enter email or phone."
+            errors["contact_phone"] = "Enter email or phone."
+
+        if errors:
+            return render_template("forms/suggest_event.html", values=values, errors=errors)
 
         item = EventSuggestion(
             kind=values["kind"],
@@ -376,7 +445,7 @@ def suggest_event_form():
         flash("Your event suggestion has been submitted.")
         return redirect(return_to or url_for("main.suggest_event_form"))
 
-    return render_template("forms/suggest_event.html", values=values)
+    return render_template("forms/suggest_event.html", values=values, errors=errors)
 
 @bp.route("/language-tandem", methods=["GET", "POST"])
 def language_tandem_form():
@@ -399,6 +468,7 @@ def language_tandem_form():
         "same_gender_only": False,
         "comment": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["first_name"] = request.form.get("first_name", "").strip()
@@ -444,33 +514,37 @@ def language_tandem_form():
             else values["occupation"]
         )
 
-        if not values["first_name"] or not values["last_name"] or not values["email"]:
-            flash("First name, last name, and email are required.")
-            return render_language_tandem_form_page(values)
+        if not values["first_name"]:
+            errors["first_name"] = "First name is required."
+        if not values["last_name"]:
+            errors["last_name"] = "Last name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
 
-        if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
-            flash("Occupation, gender, and country of origin are required.")
-            return render_language_tandem_form_page(values)
+        if not values["occupation"]:
+            errors["occupation"] = "Occupation is required."
+        if not values["gender"]:
+            errors["gender"] = "Gender is required."
+        if not values["country_of_origin"]:
+            errors["country_of_origin"] = "Country of origin is required."
 
         if values["occupation"] == "other" and not values["occupation_other"]:
-            flash("Enter occupation.")
-            return render_language_tandem_form_page(values)
+            errors["occupation_other"] = "Enter occupation."
 
         if birth_year is None:
-            flash("Enter a valid birth year.")
-            return render_language_tandem_form_page(values)
+            errors["birth_year"] = "Enter a valid birth year."
 
         if departure_date is None:
-            flash("Enter a valid departure date.")
-            return render_language_tandem_form_page(values)
+            errors["departure_date"] = "Enter a valid departure date."
 
         if not values["offered_languages"]:
-            flash("Select at least one offered language.")
-            return render_language_tandem_form_page(values)
+            errors["offered_languages"] = "Select at least one offered language."
 
         if not values["requested_languages"]:
-            flash("Select at least one requested language.")
-            return render_language_tandem_form_page(values)
+            errors["requested_languages"] = "Select at least one requested language."
+
+        if errors:
+            return render_language_tandem_form_page(values, errors=errors)
 
         item = LanguageTandemRequest(
             first_name=values["first_name"],
@@ -496,4 +570,4 @@ def language_tandem_form():
         flash("Your request has been submitted.")
         return redirect(return_to or url_for("main.language_tandem_form"))
 
-    return render_language_tandem_form_page(values)
+    return render_language_tandem_form_page(values, errors=errors)
