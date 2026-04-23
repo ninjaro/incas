@@ -69,14 +69,18 @@ def _level_label(level):
     return LEVEL_LABELS.get(level, str(level))
 
 def _overlap_details(offering_item, requested_codes, language_labels):
-    return [
-        {
+    details = []
+
+    for code in requested_codes:
+        level = _offered_level(offering_item, code)
+        details.append({
             "code": code,
             "label": language_labels.get(code, code),
-            "level": _offered_level(offering_item, code),
-        }
-        for code in requested_codes
-    ]
+            "level": level,
+            "level_label": _level_label(level),
+        })
+
+    return details
 
 def _format_overlap_details(details):
     return ", ".join(

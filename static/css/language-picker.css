@@ -1,18 +1,25 @@
 .language-lookup-menu {
+    display: none;
     margin-top: 0.5rem;
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
     background: var(--bs-body-bg);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
-    height: 18rem;
+    max-height: min(40vh, 18rem);
     overflow-y: auto;
+}
+
+.language-lookup-menu.is-open {
+    display: block;
 }
 
 .language-lookup-item {
     display: block;
     width: 100%;
+    min-height: 2.625rem;
     border: 0;
     background: transparent;
+    color: var(--bs-body-color);
     text-align: left;
     padding: 0.65rem 0.85rem;
 }
@@ -34,36 +41,43 @@
     gap: 0.5rem;
     max-width: 100%;
     border: 1px solid var(--bs-border-color);
-    border-radius: 999px;
+    border-radius: 0.5rem;
     padding: 0.35rem 0.6rem 0.35rem 0.75rem;
     background: var(--bs-tertiary-bg);
 }
 
 .language-selected-label {
+    min-width: 0;
     line-height: 1.2;
     font-size: 0.875rem;
+    overflow-wrap: anywhere;
 }
 
 .lang-level-bar {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    cursor: pointer;
-    padding: 3px 0;
+    display: inline-grid;
+    grid-template-columns: repeat(5, minmax(2.5rem, 1fr));
+    gap: 4px;
     flex-shrink: 0;
 }
 
 .lang-level-pip {
-    width: 8px;
-    height: 5px;
-    border-radius: 1.5px;
-    background: var(--bs-border-color);
-    transition: background 0.1s;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.35rem;
+    background: var(--bs-body-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+    line-height: 1;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
     flex-shrink: 0;
 }
 
 .lang-level-pip.is-active {
-    background: #ff6600;
+    color: var(--incas-neutral-dark);
+    background: var(--incas-primary);
+    border-color: var(--incas-primary);
 }
 
 .lang-level-tooltip {
@@ -90,7 +104,7 @@
 .language-chip-remove {
     border: 0;
     background: transparent;
-    padding: 0;
+    padding: 0.25rem;
     line-height: 1;
     font-size: 0.95rem;
     color: var(--bs-secondary-color);
@@ -99,4 +113,40 @@
 
 .language-chip-remove:hover {
     color: var(--bs-body-color);
+}
+
+@media (max-width: 575.98px) {
+    .language-lookup-menu {
+        max-height: min(44vh, 20rem);
+    }
+
+    .language-chip-list {
+        align-items: stretch;
+    }
+
+    .language-selected-chip {
+        width: 100%;
+        flex-wrap: wrap;
+        align-items: stretch;
+    }
+
+    .language-selected-label {
+        flex: 1 1 100%;
+    }
+
+    .lang-level-bar {
+        width: calc(100% - 2.75rem);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .lang-level-pip {
+        min-width: 0;
+        min-height: 2.75rem;
+    }
+
+    .language-chip-remove {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        margin-left: auto;
+    }
 }

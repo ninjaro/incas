@@ -4,6 +4,7 @@ import os
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
     APP_NAME = "INCAS"
+    LOCAL_TIMEZONE = os.getenv("LOCAL_TIMEZONE", "Europe/Berlin")
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///incas.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ACCESS_HASHES = {

@@ -18,13 +18,13 @@
                     {% for item in offers.pages %}
                         <div class="card shadow-sm">
                             <div class="card-body">
-                                <h2 class="h4 mb-2">{{ item.title }}</h2>
+                                <h2 class="h4 mb-2">
+                                    <a href="{{ item.url }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                                </h2>
 
                                 {% if item.subtitle %}
-                                    <div class="text-muted mb-3">{{ item.subtitle }}</div>
+                                    <div class="text-muted">{{ item.subtitle }}</div>
                                 {% endif %}
-
-                                <a href="{{ item.url }}" class="btn btn-dark">Open page</a>
                             </div>
                         </div>
                     {% endfor %}
@@ -41,13 +41,13 @@
                 {% for item in offers.forms %}
                     <div class="card shadow-sm">
                         <div class="card-body">
-                            <h2 class="h4 mb-2">{{ item.title }}</h2>
+                            <h2 class="h4 mb-2">
+                                <a href="{{ item.url }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                            </h2>
 
                             {% if item.subtitle %}
-                                <div class="text-muted mb-3">{{ item.subtitle }}</div>
+                                <div class="text-muted">{{ item.subtitle }}</div>
                             {% endif %}
-
-                            <a href="{{ item.url }}" class="btn btn-outline-dark">Open form</a>
                         </div>
                     </div>
                 {% endfor %}

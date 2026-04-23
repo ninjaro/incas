@@ -1,9 +1,27 @@
 import json
 from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
+from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+
+
+def get_configured_local_now():
+    timezone_name = "Europe/Berlin"
+
+    try:
+        timezone_name = current_app.config.get("LOCAL_TIMEZONE", timezone_name)
+    except RuntimeError:
+        pass
+
+    try:
+        timezone = ZoneInfo(timezone_name)
+    except Exception:
+        timezone = ZoneInfo("Europe/Berlin")
+
+    return datetime.now(timezone).replace(tzinfo=None)
 
 
 class Post(db.Model):
@@ -41,7 +59,7 @@ class Post(db.Model):
             return False
         if not self.is_event:
             return True
-        return datetime.utcnow() < self.ends_at
+        return get_configured_local_now() < self.ends_at
 
 
 class InstagramConnection(db.Model):

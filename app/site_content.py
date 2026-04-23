@@ -41,8 +41,24 @@ SITE_OFFERS = {
                 "url": "/offers/international-tuesday",
             },
             {
+                "title": "Country Evening",
+                "url": "/offers/country-evening",
+            },
+            {
+                "title": "Café Lingua",
+                "url": "/offers/cafe-lingua",
+            },
+            {
                 "title": "International Breakfast",
                 "url": "/offers/international-breakfast",
+            },
+            {
+                "title": "International Weekend",
+                "url": "/offers/international-weekend",
+            },
+            {
+                "title": "INCAS Active",
+                "url": "/offers/incas-active",
             },
         ],
         "forms": [
@@ -73,8 +89,24 @@ SITE_OFFERS = {
                 "url": "/offers/international-tuesday",
             },
             {
+                "title": "Länderabend",
+                "url": "/offers/country-evening",
+            },
+            {
+                "title": "Café Lingua",
+                "url": "/offers/cafe-lingua",
+            },
+            {
                 "title": "Internationales Frühstück",
                 "url": "/offers/international-breakfast",
+            },
+            {
+                "title": "Internationales Wochenende",
+                "url": "/offers/international-weekend",
+            },
+            {
+                "title": "INCAS Aktiv",
+                "url": "/offers/incas-active",
             },
         ],
         "forms": [
@@ -198,9 +230,99 @@ SITE_PAGES = {
             "title": "Offers",
             "image": None,
             "body_html": """
-<section class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
-    <p class="lead mb-2">Discover our regular activities and participation options.</p>
-    <p class="mb-0 text-body-secondary">Choose an offer from the menu.</p>
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Discover INCAS offers</h2>
+        <p class="lead mb-0">Our regular programme connects international and local students through language exchange, weekly meetings, cultural evenings, trips, breakfasts and team activities.</p>
+    </div>
+
+    <div class="row g-3">
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/language-tandem">Language Tandem</a></h2>
+                <p>Practice a language with a suitable tandem partner. You offer a language you know well and request a language you want to improve.</p>
+                <p class="mb-3">More than 300 participants are matched each year.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="/language-tandem">Registration form</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-tuesday">International Tuesday</a></h2>
+                <p>Every Tuesday evening, you can meet students from many countries, play games, talk in a relaxed atmosphere and enjoy inexpensive warm and cold drinks.</p>
+                <p class="mb-0"><strong>Every Tuesday from 8 pm to midnight</strong><br>Humboldt-Haus, Pontstraße 41</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-weekend">International Weekend</a></h2>
+                <p>Once a month, INCAS offers a day trip to a city or sight in Germany, Belgium, the Netherlands, France or Luxembourg.</p>
+                <p class="mb-0">Trips are announced in advance and usually include a guided city tour, museum visit or local sight.</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-breakfast">International Breakfast</a></h2>
+                <p>Our monthly breakfast buffet lets you start the day in a relaxed way while meeting people from all over the world.</p>
+                <p class="mb-3">Depending on the event, we serve dishes from different countries or a classic breakfast.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=breakfast">Suggest breakfast</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/cafe-lingua">Café Lingua</a></h2>
+                <p>Usually on the second Tuesday of each month, INCAS organizes a multilingual café where you can practice languages at different tables.</p>
+                <p class="mb-0">You do not need to be registered for Language Tandem to join.</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/incas-active">INCAS Active</a></h2>
+                <p>Besides public activities, we also organize team activities such as hiking trips, festivals, barbecues, ice cream in the park or escape rooms.</p>
+                <p class="mb-0">Join the team if you want to take part and help shape new activities.</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/country-evening">Country Evening</a></h2>
+                <p>Every month, one International Tuesday is dedicated to presenting a country through stories, photos, food, music and conversation.</p>
+                <p class="mb-3">You are welcome to present your own country. The presentation language should be English or German.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=country_evening">Suggest evening</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Board Game Nights</h2>
+                <p>On selected International Tuesdays, we host board game nights. Choose a game from INCAS for the evening or bring your own.</p>
+                <p class="mb-0">It is a simple way to meet new people and enjoy playing together.</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Dance Workshops</h2>
+                <p>Usually once a semester, we collaborate with Sol de la Salsa for beginner dance classes.</p>
+                <p class="mb-0">Prior knowledge is not required. The evening starts with a course and ends with time to practice your new steps.</p>
+            </div>
+        </article>
+    </div>
+
+    <section class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h2 class="h4 text-body-emphasis">Current dates</h2>
+        <p class="mb-0">Upcoming dates and registration details are published in our <a class="link-primary" href="/events">event calendar</a> and on our social media channels.</p>
+    </section>
 </section>
         """.strip(),
         },
@@ -225,6 +347,170 @@ SITE_PAGES = {
         For exact dates, registration and more detailed information you can check out the website, <a class="link-primary" title="Facebook Website INCAS Aachen" href="https://www.facebook.com/INCASAachen/" target="_blank" rel="noopener">Facebook</a>, <a class="link-primary" title="INCAS Instagram Page" href="https://www.instagram.com/incas_aachen/" target="_blank" rel="noopener">Instagram</a> or ask us on the International Tuesday events.
     </p>
     <p class="mb-0 fw-semibold text-body-emphasis">We're looking forward to seeing you.</p>
+</section>
+""".strip(),
+        },
+        "international_weekend": {
+            "title": "International Weekend",
+            "image": "img/site/international-weekend.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Explore beyond Aachen</h2>
+        <p class="lead mb-3">You are new in Aachen, want to explore the surroundings, make new friends and learn more about German culture and history?</p>
+        <p class="mb-0">Then you should join us on an <strong>INCAS Weekend</strong>. Once a month, INCAS offers a day trip to a city or sight in Germany, Belgium, the Netherlands, France or Luxembourg.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">What to expect</h3>
+        <p class="mb-2">Our trips usually include a guided city tour, a museum visit or another local sight. Past destinations include Luxembourg, the underground caves in Maastricht and the Drachenfels near Bonn.</p>
+        <p class="mb-0">Every month brings a different destination.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Registration and cost</h2>
+        <p class="mb-0">Each trip is announced at least two weeks in advance on our website and social media channels. The cost is usually about 10-25 EUR, depending on the destination. Registration details are listed with the event announcement.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-body-emphasis">FAQ</h2>
+        <div class="accordion" id="international-weekend-faq-en">
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-1" aria-expanded="true" aria-controls="international-weekend-faq-en-1">When are the trips?</button>
+                </h3>
+                <div id="international-weekend-faq-en-1" class="accordion-collapse collapse show" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">The trips are on a Saturday, once a month. The specific date is announced about two to three weeks before the trip.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-2" aria-expanded="false" aria-controls="international-weekend-faq-en-2">How can I register?</button>
+                </h3>
+                <div id="international-weekend-faq-en-2" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">Register through the contact or registration link provided in the event description.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-3" aria-expanded="false" aria-controls="international-weekend-faq-en-3">Can I register friends?</button>
+                </h3>
+                <div id="international-weekend-faq-en-3" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">You can register only one person, either yourself or one friend. Groups cannot be registered by one person; everyone needs to register individually.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-4" aria-expanded="false" aria-controls="international-weekend-faq-en-4">Which language are the guided tours in?</button>
+                </h3>
+                <div id="international-weekend-faq-en-4" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">Guided tours are usually in English. Museums may offer audio guides in German, Spanish, French or other languages, but we cannot guarantee availability.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-5" aria-expanded="false" aria-controls="international-weekend-faq-en-5">Who can participate?</button>
+                </h3>
+                <div id="international-weekend-faq-en-5" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">Students of RWTH Aachen and FH Aachen, German-course students at the Sprachenakademie, and PhD students can participate.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-en-6" aria-expanded="false" aria-controls="international-weekend-faq-en-6">Do you offer multi-day tours?</button>
+                </h3>
+                <div id="international-weekend-faq-en-6" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-en">
+                    <div class="accordion-body">We usually offer day trips only. If an exceptional multi-day tour is planned, we will announce it as early as possible.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Questions?</h2>
+        <p class="mb-0">Contact us through our <a class="link-primary" href="/contacts">contacts page</a>. We are looking forward to seeing you soon.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "cafe_lingua": {
+            "title": "Café Lingua",
+            "image": "img/site/cafe-lingua.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Practice languages together</h2>
+        <p class="lead mb-3">Foreign languages are best learned by practicing, having intercultural conversations and having fun.</p>
+        <p class="mb-0">Our <strong>Café Lingua</strong> gives you a relaxed place to do exactly that.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">How it works</h3>
+        <p class="mb-0">Usually on the second Tuesday of each month, INCAS organizes a multilingual café. You can meet students with different native languages, join language tables, ask questions and practice in a friendly setting.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Language Tandem and Café Lingua</h2>
+        <p class="mb-0">You do not need to be registered for our <a class="link-primary" href="/offers/language-tandem">Language Tandem</a> to join. The more you practice, the better. If you are looking for someone to practice with individually, you may even find a tandem partner here.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Current dates</h2>
+        <p class="mb-0">Current events can always be found in our <a class="link-primary" href="/events">event calendar</a>. Have a seat: it is time for Café Lingua.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "incas_active": {
+            "title": "INCAS Active",
+            "image": "img/site/incas-active.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Activities with the INCAS team</h2>
+        <p class="lead mb-3">Apart from the many activities we offer for students in Aachen, we also organize activities for our team.</p>
+        <p class="mb-0">These range from team-building events to simply having a good time together. They help us get to know each other better and continue developing as a team.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Examples</h3>
+        <p class="mb-0">Hiking trips, festivals, barbecues, ice cream in the park, escape rooms and similar activities are all possible. Team members can suggest new ideas through an online form.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Join the team</h2>
+        <p class="mb-0">If you want to take part in these activities too, join our team. We are looking forward to meeting you and welcoming new members.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "country_evening": {
+            "title": "Country Evening",
+            "image": "img/site/country-evening.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Showcase a country</h2>
+        <p class="lead mb-3">Every month, one International Tuesday is dedicated to the presentation of a country.</p>
+        <p class="mb-0">Students share authentic impressions from their home country: facts, photos, typical food to taste, music, dances and sometimes traditional clothing.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">After the presentation</h3>
+        <p class="mb-0">There is time to ask questions, talk about the evening and meet people in a relaxed atmosphere.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Showcase your homeland</h2>
+        <p>You are very welcome to give a presentation about your country. You can choose the topics: culture, geography, economy, national sports, an interesting movie, a dance or a mix of everything.</p>
+        <p>We can support you during preparation if you need help. The presentation language should be English or German.</p>
+        <p class="mb-0">Share impressions from your country with the international community in Aachen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Get in touch</h2>
+        <p class="mb-0">If you would like to present your country, <a class="link-primary" href="/suggest-event?kind=country_evening">suggest a Country Evening</a> or <a class="link-primary" href="/contact-form">contact us</a>.</p>
+    </section>
 </section>
 """.strip(),
         },
@@ -256,7 +542,7 @@ SITE_PAGES = {
         <p>Related to the International Tuesday, we offer you a special program:</p>
         <ul class="list-group list-group-flush border rounded-2 overflow-hidden">
             <li class="list-group-item">Country Evening</li>
-            <li class="list-group-item"><a class="link-primary" href="https://web.archive.org/web/20210820203001/https://www.incas.rwth-aachen.de/newsite/index.php/en/31-english-contents/main-pages/53-cafe-lingua-en" target="_blank" rel="noopener">Café Lingua</a></li>
+            <li class="list-group-item"><a class="link-primary" href="/offers/cafe-lingua">Café Lingua</a></li>
             <li class="list-group-item">Barbecues in summer</li>
             <li class="list-group-item">Music nights</li>
             <li class="list-group-item">Easter celebrations</li>
@@ -322,7 +608,7 @@ SITE_PAGES = {
 
     <section>
         <h2 class="h4 text-primary-emphasis">Other possibilities</h2>
-        <p>Especially for those among you interested in the French culture and language the French-German Cultural Institute offers a variety of classes and other programmes in French and German. You can find the homepage with <a class="link-primary" title="Institut Francais Homepage" href="https://www.institutfrancais.de/aachen" target="_blank" rel="noopener">this link</a>.</p>
+        <p>Especially for those among you interested in the French culture and language the French-German Cultural Institute offers a variety of classes and other programmes in French and German. You can find the homepage with <a class="link-primary" title="Institut Francais Homepage" href="https://www.institutfrancais.de/de/aachen" target="_blank" rel="noopener">this link</a>.</p>
     </section>
 
     <section>
@@ -481,9 +767,106 @@ SITE_PAGES = {
             "title": "Angebote",
             "image": None,
             "body_html": """
-<section class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
-    <p class="lead mb-2">Hier findest du unsere regelmäßigen Angebote und Mitmachmöglichkeiten.</p>
-    <p class="mb-0 text-body-secondary">Wähle oben im Menü ein Angebot aus.</p>
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Entdecke die Angebote von INCAS</h2>
+        <p class="lead mb-0">Unser regelmäßiges Programm verbindet internationale und lokale Studierende durch Sprachaustausch, wöchentliche Treffen, Kulturabende, Ausflüge, Frühstücke und Teamaktivitäten.</p>
+    </div>
+
+    <div class="row g-3">
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Sprachtandem</h2>
+                <p>Übe eine Sprache mit einer passenden Tandempartnerin oder einem passenden Tandempartner. Du bietest eine Sprache an, die du gut kannst, und suchst eine Sprache, die du verbessern möchtest.</p>
+                <p class="mb-3">Seit dem 01. Oktober 2013 wurden mehr als 690 Teilnehmende vermittelt.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-dark" href="/offers/language-tandem">Angebot öffnen</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/language-tandem">Anmeldeformular</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Internationaler Dienstag</h2>
+                <p>Jeden Dienstagabend kannst du Studierende aus aller Welt kennenlernen, spielen, dich in gemütlicher Atmosphäre austauschen und günstige warme und kalte Getränke genießen.</p>
+                <p class="mb-3"><strong>Jeden Dienstag ab 20:00 bis ca. 24:00 Uhr</strong><br>Humboldt-Haus, Pontstraße 41</p>
+                <a class="btn btn-sm btn-dark" href="/offers/international-tuesday">Angebot öffnen</a>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Internationales Wochenende</h2>
+                <p>Einmal im Monat organisiert INCAS einen Tagestrip in eine Stadt oder zu einer Sehenswürdigkeit in Deutschland, Belgien, den Niederlanden oder Luxemburg.</p>
+                <p class="mb-3">Die Fahrten werden im Voraus angekündigt und enthalten meistens eine Stadtführung, einen Museumsbesuch oder eine lokale Sehenswürdigkeit.</p>
+                <a class="btn btn-sm btn-dark" href="/offers/international-weekend">Angebot öffnen</a>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Internationales Frühstück</h2>
+                <p>Unser monatliches Frühstücksbuffet bietet dir einen entspannten Start in den Tag und die Möglichkeit, neue Menschen aus aller Welt kennenzulernen.</p>
+                <p class="mb-3">Je nach Veranstaltung gibt es Spezialitäten aus unterschiedlichen Ländern oder ein klassisches Frühstück.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-dark" href="/offers/international-breakfast">Angebot öffnen</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=breakfast">Frühstück vorschlagen</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Café Lingua</h2>
+                <p>Normalerweise am zweiten Dienstag eines Monats organisiert INCAS ein mehrsprachiges Café, in dem du Sprachen an verschiedenen Sprachtischen üben kannst.</p>
+                <p class="mb-3">Du musst nicht für das Sprachtandem angemeldet sein, um mitzumachen.</p>
+                <a class="btn btn-sm btn-dark" href="/offers/cafe-lingua">Angebot öffnen</a>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">INCAS Aktiv</h2>
+                <p>Neben öffentlichen Angeboten organisieren wir auch Teamaktivitäten wie Wanderungen, Festivalbesuche, Grillpartys, Eisessen im Park oder Escape Rooms.</p>
+                <p class="mb-3">Komm ins Team, wenn du mitmachen und neue Aktivitäten mitgestalten möchtest.</p>
+                <a class="btn btn-sm btn-dark" href="/offers/incas-active">Angebot öffnen</a>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Länderabend</h2>
+                <p>Jeden Monat widmen wir einen Internationalen Dienstag der Vorstellung eines Landes mit Geschichten, Bildern, Essen, Musik und Gesprächen.</p>
+                <p class="mb-3">Du kannst gerne dein eigenes Land vorstellen. Die Präsentation sollte auf Deutsch oder Englisch stattfinden.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-dark" href="/offers/country-evening">Angebot öffnen</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=country_evening">Länderabend vorschlagen</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Brettspielabende</h2>
+                <p>An ausgewählten Internationalen Dienstagen veranstalten wir Brettspielabende. Du kannst ein Spiel von INCAS wählen oder dein eigenes mitbringen.</p>
+                <p class="mb-0">So lernst du leicht neue Leute kennen und kannst gemeinsam spielen.</p>
+            </div>
+        </article>
+
+        <article class="col-md-6">
+            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
+                <h2 class="h4 text-primary-emphasis">Tanzworkshops</h2>
+                <p>Normalerweise einmal pro Semester arbeiten wir mit Sol de la Salsa zusammen und bieten Tanzkurse für Anfängerinnen und Anfänger an.</p>
+                <p class="mb-0">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem Kurs und endet mit Zeit zum Üben.</p>
+            </div>
+        </article>
+    </div>
+
+    <section class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h2 class="h4 text-body-emphasis">Aktuelle Termine</h2>
+        <p class="mb-0">Kommende Termine und Anmeldeinformationen findest du in unserem <a class="link-primary" href="/events">Eventkalender</a> und auf unseren Social-Media-Kanälen.</p>
+    </section>
 </section>
         """.strip(),
         },
@@ -508,6 +891,170 @@ SITE_PAGES = {
         Für genaue Informationen schau auf dieser Website, <a class="link-primary" title="Facebook Website INCAS Aachen" href="https://www.facebook.com/INCASAachen/" target="_blank" rel="noopener">Facebook</a> oder <a class="link-primary" title="INCAS Instagram Page" href="https://www.instagram.com/incas_aachen/" target="_blank" rel="noopener">Instagram</a> oder frag uns einfach bei einem Internationalen Dienstag.
     </p>
     <p class="mb-0 fw-semibold text-body-emphasis">Wir freuen uns auf dich!</p>
+</section>
+""".strip(),
+        },
+        "international_weekend": {
+            "title": "Internationales Wochenende",
+            "image": "img/site/international-weekend.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Aachen und Umgebung entdecken</h2>
+        <p class="lead mb-3">Du bist neu in Aachen, möchtest die Umgebung erkunden, neue Freunde finden und mehr über Kultur und Geschichte erfahren?</p>
+        <p class="mb-0">Dann solltest du uns auf ein <strong>Internationales Wochenende</strong> begleiten. INCAS organisiert einmal monatlich einen Tagestrip in eine Stadt oder zu einer Sehenswürdigkeit in Deutschland, Belgien, den Niederlanden oder Luxemburg.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Was dich erwartet</h3>
+        <p class="mb-2">Unsere Trips enthalten normalerweise eine Stadtführung, eine Führung in einem Museum oder den Besuch einer Sehenswürdigkeit. Wir haben schon Luxemburg besucht, die Untergrundhöhlen in Maastricht besichtigt und sind auf den Drachenfels nahe Bonn gewandert.</p>
+        <p class="mb-0">Jeden Monat bieten wir ein anderes Ziel an.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Anmeldung und Kosten</h2>
+        <p class="mb-0">Jede Tour wird etwa zwei Wochen im Voraus auf unserer Website und über unsere Social-Media-Kanäle angekündigt. Die Kosten liegen meist bei etwa 5-15 EUR, je nach Ziel. Die Anmeldeinformationen findest du bei der Eventbeschreibung.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-body-emphasis">FAQ</h2>
+        <div class="accordion" id="international-weekend-faq-de">
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-1" aria-expanded="true" aria-controls="international-weekend-faq-de-1">Wann finden die Fahrten statt?</button>
+                </h3>
+                <div id="international-weekend-faq-de-1" class="accordion-collapse collapse show" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Die Fahrten finden monatlich an einem Samstag statt. Das genaue Datum wird zwei bis drei Wochen vorher bekanntgegeben.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-2" aria-expanded="false" aria-controls="international-weekend-faq-de-2">Wie kann ich mich anmelden?</button>
+                </h3>
+                <div id="international-weekend-faq-de-2" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Du meldest dich über den Kontakt oder Link an, der in der Eventbeschreibung angegeben ist.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-3" aria-expanded="false" aria-controls="international-weekend-faq-de-3">Kann ich auch Freunde anmelden?</button>
+                </h3>
+                <div id="international-weekend-faq-de-3" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Jeder kann nur eine Person anmelden, also entweder sich selbst oder einen Freund. Gruppen können nicht von einer Person angemeldet werden.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-4" aria-expanded="false" aria-controls="international-weekend-faq-de-4">In welcher Sprache sind die Führungen?</button>
+                </h3>
+                <div id="international-weekend-faq-de-4" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Die Führungen sind normalerweise auf Englisch. In Museen kann es Audioguides in Deutsch, Spanisch, Französisch oder weiteren Sprachen geben, aber das können wir nicht garantieren.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-5" aria-expanded="false" aria-controls="international-weekend-faq-de-5">Wer darf teilnehmen?</button>
+                </h3>
+                <div id="international-weekend-faq-de-5" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Studierende der RWTH Aachen und FH Aachen, Teilnehmende an Kursen der Sprachenakademie und Doktorandinnen und Doktoranden können teilnehmen.</div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#international-weekend-faq-de-6" aria-expanded="false" aria-controls="international-weekend-faq-de-6">Gibt es Mehrtagesfahrten?</button>
+                </h3>
+                <div id="international-weekend-faq-de-6" class="accordion-collapse collapse" data-bs-parent="#international-weekend-faq-de">
+                    <div class="accordion-body">Wir bieten normalerweise Tagesfahrten an. Falls ausnahmsweise eine Mehrtagesfahrt geplant ist, informieren wir euch rechtzeitig.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Noch Fragen?</h2>
+        <p class="mb-0">Kontaktiere uns einfach über unsere <a class="link-primary" href="/contacts">Kontaktseite</a>. Wir freuen uns auf dich.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "cafe_lingua": {
+            "title": "Café Lingua",
+            "image": "img/site/cafe-lingua.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Sprachen gemeinsam üben</h2>
+        <p class="lead mb-3">Fremdsprachen lernt man am besten durch Praxis, Spaß und kulturellen Austausch.</p>
+        <p class="mb-0">Unser <strong>Café Lingua</strong> bietet dir genau diese Möglichkeit.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">So funktioniert es</h3>
+        <p class="mb-0">Normalerweise am zweiten Dienstag eines Monats verwandelt sich unser wöchentlicher Stammtisch in ein multikulturelles Sprachcafé. Dort kannst du mit Muttersprachlern in kleinen Gruppen deine Fremdsprache anwenden und verbessern.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Sprachtandem und Café Lingua</h2>
+        <p class="mb-0">Es spielt keine Rolle, ob du bereits für das <a class="link-primary" href="/offers/language-tandem">Sprachtandem</a> angemeldet bist oder schon eine Partnerin oder einen Partner hast. Je mehr du übst, desto besser. Vielleicht findest du hier sogar jemanden für regelmäßiges Üben.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Aktuelle Termine</h2>
+        <p class="mb-0">Aktuelle Termine findest du immer in unserem <a class="link-primary" href="/events">Eventkalender</a>. Auf die Plätze, fertig, Café Lingua.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "incas_active": {
+            "title": "INCAS Aktiv",
+            "image": "img/site/incas-active.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Aktivitäten mit dem INCAS-Team</h2>
+        <p class="lead mb-3">Neben den vielen Aktivitäten, die wir für Studierende in Aachen anbieten, machen wir auch Aktivitäten nur für unser Team.</p>
+        <p class="mb-0">Das reicht von Teambuilding-Events bis hin zu einfach nur Spaß miteinander haben. So lernen wir uns besser kennen und entwickeln uns als Team weiter.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Beispiele</h3>
+        <p class="mb-0">Wanderungen, Festivalbesuche, Grillpartys, Eisessen im Park, Escape Rooms und ähnliche Aktivitäten sind möglich. Teammitglieder können neue Ideen bequem über ein Online-Formular vorschlagen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Mach mit</h2>
+        <p class="mb-0">Wenn auch du Lust hast, an diesen Aktivitäten teilzunehmen, dann komm in unser Team. Wir freuen uns auf dich und heißen neue Mitglieder herzlich willkommen.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "country_evening": {
+            "title": "Länderabend",
+            "image": "img/site/country-evening.webp",
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Ein Land vorstellen</h2>
+        <p class="lead mb-3">Jeden Monat widmen wir einen Internationalen Dienstag der Präsentation eines Landes.</p>
+        <p class="mb-0">Kommilitoninnen und Kommilitonen vermitteln authentische Eindrücke aus ihrem Heimatland: Fakten, Bilder, typische Köstlichkeiten zum Probieren, Musik, Tanz und manchmal traditionelle Kleidung.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Nach der Präsentation</h3>
+        <p class="mb-0">Im Anschluss könnt ihr Fragen stellen, euch über den Abend austauschen und in entspannter Atmosphäre neue Leute kennenlernen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Präsentiert eure Heimat</h2>
+        <p>Würdet ihr uns gerne euer Herkunftsland vorstellen? Ihr könnt die Themen selbst wählen: Kultur, Geografie, Wirtschaft, Nationalsport, einen interessanten Film, einen Tanz oder eine Mischung aus allem.</p>
+        <p>Wir unterstützen euch gerne bei der Vorbereitung. Die Präsentation sollte auf Deutsch oder Englisch erfolgen.</p>
+        <p class="mb-0">Teilt Eindrücke aus eurem Land mit der internationalen Community in Aachen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Mitmachen</h2>
+        <p class="mb-0">Wenn du dein Land vorstellen möchtest, <a class="link-primary" href="/suggest-event?kind=country_evening">schlage einen Länderabend vor</a> oder <a class="link-primary" href="/contact-form">kontaktiere uns</a>.</p>
+    </section>
 </section>
 """.strip(),
         },
@@ -539,7 +1086,7 @@ SITE_PAGES = {
         <p>Im Rahmen des Internationalen Dienstag bieten wir immer wieder besondere Veranstaltungen an:</p>
         <ul class="list-group list-group-flush border rounded-2 overflow-hidden">
             <li class="list-group-item">Länderabend</li>
-            <li class="list-group-item"><a class="link-primary" href="https://web.archive.org/web/20210820210432/https://www.incas.rwth-aachen.de/newsite/index.php/de/31-english-contents/main-pages/49-cafe-lingua" target="_blank" rel="noopener">Café Lingua</a></li>
+            <li class="list-group-item"><a class="link-primary" href="/offers/cafe-lingua">Café Lingua</a></li>
             <li class="list-group-item">Grillabende im Sommer</li>
             <li class="list-group-item">Musikabende</li>
             <li class="list-group-item">Osterfeier</li>

@@ -15,7 +15,7 @@
                     <div class="card-body d-flex flex-column">
                         {% set meta = event_kind_meta(item.event_kind) %}
                         <h2 class="h5 d-flex align-items-center gap-2 flex-wrap">
-                            <span>{{ item.title }}</span>
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
                             {% if meta %}
                                 <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
                             {% endif %}
@@ -27,15 +27,13 @@
                             </div>
                         {% endif %}
 
-                        <div class="mt-auto d-flex gap-2 flex-wrap">
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-dark">Open</a>
-
-                            {% if item.instagram_permalink %}
+                        {% if item.instagram_permalink %}
+                            <div class="mt-auto d-flex gap-2 flex-wrap">
                                 <a href="{{ item.instagram_permalink }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
                                     Instagram
                                 </a>
-                            {% endif %}
-                        </div>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

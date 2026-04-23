@@ -3,21 +3,39 @@
 {% block title %}Contact · INCAS{% endblock %}
 
 {% block content %}
+{% set form_errors = errors|default({}) %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <h1 class="h3 mb-4">Contact / Questions</h1>
 
-        <form method="post" class="card shadow-sm">
+        <form method="post" class="card shadow-sm incas-form">
             <div class="card-body">
+                {% if form_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <div class="fw-semibold">Check these fields</div>
+                        <ul class="mb-0 ps-3">
+                            {% for message in form_errors.values() %}
+                                <li>{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="name">Name <span class="text-danger">*</span></label>
-                        <input class="form-control" id="name" name="name" required value="{{ values.name }}">
+                        <input class="form-control{% if form_errors.get('name') %} is-invalid{% endif %}" id="name" name="name" autocomplete="name" required value="{{ values.name }}" {% if form_errors.get('name') %}aria-describedby="name_error"{% endif %}>
+                        {% if form_errors.get('name') %}
+                            <div class="invalid-feedback" id="name_error">{{ form_errors.name }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="col-md-6">
                         <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
-                        <input class="form-control" id="email" name="email" type="email" required value="{{ values.email }}">
+                        <input class="form-control{% if form_errors.get('email') %} is-invalid{% endif %}" id="email" name="email" type="email" inputmode="email" autocomplete="email" required value="{{ values.email }}" {% if form_errors.get('email') %}aria-describedby="email_error"{% endif %}>
+                        {% if form_errors.get('email') %}
+                            <div class="invalid-feedback" id="email_error">{{ form_errors.email }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="col-12">
@@ -27,12 +45,19 @@
 
                     <div class="col-12">
                         <label class="form-label" for="message">Message <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="message" name="message" rows="6" required>{{ values.message }}</textarea>
+                        <textarea class="form-control{% if form_errors.get('message') %} is-invalid{% endif %}" id="message" name="message" rows="6" required {% if form_errors.get('message') %}aria-describedby="message_error"{% endif %}>{{ values.message }}</textarea>
+                        {% if form_errors.get('message') %}
+                            <div class="invalid-feedback" id="message_error">{{ form_errors.message }}</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <div class="card-footer d-flex justify-content-end">
+            <div class="card-footer form-submit-footer d-flex justify-content-end">
+                <button type="submit" class="btn btn-dark">Submit</button>
+            </div>
+
+            <div class="mobile-sticky-submit">
                 <button type="submit" class="btn btn-dark">Submit</button>
             </div>
         </form>

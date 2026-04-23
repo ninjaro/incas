@@ -188,6 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (hasMatchUi) {
         const MATCH_VIEW_MODE_STORAGE_KEY = "incas:tandem-match-view-mode";
         const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
+        const matchSource = document.querySelector("[data-match-source-id]");
+        const matchStateStorageKey = `incas:tandem-match-state:${matchSource ? matchSource.dataset.matchSourceId : window.location.pathname}`;
 
         const matchUiState = {
             viewMode: hasMatchViewControls
@@ -195,7 +197,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 : readViewMode(adminLayoutMode, "list", CARD_VIEW_MODES),
             sortMode: "score",
             warningFilter: "all",
+            mutualFilter: "all",
+            levelFilter: "all",
         };
+
+        const persistedMatchState = {
+            hidden: new Set(),
+            shortlisted: new Set(),
+        };
+
+        function readPersistedMatchState() {
+            try {
+                const rawState = JSON.parse(localStorage.getItem(matchStateStorageKey) || "{}");
+                (rawState.hidden || []).forEach((id) => persistedMatchState.hidden.add(String(id)));
+                (rawState.shortlisted || []).forEach((id) => persistedMatchState.shortlisted.add(String(id)));
+            } catch (_error) {
+                persistedMatchState.hidden.clear();
+                persistedMatchState.shortlisted.clear();
+            }
+        }
+
+        function writePersistedMatchState() {
+            localStorage.setItem(matchStateStorageKey, JSON.stringify({
+                hidden: Array.from(persistedMatchState.hidden),
+                shortlisted: Array.from(persistedMatchState.shortlisted),
+            }));
+        }
 
         function getMatchResultsContainers() {
             return Array.from(document.querySelectorAll("[data-match-results]"));
@@ -203,6 +230,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function getCards(container) {
             return Array.from(container.querySelectorAll("[data-match-card]"));
+        }
+
+        function getAllMatchCards() {
+            return Array.from(document.querySelectorAll("[data-match-card]"));
+        }
+
+        function getCardId(card) {
+            return String(card.dataset.candidateId || "");
         }
 
         function parseCreatedAt(card) {
@@ -248,12 +283,67 @@ document.addEventListener("DOMContentLoaded", () => {
             return warningKeys.includes(filterValue);
         }
 
+        function matchesMutualFilter(card) {
+            if (matchUiState.mutualFilter === "all") return true;
+
+            const isMutual = card.dataset.isMutual === "true";
+            if (matchUiState.mutualFilter === "mutual") return isMutual;
+            if (matchUiState.mutualFilter === "one_way") return !isMutual;
+
+            return true;
+        }
+
+        function matchesLevelFilter(card) {
+            if (matchUiState.levelFilter === "all") return true;
+
+            const requiredLevel = Number(matchUiState.levelFilter);
+            const candidateLevel = Number(card.dataset.bestRequestedLevel || 0);
+
+            return candidateLevel >= requiredLevel;
+        }
+
         function setCardHiddenState(card, isHidden) {
             const hideButton = card.querySelector("[data-hide-match]");
             const restoreButton = card.querySelector("[data-restore-match]");
 
             if (hideButton) hideButton.classList.toggle("d-none", isHidden);
             if (restoreButton) restoreButton.classList.toggle("d-none", !isHidden);
+        }
+
+        function setCardShortlistState(card, isShortlisted) {
+            const button = card.querySelector("[data-toggle-shortlist]");
+            if (!button) return;
+
+            const icon = button.querySelector(".bi");
+            const label = button.querySelector("[data-shortlist-label]");
+
+            button.classList.toggle("btn-warning", isShortlisted);
+            button.classList.toggle("btn-outline-warning", !isShortlisted);
+            button.setAttribute("aria-pressed", isShortlisted ? "true" : "false");
+
+            if (icon) {
+                icon.classList.toggle("bi-star-fill", isShortlisted);
+                icon.classList.toggle("bi-star", !isShortlisted);
+            }
+
+            if (label) label.textContent = isShortlisted ? "Shortlisted" : "Shortlist";
+        }
+
+        function moveCardToHidden(card) {
+            const hiddenContainer = document.getElementById("hidden-match-results");
+            if (!hiddenContainer) return;
+
+            hiddenContainer.appendChild(card);
+            setCardHiddenState(card, true);
+        }
+
+        function moveCardToOrigin(card) {
+            const originSection = card.dataset.originSection;
+            const originContainer = document.querySelector(`[data-section-key="${originSection}"]`);
+            if (!originContainer) return;
+
+            originContainer.appendChild(card);
+            setCardHiddenState(card, false);
         }
 
         function applyContainerState(container) {
@@ -266,7 +356,75 @@ document.addEventListener("DOMContentLoaded", () => {
             container.dataset.viewMode = matchUiState.viewMode;
 
             cards.forEach((card) => {
-                card.classList.toggle("d-none", !matchesWarningFilter(card));
+                const isVisible = matchesWarningFilter(card)
+                    && matchesMutualFilter(card)
+                    && matchesLevelFilter(card);
+
+                card.classList.toggle("d-none", !isVisible);
+            });
+        }
+
+        function updateShortlistPanel() {
+            const list = document.querySelector("[data-shortlist-list]");
+            const countBadge = document.querySelector("[data-shortlist-count]");
+            const emptyState = document.querySelector("[data-shortlist-empty]");
+
+            if (!list || !countBadge || !emptyState) return;
+
+            list.innerHTML = "";
+
+            const shortlistedCards = getAllMatchCards()
+            .filter((card) => persistedMatchState.shortlisted.has(getCardId(card)))
+            .sort(compareCards);
+
+            countBadge.textContent = shortlistedCards.length;
+            emptyState.classList.toggle("d-none", shortlistedCards.length > 0);
+
+            shortlistedCards.forEach((card) => {
+                const row = document.createElement("div");
+                row.className = "match-shortlist-row";
+
+                const summary = document.createElement("div");
+                summary.className = "match-shortlist-summary";
+
+                const name = document.createElement("div");
+                name.className = "fw-semibold";
+                name.textContent = card.dataset.candidateName || "Candidate";
+
+                const meta = document.createElement("div");
+                meta.className = "small text-muted";
+                meta.textContent = `${card.dataset.category || "match"} · ${card.dataset.score || 0} pts · ${card.dataset.candidateEmail || ""}`;
+
+                summary.appendChild(name);
+                summary.appendChild(meta);
+
+                const actions = document.createElement("div");
+                actions.className = "match-shortlist-actions";
+
+                const mailLink = document.createElement("a");
+                mailLink.className = "btn btn-sm btn-outline-secondary";
+                mailLink.href = `mailto:${card.dataset.candidateEmail || ""}?subject=INCAS%20Language%20Tandem`;
+                mailLink.textContent = "Email";
+
+                const copyButton = document.createElement("button");
+                copyButton.type = "button";
+                copyButton.className = "btn btn-sm btn-outline-secondary";
+                copyButton.dataset.copyText = card.dataset.candidateEmail || "";
+                copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span data-copy-label>Copy</span>';
+
+                const removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.className = "btn btn-sm btn-outline-secondary";
+                removeButton.dataset.removeShortlist = getCardId(card);
+                removeButton.textContent = "Remove";
+
+                actions.appendChild(mailLink);
+                actions.appendChild(copyButton);
+                actions.appendChild(removeButton);
+
+                row.appendChild(summary);
+                row.appendChild(actions);
+                list.appendChild(row);
             });
         }
 
@@ -315,6 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             ["full", "partial", "weak"].forEach(updateSectionState);
             updateHiddenState();
+            updateShortlistPanel();
             syncViewButtons();
 
             if (hasMatchViewControls) {
@@ -323,22 +482,48 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         function hideCard(card) {
-            const hiddenContainer = document.getElementById("hidden-match-results");
-            if (!hiddenContainer) return;
-
-            hiddenContainer.appendChild(card);
-            setCardHiddenState(card, true);
+            const cardId = getCardId(card);
+            if (cardId) persistedMatchState.hidden.add(cardId);
+            writePersistedMatchState();
+            moveCardToHidden(card);
             refreshMatchUi();
         }
 
         function restoreCard(card) {
-            const originSection = card.dataset.originSection;
-            const originContainer = document.querySelector(`[data-section-key="${originSection}"]`);
-            if (!originContainer) return;
-
-            originContainer.appendChild(card);
-            setCardHiddenState(card, false);
+            const cardId = getCardId(card);
+            if (cardId) persistedMatchState.hidden.delete(cardId);
+            writePersistedMatchState();
+            moveCardToOrigin(card);
             refreshMatchUi();
+        }
+
+        function toggleShortlist(card) {
+            const cardId = getCardId(card);
+            if (!cardId) return;
+
+            const isShortlisted = persistedMatchState.shortlisted.has(cardId);
+            if (isShortlisted) {
+                persistedMatchState.shortlisted.delete(cardId);
+            } else {
+                persistedMatchState.shortlisted.add(cardId);
+            }
+
+            setCardShortlistState(card, !isShortlisted);
+            writePersistedMatchState();
+            refreshMatchUi();
+        }
+
+        function applyPersistedMatchState() {
+            getAllMatchCards().forEach((card) => {
+                const cardId = getCardId(card);
+                if (!cardId) return;
+
+                if (persistedMatchState.hidden.has(cardId)) {
+                    moveCardToHidden(card);
+                }
+
+                setCardShortlistState(card, persistedMatchState.shortlisted.has(cardId));
+            });
         }
 
         document.querySelectorAll("[data-set-view-mode]").forEach((button) => {
@@ -364,7 +549,43 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        const mutualFilterSelect = document.getElementById("match-mutual-filter");
+        if (mutualFilterSelect) {
+            mutualFilterSelect.addEventListener("change", () => {
+                matchUiState.mutualFilter = mutualFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
+        const levelFilterSelect = document.getElementById("match-level-filter");
+        if (levelFilterSelect) {
+            levelFilterSelect.addEventListener("change", () => {
+                matchUiState.levelFilter = levelFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
         document.addEventListener("click", (event) => {
+            const shortlistButton = event.target.closest("[data-toggle-shortlist]");
+            if (shortlistButton) {
+                const card = shortlistButton.closest("[data-match-card]");
+                if (card) toggleShortlist(card);
+                return;
+            }
+
+            const removeShortlistButton = event.target.closest("[data-remove-shortlist]");
+            if (removeShortlistButton) {
+                const candidateId = String(removeShortlistButton.dataset.removeShortlist || "");
+                persistedMatchState.shortlisted.delete(candidateId);
+
+                const card = getAllMatchCards().find((item) => getCardId(item) === candidateId);
+                if (card) setCardShortlistState(card, false);
+
+                writePersistedMatchState();
+                refreshMatchUi();
+                return;
+            }
+
             const hideButton = event.target.closest("[data-hide-match]");
             if (hideButton) {
                 const card = hideButton.closest("[data-match-card]");
@@ -384,8 +605,55 @@ document.addEventListener("DOMContentLoaded", () => {
             refreshMatchUi();
         });
 
+        readPersistedMatchState();
+        applyPersistedMatchState();
         refreshMatchUi();
     }
+
+    function fallbackCopyText(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.top = "-1000px";
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        try {
+            document.execCommand("copy");
+        } finally {
+            textarea.remove();
+        }
+    }
+
+    document.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-copy-text]");
+        if (!button) return;
+
+        const text = button.dataset.copyText || "";
+        const label = button.querySelector("[data-copy-label]");
+        const originalLabel = label ? label.textContent : "";
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                fallbackCopyText(text);
+            }
+
+            if (label) label.textContent = "Copied";
+            button.classList.add("btn-success");
+            button.classList.remove("btn-outline-secondary");
+        } catch (_error) {
+            if (label) label.textContent = "Failed";
+        }
+
+        window.setTimeout(() => {
+            if (label) label.textContent = originalLabel;
+            button.classList.remove("btn-success");
+            button.classList.add("btn-outline-secondary");
+        }, 1400);
+    });
 
     function parseSortValue(value, type) {
         const rawValue = value || "";

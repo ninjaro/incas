@@ -1,211 +1,306 @@
-<form method="post" action="{{ form_action or url_for('main.language_tandem_form') }}" class="card shadow-sm">
+{% set form_errors = errors|default({}) %}
+<form method="post" action="{{ form_action or url_for('main.language_tandem_form') }}" class="card shadow-sm incas-form incas-tandem-form">
     {% if form_return_to %}
         <input type="hidden" name="return_to" value="{{ form_return_to }}">
     {% endif %}
+
     <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
-                <input class="form-control" id="first_name" name="first_name" required value="{{ values.first_name }}">
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
-                <input class="form-control" id="last_name" name="last_name" required value="{{ values.last_name }}">
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
-                <input class="form-control" id="email" name="email" type="email" required value="{{ values.email }}">
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label" for="occupation">Occupation <span class="text-danger">*</span></label>
-                <select class="form-select" id="occupation" name="occupation" required>
-                    <option value="">Select</option>
-                    <option value="Student at RWTH Aachen" {% if values.occupation == "Student at RWTH Aachen" %}selected{% endif %}>Student at RWTH Aachen</option>
-                    <option value="Student at FH Aachen" {% if values.occupation == "Student at FH Aachen" %}selected{% endif %}>Student at FH Aachen</option>
-                    <option value="other" {% if values.occupation == "other" %}selected{% endif %}>Other</option>
-                </select>
-
-                <div id="occupation_other_wrapper" class="mt-2" {% if values.occupation != "other" %}style="display: none;"{% endif %}>
-                    <label class="form-label mb-1" for="occupation_other">Please specify <span class="text-danger">*</span></label>
-                    <input
-                        class="form-control"
-                        id="occupation_other"
-                        name="occupation_other"
-                        placeholder="e.g. Researcher, Staff, Alumni"
-                        value="{{ values.occupation_other }}"
-                        {% if values.occupation == "other" %}required{% endif %}
-                    >
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
-                <select class="form-select" id="gender" name="gender" required>
-                    <option value="">Select</option>
-                    <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
-                    <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
-                    <option value="Non-binary / Diverse" {% if values.gender == "Non-binary / Diverse" or values.gender == "Divers" %}selected{% endif %}>Non-binary / Diverse</option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label" for="birth_year">Year of Birth <span class="text-danger">*</span></label>
-                <input class="form-control" id="birth_year" name="birth_year" type="number" required value="{{ values.birth_year }}">
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label" for="departure_date">Departure Date <span class="text-danger">*</span></label>
-                <input class="form-control" id="departure_date" name="departure_date" type="date" required value="{{ values.departure_date }}">
-            </div>
-
-            <div class="col-12">
-                <label class="form-label" for="country_of_origin">Country of Origin <span class="text-danger">*</span></label>
-                <select class="form-select" id="country_of_origin" name="country_of_origin" required>
-                    <option value="">Select</option>
-                    {% for country in country_options %}
-                        <option value="{{ country.code }}" {% if values.country_of_origin == country.code %}selected{% endif %}>
-                            {{ country.label }}
-                        </option>
+        {% if form_errors %}
+            <div class="alert alert-danger" role="alert">
+                <div class="fw-semibold">Check these fields</div>
+                <ul class="mb-0 ps-3">
+                    {% for message in form_errors.values() %}
+                        <li>{{ message }}</li>
                     {% endfor %}
-                </select>
+                </ul>
             </div>
+        {% endif %}
 
-            <div class="col-md-6">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="form-label m-0" for="offered_language_lookup">Offered Languages <span class="text-danger">*</span></label>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="alpha">A–Z</button>
-                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="popularity">Popular</button>
+        <div class="row g-3">
+            <fieldset class="col-12 incas-form-section">
+                <legend class="incas-form-legend">Contact</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('first_name') %} is-invalid{% endif %}" id="first_name" name="first_name" autocomplete="given-name" required value="{{ values.first_name }}" {% if form_errors.get('first_name') %}aria-describedby="first_name_error"{% endif %}>
+                        {% if form_errors.get('first_name') %}
+                            <div class="invalid-feedback" id="first_name_error">{{ form_errors.first_name }}</div>
+                        {% endif %}
                     </div>
-                </div>
 
-                {% if offered_field.hint_choices %}
-                    <div class="mb-3">
-                        <div class="small text-muted mb-2">Recommended for this country</div>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for choice in offered_field.hint_choices %}
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-outline-secondary language-suggestion"
-                                    data-target-picker="offered"
-                                    data-target-value="{{ choice.code }}"
-                                    title="Add {{ choice.label }}"
-                                >
-                                    {{ choice.label }}
-                                </button>
-                            {% endfor %}
+                    <div class="col-md-6">
+                        <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('last_name') %} is-invalid{% endif %}" id="last_name" name="last_name" autocomplete="family-name" required value="{{ values.last_name }}" {% if form_errors.get('last_name') %}aria-describedby="last_name_error"{% endif %}>
+                        {% if form_errors.get('last_name') %}
+                            <div class="invalid-feedback" id="last_name_error">{{ form_errors.last_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('email') %} is-invalid{% endif %}" id="email" name="email" type="email" autocomplete="email" inputmode="email" required value="{{ values.email }}" {% if form_errors.get('email') %}aria-describedby="email_error"{% endif %}>
+                        {% if form_errors.get('email') %}
+                            <div class="invalid-feedback" id="email_error">{{ form_errors.email }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="occupation">Occupation <span class="text-danger">*</span></label>
+                        <select class="form-select{% if form_errors.get('occupation') %} is-invalid{% endif %}" id="occupation" name="occupation" autocomplete="organization-title" required {% if form_errors.get('occupation') %}aria-describedby="occupation_error"{% endif %}>
+                            <option value="">Select</option>
+                            <option value="Student at RWTH Aachen" {% if values.occupation == "Student at RWTH Aachen" %}selected{% endif %}>Student at RWTH Aachen</option>
+                            <option value="Student at FH Aachen" {% if values.occupation == "Student at FH Aachen" %}selected{% endif %}>Student at FH Aachen</option>
+                            <option value="other" {% if values.occupation == "other" %}selected{% endif %}>Other</option>
+                        </select>
+                        {% if form_errors.get('occupation') %}
+                            <div class="invalid-feedback" id="occupation_error">{{ form_errors.occupation }}</div>
+                        {% endif %}
+
+                        <div id="occupation_other_wrapper" class="mt-2" {% if values.occupation != "other" %}style="display: none;"{% endif %}>
+                            <label class="form-label mb-1" for="occupation_other">Please specify <span class="text-danger">*</span></label>
+                            <input
+                                class="form-control{% if form_errors.get('occupation_other') %} is-invalid{% endif %}"
+                                id="occupation_other"
+                                name="occupation_other"
+                                autocomplete="organization-title"
+                                placeholder="e.g. Researcher, Staff, Alumni"
+                                value="{{ values.occupation_other }}"
+                                {% if form_errors.get('occupation_other') %}aria-describedby="occupation_other_error"{% endif %}
+                                {% if values.occupation == "other" %}required{% endif %}
+                            >
+                            {% if form_errors.get('occupation_other') %}
+                                <div class="invalid-feedback" id="occupation_other_error">{{ form_errors.occupation_other }}</div>
+                            {% endif %}
                         </div>
                     </div>
-                {% endif %}
-
-                <div>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="offered_language_lookup"
-                        data-target-picker="offered"
-                        placeholder="Filter languages"
-                        autocomplete="off"
-                    >
-                    <div id="offered_language_menu" class="language-lookup-menu" aria-live="polite"></div>
                 </div>
+            </fieldset>
 
-                <div class="form-text mt-2">
-                    Filter the list and click to add. Use the bar on each chip to set your proficiency level.
-                </div>
+            <fieldset class="col-12 incas-form-section">
+                <legend class="incas-form-legend">Stay</legend>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
+                        <select class="form-select{% if form_errors.get('gender') %} is-invalid{% endif %}" id="gender" name="gender" autocomplete="sex" required {% if form_errors.get('gender') %}aria-describedby="gender_error"{% endif %}>
+                            <option value="">Select</option>
+                            <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
+                            <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
+                            <option value="Non-binary / Diverse" {% if values.gender == "Non-binary / Diverse" or values.gender == "Divers" %}selected{% endif %}>Non-binary / Diverse</option>
+                        </select>
+                        {% if form_errors.get('gender') %}
+                            <div class="invalid-feedback" id="gender_error">{{ form_errors.gender }}</div>
+                        {% endif %}
+                    </div>
 
-                <div class="mt-3">
-                    <div class="small text-muted mb-2">Selected offered languages</div>
-                    <div id="offered_language_selected" class="language-chip-list"></div>
-                </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="birth_year">Year of Birth <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('birth_year') %} is-invalid{% endif %}" id="birth_year" name="birth_year" type="number" inputmode="numeric" min="1900" autocomplete="bday-year" required value="{{ values.birth_year }}" {% if form_errors.get('birth_year') %}aria-describedby="birth_year_error"{% endif %}>
+                        {% if form_errors.get('birth_year') %}
+                            <div class="invalid-feedback" id="birth_year_error">{{ form_errors.birth_year }}</div>
+                        {% endif %}
+                    </div>
 
-                <div id="offered_language_inputs"></div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="departure_date">Departure Date <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('departure_date') %} is-invalid{% endif %}" id="departure_date" name="departure_date" type="date" autocomplete="off" required value="{{ values.departure_date }}" {% if form_errors.get('departure_date') %}aria-describedby="departure_date_error"{% endif %}>
+                        {% if form_errors.get('departure_date') %}
+                            <div class="invalid-feedback" id="departure_date_error">{{ form_errors.departure_date }}</div>
+                        {% endif %}
+                    </div>
 
-                <script type="application/json" id="offered_language_options_json">
-                    [
-                        {% for choice in offered_field.all_choices %}
-                            {
-                                "value": {{ choice.code|tojson }},
-                                "label": {{ choice.label|tojson }},
-                                "popularity": {{ choice.popularity|int }},
-                                "isHint": {{ choice.is_hint|tojson }}
-                            }{% if not loop.last %},{% endif %}
-                        {% endfor %}
-                    ]
-                </script>
-            </div>
-
-            <div class="col-md-6">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="form-label m-0" for="requested_language_lookup">Requested Languages <span class="text-danger">*</span></label>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="alpha">A–Z</button>
-                        <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="popularity">Popular</button>
+                    <div class="col-12">
+                        <label class="form-label" for="country_of_origin_lookup">Country of Origin <span class="text-danger">*</span></label>
+                        <input type="hidden" id="country_of_origin" name="country_of_origin" value="{{ values.country_of_origin }}">
+                        <input
+                            class="form-control{% if form_errors.get('country_of_origin') %} is-invalid{% endif %}"
+                            id="country_of_origin_lookup"
+                            autocomplete="country-name"
+                            placeholder="Search country"
+                            required
+                            aria-controls="country_of_origin_menu"
+                            {% if form_errors.get('country_of_origin') %}aria-describedby="country_of_origin_error"{% endif %}
+                        >
+                        {% if form_errors.get('country_of_origin') %}
+                            <div class="invalid-feedback" id="country_of_origin_error">{{ form_errors.country_of_origin }}</div>
+                        {% endif %}
+                        <div id="country_of_origin_menu" class="language-lookup-menu country-lookup-menu" role="listbox" aria-live="polite"></div>
+                        <script type="application/json" id="country_options_json">
+                            [
+                                {% for country in country_options %}
+                                    {
+                                        "value": {{ country.code|tojson }},
+                                        "label": {{ country.label|tojson }}
+                                    }{% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            ]
+                        </script>
                     </div>
                 </div>
+            </fieldset>
 
-                <div>
-                    <input
-                        type="text"
-                        class="form-control"
-                        id="requested_language_lookup"
-                        data-target-picker="requested"
-                        placeholder="Filter languages"
-                        autocomplete="off"
-                    >
-                    <div id="requested_language_menu" class="language-lookup-menu" aria-live="polite"></div>
+            <fieldset class="col-12 incas-form-section">
+                <legend class="incas-form-legend">Languages</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="language-picker-panel">
+                            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+                                <label class="form-label m-0" for="offered_language_lookup">Offered Languages <span class="text-danger">*</span></label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="alpha">A-Z</button>
+                                    <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="popularity">Popular</button>
+                                </div>
+                            </div>
+
+                            {% if offered_field.hint_choices %}
+                                <div class="mb-3">
+                                    <div class="small text-muted mb-2">Recommended for this country</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for choice in offered_field.hint_choices %}
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-secondary language-suggestion"
+                                                data-target-picker="offered"
+                                                data-target-value="{{ choice.code }}"
+                                                title="Add {{ choice.label }}"
+                                            >
+                                                {{ choice.label }}
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <input
+                                type="text"
+                                class="form-control{% if form_errors.get('offered_languages') %} is-invalid{% endif %}"
+                                id="offered_language_lookup"
+                                data-target-picker="offered"
+                                placeholder="Filter languages"
+                                autocomplete="off"
+                                role="combobox"
+                                aria-autocomplete="list"
+                                aria-expanded="false"
+                                aria-controls="offered_language_menu"
+                                {% if form_errors.get('offered_languages') %}aria-describedby="offered_languages_error"{% endif %}
+                            >
+                            {% if form_errors.get('offered_languages') %}
+                                <div class="invalid-feedback d-block" id="offered_languages_error">{{ form_errors.offered_languages }}</div>
+                            {% endif %}
+                            <div id="offered_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
+
+                            <div class="form-text mt-2">
+                                Add each language you can offer and set your proficiency level.
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="small text-muted mb-2">Selected offered languages</div>
+                                <div id="offered_language_selected" class="language-chip-list"></div>
+                            </div>
+
+                            <div id="offered_language_inputs"></div>
+                        </div>
+
+                        <script type="application/json" id="offered_language_options_json">
+                            [
+                                {% for choice in offered_field.all_choices %}
+                                    {
+                                        "value": {{ choice.code|tojson }},
+                                        "label": {{ choice.label|tojson }},
+                                        "popularity": {{ choice.popularity|int }},
+                                        "isHint": {{ choice.is_hint|tojson }}
+                                    }{% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            ]
+                        </script>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="language-picker-panel">
+                            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
+                                <label class="form-label m-0" for="requested_language_lookup">Requested Languages <span class="text-danger">*</span></label>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="alpha">A-Z</button>
+                                    <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="popularity">Popular</button>
+                                </div>
+                            </div>
+
+                            <input
+                                type="text"
+                                class="form-control{% if form_errors.get('requested_languages') %} is-invalid{% endif %}"
+                                id="requested_language_lookup"
+                                data-target-picker="requested"
+                                placeholder="Filter languages"
+                                autocomplete="off"
+                                role="combobox"
+                                aria-autocomplete="list"
+                                aria-expanded="false"
+                                aria-controls="requested_language_menu"
+                                {% if form_errors.get('requested_languages') %}aria-describedby="requested_languages_error"{% endif %}
+                            >
+                            {% if form_errors.get('requested_languages') %}
+                                <div class="invalid-feedback d-block" id="requested_languages_error">{{ form_errors.requested_languages }}</div>
+                            {% endif %}
+                            <div id="requested_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
+
+                            <div class="form-text mt-2">
+                                Add the languages you want to practice.
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="small text-muted mb-2">Selected requested languages</div>
+                                <div id="requested_language_selected" class="language-chip-list"></div>
+                            </div>
+
+                            <div id="requested_language_inputs"></div>
+                        </div>
+
+                        <script type="application/json" id="requested_language_options_json">
+                            [
+                                {% for choice in requested_field.all_choices %}
+                                    {
+                                        "value": {{ choice.code|tojson }},
+                                        "label": {{ choice.label|tojson }},
+                                        "popularity": {{ choice.popularity|int }},
+                                        "isHint": {{ choice.is_hint|tojson }}
+                                    }{% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            ]
+                        </script>
+                    </div>
                 </div>
+            </fieldset>
 
-                <div class="form-text mt-2">
-                    Filter the list and click to add the languages you want to practice.
+            <fieldset class="col-12 incas-form-section">
+                <legend class="incas-form-legend">Preferences</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
+                            <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" id="same_gender_only" name="same_gender_only" type="checkbox" {% if values.same_gender_only %}checked{% endif %}>
+                            <label class="form-check-label" for="same_gender_only">Same gender tandems only</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label" for="comment">Comment</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
+                    </div>
                 </div>
-
-                <div class="mt-3">
-                    <div class="small text-muted mb-2">Selected requested languages</div>
-                    <div id="requested_language_selected" class="language-chip-list"></div>
-                </div>
-
-                <div id="requested_language_inputs"></div>
-
-                <script type="application/json" id="requested_language_options_json">
-                    [
-                        {% for choice in requested_field.all_choices %}
-                            {
-                                "value": {{ choice.code|tojson }},
-                                "label": {{ choice.label|tojson }},
-                                "popularity": {{ choice.popularity|int }},
-                                "isHint": {{ choice.is_hint|tojson }}
-                            }{% if not loop.last %},{% endif %}
-                        {% endfor %}
-                    ]
-                </script>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-check">
-                    <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
-                    <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="form-check">
-                    <input class="form-check-input" id="same_gender_only" name="same_gender_only" type="checkbox" {% if values.same_gender_only %}checked{% endif %}>
-                    <label class="form-check-label" for="same_gender_only">Same gender tandems only</label>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <label class="form-label" for="comment">Comment</label>
-                <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
-            </div>
+            </fieldset>
         </div>
     </div>
 
-    <div class="card-footer d-flex justify-content-end">
+    <div class="card-footer form-submit-footer d-flex justify-content-end">
+        <button type="submit" class="btn btn-dark">Submit</button>
+    </div>
+
+    <div class="mobile-sticky-submit">
         <button type="submit" class="btn btn-dark">Submit</button>
     </div>
 </form>

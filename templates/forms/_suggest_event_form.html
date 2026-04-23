@@ -1,40 +1,67 @@
-<form method="post" action="{{ form_action or url_for('main.suggest_event_form') }}" class="card shadow-sm">
+{% set form_errors = errors|default({}) %}
+<form method="post" action="{{ form_action or url_for('main.suggest_event_form') }}" class="card shadow-sm incas-form">
     {% if form_return_to %}
         <input type="hidden" name="return_to" value="{{ form_return_to }}">
     {% endif %}
     <div class="card-body">
+        {% if form_errors %}
+            <div class="alert alert-danger" role="alert">
+                <div class="fw-semibold">Check these fields</div>
+                <ul class="mb-0 ps-3">
+                    {% for message in form_errors.values()|unique %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         <div class="row g-3">
             {% if form_preset_kind %}
                 <input type="hidden" name="kind" value="{{ form_preset_kind }}">
             {% else %}
                 <div class="col-md-6">
                     <label class="form-label" for="kind">Event Type <span class="text-danger">*</span></label>
-                    <select class="form-select" id="kind" name="kind" required>
+                    <select class="form-select{% if form_errors.get('kind') %} is-invalid{% endif %}" id="kind" name="kind" required {% if form_errors.get('kind') %}aria-describedby="kind_error"{% endif %}>
                         <option value="">Select</option>
                         <option value="country_evening" {% if values.kind == "country_evening" %}selected{% endif %}>Country Evening</option>
                         <option value="breakfast" {% if values.kind == "breakfast" %}selected{% endif %}>International Breakfast</option>
                     </select>
+                    {% if form_errors.get('kind') %}
+                        <div class="invalid-feedback" id="kind_error">{{ form_errors.kind }}</div>
+                    {% endif %}
                 </div>
             {% endif %}
 
             <div class="col-md-6">
                 <label class="form-label" for="country">Country <span class="text-danger">*</span></label>
-                <input class="form-control" id="country" name="country" required value="{{ values.country }}">
+                <input class="form-control{% if form_errors.get('country') %} is-invalid{% endif %}" id="country" name="country" autocomplete="country-name" required value="{{ values.country }}" {% if form_errors.get('country') %}aria-describedby="country_error"{% endif %}>
+                {% if form_errors.get('country') %}
+                    <div class="invalid-feedback" id="country_error">{{ form_errors.country }}</div>
+                {% endif %}
             </div>
 
             <div class="col-12">
                 <label class="form-label" for="contact_name">Contact Name <span class="text-danger">*</span></label>
-                <input class="form-control" id="contact_name" name="contact_name" required value="{{ values.contact_name }}">
+                <input class="form-control{% if form_errors.get('contact_name') %} is-invalid{% endif %}" id="contact_name" name="contact_name" autocomplete="name" required value="{{ values.contact_name }}" {% if form_errors.get('contact_name') %}aria-describedby="contact_name_error"{% endif %}>
+                {% if form_errors.get('contact_name') %}
+                    <div class="invalid-feedback" id="contact_name_error">{{ form_errors.contact_name }}</div>
+                {% endif %}
             </div>
 
             <div class="col-md-6">
                 <label class="form-label" for="contact_email">Email</label>
-                <input class="form-control" id="contact_email" name="contact_email" type="email" value="{{ values.contact_email }}">
+                <input class="form-control{% if form_errors.get('contact_email') %} is-invalid{% endif %}" id="contact_email" name="contact_email" type="email" inputmode="email" autocomplete="email" value="{{ values.contact_email }}" {% if form_errors.get('contact_email') %}aria-describedby="contact_email_error"{% endif %}>
+                {% if form_errors.get('contact_email') %}
+                    <div class="invalid-feedback" id="contact_email_error">{{ form_errors.contact_email }}</div>
+                {% endif %}
             </div>
 
             <div class="col-md-6">
                 <label class="form-label" for="contact_phone">Phone</label>
-                <input class="form-control" id="contact_phone" name="contact_phone" value="{{ values.contact_phone }}">
+                <input class="form-control{% if form_errors.get('contact_phone') %} is-invalid{% endif %}" id="contact_phone" name="contact_phone" type="tel" inputmode="tel" autocomplete="tel" value="{{ values.contact_phone }}" {% if form_errors.get('contact_phone') %}aria-describedby="contact_phone_error"{% endif %}>
+                {% if form_errors.get('contact_phone') %}
+                    <div class="invalid-feedback" id="contact_phone_error">{{ form_errors.contact_phone }}</div>
+                {% endif %}
             </div>
 
             <div class="col-12">
@@ -48,7 +75,11 @@
         </div>
     </div>
 
-    <div class="card-footer d-flex justify-content-end">
+    <div class="card-footer form-submit-footer d-flex justify-content-end">
+        <button type="submit" class="btn btn-dark">Submit</button>
+    </div>
+
+    <div class="mobile-sticky-submit">
         <button type="submit" class="btn btn-dark">Submit</button>
     </div>
 </form>

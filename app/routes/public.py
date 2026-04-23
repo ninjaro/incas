@@ -1,10 +1,10 @@
 import calendar
 import json
-from datetime import date, datetime
+from datetime import datetime
 
 from flask import abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db
+from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db, get_configured_local_now
 from app.routes import bp
 from app.routes.helpers.content import parse_calendar_month
 from app.routes.helpers.tandem_form import (
@@ -15,10 +15,25 @@ from app.routes.helpers.tandem_form import (
     parse_departure_date,
     render_language_tandem_form_page,
 )
-from app.site_content import get_site_offers, get_site_page
+from app.site_content import get_site_page
 
 SUPPORTED_LOCALES = {"en", "de"}
 DEFAULT_LOCALE = "en"
+EVENT_KIND_ORDER = [
+    "country_evening",
+    "cafe_lingua",
+    "breakfast",
+    "board_games",
+    "dance",
+    "trip",
+    "karaoke",
+    "housing",
+]
+CALENDAR_MODES = {"default", "mini", "agenda", "timeline", "cards", "hardcore"}
+
+
+def get_local_now():
+    return get_configured_local_now()
 
 
 @bp.route("/")
@@ -115,6 +130,7 @@ def contact_form():
         "subject": "",
         "message": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["name"] = request.form.get("name", "").strip()
@@ -122,9 +138,15 @@ def contact_form():
         values["subject"] = request.form.get("subject", "").strip()
         values["message"] = request.form.get("message", "").strip()
 
-        if not values["name"] or not values["email"] or not values["message"]:
-            flash("Name, email, and message are required.")
-            return render_template("forms/contact.html", values=values)
+        if not values["name"]:
+            errors["name"] = "Name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
+        if not values["message"]:
+            errors["message"] = "Message is required."
+
+        if errors:
+            return render_template("forms/contact.html", values=values, errors=errors)
 
         item = ContactRequest(
             name=values["name"],
@@ -139,7 +161,7 @@ def contact_form():
         flash("Your message has been submitted.")
         return redirect(url_for("main.contact_form"))
 
-    return render_template("forms/contact.html", values=values)
+    return render_template("forms/contact.html", values=values, errors=errors)
 
 @bp.route("/posts")
 def posts():
@@ -196,6 +218,7 @@ def render_site_content_page(page_key):
             "country_of_origin": "",
             "offered_languages": [],
             "offered_native_languages": [],
+            "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
             "same_gender_only": False,
@@ -223,6 +246,26 @@ def international_breakfast():
     return render_site_content_page("international_breakfast")
 
 
+@bp.route("/offers/international-weekend")
+def international_weekend():
+    return render_site_content_page("international_weekend")
+
+
+@bp.route("/offers/cafe-lingua")
+def cafe_lingua():
+    return render_site_content_page("cafe_lingua")
+
+
+@bp.route("/offers/incas-active")
+def incas_active():
+    return render_site_content_page("incas_active")
+
+
+@bp.route("/offers/country-evening")
+def country_evening():
+    return render_site_content_page("country_evening")
+
+
 @bp.route("/offers/international-tuesday")
 def international_tuesday():
     return render_site_content_page("international_tuesday")
@@ -231,36 +274,94 @@ def international_tuesday():
 def offer_language_tandem():
     return render_site_content_page("language_tandem")
 
-@bp.route("/calendar")
-def calendar_view():
-    year, month = parse_calendar_month(request.args.get("month"))
+def render_calendar_page(mode="default"):
+    calendar_mode = mode if mode in CALENDAR_MODES else "default"
+    now_local = get_local_now()
+    today = now_local.date()
+
+    raw_month = request.args.get("month")
+    if (raw_month or "").strip():
+        year, month = parse_calendar_month(raw_month)
+    else:
+        year, month = now_local.year, now_local.month
+    event_kind_filter = (request.args.get("kind") or "").strip()
 
     month_matrix = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
-    month_start = datetime(year, month, 1)
-    month_end_day = calendar.monthrange(year, month)[1]
-    month_end = datetime(year, month, month_end_day, 23, 59, 59)
+    visible_start = month_matrix[0][0]
+    visible_end = month_matrix[-1][-1]
+    visible_start_at = datetime(visible_start.year, visible_start.month, visible_start.day)
+    visible_end_at = datetime(visible_end.year, visible_end.month, visible_end.day, 23, 59, 59)
 
     items = (
         Post.query
         .filter(Post.starts_at.isnot(None))
-        .filter(Post.starts_at >= month_start)
-        .filter(Post.starts_at <= month_end)
+        .filter(Post.starts_at >= visible_start_at)
+        .filter(Post.starts_at <= visible_end_at)
         .order_by(Post.starts_at.asc())
         .all()
     )
-    upcoming_items = [item for item in items if item.is_live]
-    archived_items = [item for item in items if not item.is_live]
+    unfiltered_month_items = [
+        item for item in items
+        if item.starts_at.year == year and item.starts_at.month == month
+    ]
+
+    event_kind_counts = {}
+    for item in unfiltered_month_items:
+        if not item.event_kind:
+            continue
+        event_kind_counts[item.event_kind] = event_kind_counts.get(item.event_kind, 0) + 1
+
+    valid_event_kinds = set(EVENT_KIND_ORDER) | set(event_kind_counts)
+    if event_kind_filter not in valid_event_kinds:
+        event_kind_filter = ""
+
+    event_kind_options = [
+        {"kind": kind, "count": count}
+        for kind, count in event_kind_counts.items()
+    ]
+    if event_kind_filter and event_kind_filter not in event_kind_counts:
+        event_kind_options.append({"kind": event_kind_filter, "count": 0})
+
+    event_kind_options.sort(
+        key=lambda option: (
+            EVENT_KIND_ORDER.index(option["kind"])
+            if option["kind"] in EVENT_KIND_ORDER
+            else len(EVENT_KIND_ORDER),
+            option["kind"],
+        )
+    )
+
+    if event_kind_filter:
+        items = [item for item in items if item.event_kind == event_kind_filter]
+
+    month_items = [
+        item for item in items
+        if item.starts_at.year == year and item.starts_at.month == month
+    ]
+    upcoming_items = [item for item in month_items if now_local < item.ends_at]
+    archived_items = [item for item in month_items if now_local >= item.ends_at]
 
     upcoming_items.sort(key=lambda item: item.starts_at)
     archived_items.sort(key=lambda item: item.ends_at, reverse=True)
-
-    now_utc = datetime.utcnow()
 
     events_by_day = {}
 
     for item in items:
         key = item.starts_at.date()
         events_by_day.setdefault(key, []).append(item)
+
+    agenda_days = [
+        {"date": day, "items": events_by_day.get(day, [])}
+        for week in month_matrix
+        for day in week
+        if day.month == month and events_by_day.get(day)
+    ]
+    day_modal_groups = [
+        {"date": day, "items": events_by_day.get(day, [])}
+        for week in month_matrix
+        for day in week
+        if events_by_day.get(day)
+    ]
 
     prev_year = year
     prev_month = month - 1
@@ -276,18 +377,37 @@ def calendar_view():
 
     return render_template(
         "calendar.html",
+        calendar_mode=calendar_mode,
         month_matrix=month_matrix,
         events_by_day=events_by_day,
         current_year=year,
         current_month=month,
         month_label=datetime(year, month, 1).strftime("%B %Y"),
+        current_month_value=f"{year:04d}-{month:02d}",
         prev_month_value=f"{prev_year:04d}-{prev_month:02d}",
         next_month_value=f"{next_year:04d}-{next_month:02d}",
+        today_month_value=f"{today.year:04d}-{today.month:02d}",
+        event_kind_filter=event_kind_filter,
+        event_kind_options=event_kind_options,
+        event_kind_total_count=len(unfiltered_month_items),
+        agenda_days=agenda_days,
+        day_modal_groups=day_modal_groups,
+        month_items=month_items,
         upcoming_items=upcoming_items,
         archived_items=archived_items,
-        now_utc=now_utc,
-        today=date.today(),
+        now_local=now_local,
+        today=today,
     )
+
+@bp.route("/calendar")
+def calendar_view():
+    return render_calendar_page(request.args.get("view", "default"))
+
+@bp.route("/calendar-<mode>")
+def calendar_mode(mode):
+    if mode not in CALENDAR_MODES:
+        abort(404)
+    return render_calendar_page(mode)
 
 @bp.route("/suggest-event", methods=["GET", "POST"])
 def suggest_event_form():
@@ -300,6 +420,7 @@ def suggest_event_form():
         "contact_phone": "",
         "comment": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["kind"] = request.form.get("kind", "").strip()
@@ -310,20 +431,20 @@ def suggest_event_form():
         values["comment"] = request.form.get("comment", "").strip()
 
         if values["kind"] not in {"country_evening", "breakfast"}:
-            flash("Select a valid event type.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["kind"] = "Select a valid event type."
 
         if not values["country"]:
-            flash("Country is required.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["country"] = "Country is required."
 
         if not values["contact_name"]:
-            flash("Contact name is required.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["contact_name"] = "Contact name is required."
 
         if not values["contact_email"] and not values["contact_phone"]:
-            flash("Enter at least email or phone.")
-            return render_template("forms/suggest_event.html", values=values)
+            errors["contact_email"] = "Enter email or phone."
+            errors["contact_phone"] = "Enter email or phone."
+
+        if errors:
+            return render_template("forms/suggest_event.html", values=values, errors=errors)
 
         item = EventSuggestion(
             kind=values["kind"],
@@ -340,7 +461,7 @@ def suggest_event_form():
         flash("Your event suggestion has been submitted.")
         return redirect(return_to or url_for("main.suggest_event_form"))
 
-    return render_template("forms/suggest_event.html", values=values)
+    return render_template("forms/suggest_event.html", values=values, errors=errors)
 
 @bp.route("/language-tandem", methods=["GET", "POST"])
 def language_tandem_form():
@@ -363,6 +484,7 @@ def language_tandem_form():
         "same_gender_only": False,
         "comment": "",
     }
+    errors = {}
 
     if request.method == "POST":
         values["first_name"] = request.form.get("first_name", "").strip()
@@ -408,33 +530,37 @@ def language_tandem_form():
             else values["occupation"]
         )
 
-        if not values["first_name"] or not values["last_name"] or not values["email"]:
-            flash("First name, last name, and email are required.")
-            return render_language_tandem_form_page(values)
+        if not values["first_name"]:
+            errors["first_name"] = "First name is required."
+        if not values["last_name"]:
+            errors["last_name"] = "Last name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
 
-        if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
-            flash("Occupation, gender, and country of origin are required.")
-            return render_language_tandem_form_page(values)
+        if not values["occupation"]:
+            errors["occupation"] = "Occupation is required."
+        if not values["gender"]:
+            errors["gender"] = "Gender is required."
+        if not values["country_of_origin"]:
+            errors["country_of_origin"] = "Country of origin is required."
 
         if values["occupation"] == "other" and not values["occupation_other"]:
-            flash("Enter occupation.")
-            return render_language_tandem_form_page(values)
+            errors["occupation_other"] = "Enter occupation."
 
         if birth_year is None:
-            flash("Enter a valid birth year.")
-            return render_language_tandem_form_page(values)
+            errors["birth_year"] = "Enter a valid birth year."
 
         if departure_date is None:
-            flash("Enter a valid departure date.")
-            return render_language_tandem_form_page(values)
+            errors["departure_date"] = "Enter a valid departure date."
 
         if not values["offered_languages"]:
-            flash("Select at least one offered language.")
-            return render_language_tandem_form_page(values)
+            errors["offered_languages"] = "Select at least one offered language."
 
         if not values["requested_languages"]:
-            flash("Select at least one requested language.")
-            return render_language_tandem_form_page(values)
+            errors["requested_languages"] = "Select at least one requested language."
+
+        if errors:
+            return render_language_tandem_form_page(values, errors=errors)
 
         item = LanguageTandemRequest(
             first_name=values["first_name"],
@@ -460,4 +586,4 @@ def language_tandem_form():
         flash("Your request has been submitted.")
         return redirect(return_to or url_for("main.language_tandem_form"))
 
-    return render_language_tandem_form_page(values)
+    return render_language_tandem_form_page(values, errors=errors)

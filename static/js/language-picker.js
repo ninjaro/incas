@@ -45,6 +45,173 @@
         }
     };
 
+    window.initCountryLookup = function initCountryLookup(config) {
+        const lookup = document.getElementById(config.lookupId || "country_of_origin_lookup");
+        const hidden = document.getElementById(config.hiddenId || "country_of_origin");
+        const menu = document.getElementById(config.menuId || "country_of_origin_menu");
+
+        if (!lookup || !hidden || !menu) return;
+
+        const options = (config.options || []).map((item) => ({
+            value: item.value || item.code,
+            label: item.label,
+        })).filter((item) => item.value && item.label);
+
+        let query = "";
+        let isOpen = false;
+
+        if (!hidden.value && config.selected) {
+            hidden.value = config.selected;
+        }
+
+        function getSelectedOption() {
+            return options.find((item) => item.value === hidden.value);
+        }
+
+        function getFilteredOptions() {
+            const normalizedQuery = query.trim().toLowerCase();
+            if (!normalizedQuery) return options;
+
+            return options.filter((item) => item.label.toLowerCase().includes(normalizedQuery));
+        }
+
+        function syncTypedValue() {
+            const typedValue = lookup.value.trim().toLowerCase();
+
+            if (!typedValue) {
+                hidden.value = "";
+                return;
+            }
+
+            const exactMatch = options.find((item) => item.label.toLowerCase() === typedValue);
+            hidden.value = exactMatch ? exactMatch.value : "";
+        }
+
+        function selectCountry(value) {
+            const option = options.find((item) => item.value === value);
+            hidden.value = option ? option.value : "";
+            lookup.value = option ? option.label : "";
+            query = "";
+            isOpen = false;
+            renderCountryMenu();
+        }
+
+        function renderCountryMenu() {
+            lookup.setAttribute("role", "combobox");
+            lookup.setAttribute("aria-autocomplete", "list");
+            lookup.setAttribute("aria-controls", menu.id);
+            lookup.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+            menu.setAttribute("role", "listbox");
+            menu.classList.toggle("is-open", isOpen);
+            menu.innerHTML = "";
+
+            if (!isOpen) return;
+
+            const items = getFilteredOptions();
+
+            if (!items.length) {
+                const empty = document.createElement("button");
+                empty.type = "button";
+                empty.className = "language-lookup-item";
+                empty.disabled = true;
+                empty.setAttribute("role", "option");
+                empty.textContent = "No countries found";
+                menu.appendChild(empty);
+                return;
+            }
+
+            items.forEach((item) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "language-lookup-item";
+                button.dataset.countryValue = item.value;
+                button.setAttribute("role", "option");
+                button.setAttribute("aria-selected", hidden.value === item.value ? "true" : "false");
+                button.textContent = item.label;
+                menu.appendChild(button);
+            });
+        }
+
+        const selectedOption = getSelectedOption();
+        if (selectedOption) {
+            lookup.value = selectedOption.label;
+        }
+
+        lookup.addEventListener("input", () => {
+            query = lookup.value || "";
+            isOpen = true;
+            syncTypedValue();
+            renderCountryMenu();
+        });
+
+        lookup.addEventListener("focus", () => {
+            query = lookup.value || "";
+            isOpen = true;
+            renderCountryMenu();
+        });
+
+        lookup.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                isOpen = false;
+                renderCountryMenu();
+                return;
+            }
+
+            if (event.key === "Enter") {
+                const firstItem = getFilteredOptions()[0];
+                if (firstItem) {
+                    event.preventDefault();
+                    selectCountry(firstItem.value);
+                }
+                return;
+            }
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                isOpen = true;
+                renderCountryMenu();
+                menu.querySelector(".language-lookup-item:not(:disabled)")?.focus();
+            }
+        });
+
+        menu.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-country-value]");
+            if (!button) return;
+            selectCountry(button.dataset.countryValue);
+            lookup.focus();
+        });
+
+        menu.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                isOpen = false;
+                renderCountryMenu();
+                lookup.focus();
+                return;
+            }
+
+            if (event.key === "Enter") {
+                const button = event.target.closest("[data-country-value]");
+                if (button) {
+                    event.preventDefault();
+                    selectCountry(button.dataset.countryValue);
+                    lookup.focus();
+                }
+            }
+        });
+
+        lookup.form?.addEventListener("submit", syncTypedValue);
+
+        document.addEventListener("click", (event) => {
+            if (lookup.contains(event.target) || menu.contains(event.target)) return;
+            if (!isOpen) return;
+            isOpen = false;
+            renderCountryMenu();
+        });
+
+        renderCountryMenu();
+    };
+
     window.initLanguagePicker = function initLanguagePicker(config) {
         const languagePickerState = {
             offered: {
@@ -53,6 +220,7 @@
                 levels: config.offered.levels || {},
                 sortMode: "alpha",
                 query: "",
+                isOpen: false,
                 allowLevels: true,
             },
             requested: {
@@ -61,6 +229,7 @@
                 levels: {},
                 sortMode: "alpha",
                 query: "",
+                isOpen: false,
                 allowLevels: false,
             },
         };
@@ -95,6 +264,11 @@
             return items;
         }
 
+        function getLevelLabel(level) {
+            const index = LANG_LEVELS.indexOf(level);
+            return index >= 0 ? LEVEL_LABELS[index] : "Set level";
+        }
+
         function syncSortButtons(kind) {
             const state = languagePickerState[kind];
             document.querySelectorAll(`.language-sort[data-target-picker="${kind}"]`).forEach((button) => {
@@ -117,17 +291,32 @@
 
         function renderLookupMenu(kind) {
             const state = languagePickerState[kind];
-            const { menu } = getPickerElements(kind);
+            const { lookup, menu } = getPickerElements(kind);
             if (!menu) return;
 
-            const items = getAvailableItems(kind);
+            if (lookup) {
+                lookup.setAttribute("role", "combobox");
+                lookup.setAttribute("aria-autocomplete", "list");
+                lookup.setAttribute("aria-controls", `${kind}_language_menu`);
+                lookup.setAttribute("aria-expanded", state.isOpen ? "true" : "false");
+            }
+
+            menu.setAttribute("role", "listbox");
+            menu.classList.toggle("is-open", state.isOpen);
             menu.innerHTML = "";
+
+            if (!state.isOpen) {
+                return;
+            }
+
+            const items = getAvailableItems(kind);
 
             if (!items.length) {
                 const empty = document.createElement("button");
                 empty.type = "button";
                 empty.className = "language-lookup-item";
                 empty.disabled = true;
+                empty.setAttribute("role", "option");
                 empty.textContent = state.query.trim() ? "No matches" : "No languages left to add";
                 menu.appendChild(empty);
                 return;
@@ -140,6 +329,9 @@
                 button.dataset.action = "add-language";
                 button.dataset.kind = kind;
                 button.dataset.value = item.value;
+                button.id = `${kind}_language_option_${item.value}`;
+                button.setAttribute("role", "option");
+                button.setAttribute("aria-selected", "false");
                 button.textContent = item.label;
                 menu.appendChild(button);
             });
@@ -148,6 +340,8 @@
         function createLevelBar(kind, code, currentLevel) {
             const bar = document.createElement("div");
             bar.className = "lang-level-bar";
+            bar.setAttribute("role", "group");
+            bar.setAttribute("aria-label", "Proficiency level");
 
             const currentIndex = currentLevel ? LANG_LEVELS.indexOf(currentLevel) : -1;
             let hoveredIndex = -1;
@@ -156,19 +350,30 @@
                 const activeIndex = hoveredIndex >= 0 ? hoveredIndex : currentIndex;
                 pips.forEach((pip, i) => {
                     pip.classList.toggle("is-active", activeIndex >= 0 && i <= activeIndex);
+                    pip.setAttribute("aria-pressed", currentIndex === i ? "true" : "false");
                 });
             }
 
             const pips = LANG_LEVELS.map((_level, i) => {
-                const pip = document.createElement("span");
+                const pip = document.createElement("button");
+                pip.type = "button";
                 pip.className = "lang-level-pip";
                 pip.dataset.levelIndex = i;
+                pip.textContent = String(i + 1);
+                pip.title = LEVEL_LABELS[i];
+                pip.setAttribute("aria-label", LEVEL_LABELS[i]);
 
                 pip.addEventListener("mouseenter", () => {
                     hoveredIndex = i;
                     updatePips();
                     showTooltip(pip, LEVEL_LABELS[i]);
                 });
+
+                pip.addEventListener("focus", () => {
+                    showTooltip(pip, LEVEL_LABELS[i]);
+                });
+
+                pip.addEventListener("blur", hideTooltip);
 
                 bar.appendChild(pip);
                 return pip;
@@ -227,7 +432,9 @@
 
                 const label = document.createElement("span");
                 label.className = "language-selected-label";
-                label.textContent = item.label;
+                label.textContent = state.allowLevels
+                    ? `${item.label} - ${getLevelLabel(state.levels[item.value])}`
+                    : item.label;
                 chip.appendChild(label);
 
                 if (state.allowLevels) {
@@ -284,6 +491,7 @@
             if (state.selected.includes(value)) return;
             state.selected.push(value);
             state.query = "";
+            state.isOpen = false;
             const { lookup } = getPickerElements(kind);
             if (lookup) lookup.value = "";
             renderLanguagePicker(kind);
@@ -306,12 +514,48 @@
 
         document.getElementById("offered_language_lookup")?.addEventListener("input", (event) => {
             languagePickerState.offered.query = event.target.value || "";
+            languagePickerState.offered.isOpen = true;
             renderLanguagePicker("offered");
         });
 
         document.getElementById("requested_language_lookup")?.addEventListener("input", (event) => {
             languagePickerState.requested.query = event.target.value || "";
+            languagePickerState.requested.isOpen = true;
             renderLanguagePicker("requested");
+        });
+
+        ["offered", "requested"].forEach((kind) => {
+            const { lookup } = getPickerElements(kind);
+            if (!lookup) return;
+
+            lookup.addEventListener("focus", () => {
+                languagePickerState[kind].isOpen = true;
+                renderLanguagePicker(kind);
+            });
+
+            lookup.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") {
+                    languagePickerState[kind].isOpen = false;
+                    renderLanguagePicker(kind);
+                    return;
+                }
+
+                if (event.key === "Enter") {
+                    const firstItem = getAvailableItems(kind)[0];
+                    if (firstItem) {
+                        event.preventDefault();
+                        addLanguage(kind, firstItem.value);
+                    }
+                    return;
+                }
+
+                if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    languagePickerState[kind].isOpen = true;
+                    renderLanguagePicker(kind);
+                    getPickerElements(kind).menu?.querySelector(".language-lookup-item:not(:disabled)")?.focus();
+                }
+            });
         });
 
         document.querySelectorAll(".language-suggestion").forEach((button) => {
@@ -332,6 +576,15 @@
                 removeLanguage(removeButton.dataset.kind, removeButton.dataset.value);
                 return;
             }
+
+            ["offered", "requested"].forEach((kind) => {
+                const { lookup, menu } = getPickerElements(kind);
+                if (!lookup || !menu) return;
+                if (lookup.contains(event.target) || menu.contains(event.target)) return;
+                if (!languagePickerState[kind].isOpen) return;
+                languagePickerState[kind].isOpen = false;
+                renderLanguagePicker(kind);
+            });
         });
 
         renderLanguagePicker("offered");
