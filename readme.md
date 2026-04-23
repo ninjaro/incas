@@ -69,9 +69,3 @@ The Docker image installs these automatically. Install them locally only if you 
 ```bash
 pip install --no-cache-dir -r requirements-docker.txt
 ```
-
-# Local, SQLite
-  python run.py
-
-  # Docker, Postgres
-  docker compose up --build

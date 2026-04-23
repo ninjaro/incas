@@ -189,7 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const MATCH_VIEW_MODE_STORAGE_KEY = "incas:tandem-match-view-mode";
         const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
         const matchSource = document.querySelector("[data-match-source-id]");
-        const matchStateStorageKey = `incas:tandem-match-state:${matchSource ? matchSource.dataset.matchSourceId : window.location.pathname}`;
+        const matchStateEndpoint = matchSource ? (matchSource.dataset.matchStateEndpoint || "") : "";
+        const matchStateScript = document.getElementById("match-review-state-json");
 
         const matchUiState = {
             viewMode: hasMatchViewControls
@@ -208,7 +209,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function readPersistedMatchState() {
             try {
-                const rawState = JSON.parse(localStorage.getItem(matchStateStorageKey) || "{}");
+                const rawState = JSON.parse(matchStateScript?.textContent || "{}");
+                persistedMatchState.hidden.clear();
+                persistedMatchState.shortlisted.clear();
                 (rawState.hidden || []).forEach((id) => persistedMatchState.hidden.add(String(id)));
                 (rawState.shortlisted || []).forEach((id) => persistedMatchState.shortlisted.add(String(id)));
             } catch (_error) {
@@ -217,11 +220,34 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        function writePersistedMatchState() {
-            localStorage.setItem(matchStateStorageKey, JSON.stringify({
-                hidden: Array.from(persistedMatchState.hidden),
-                shortlisted: Array.from(persistedMatchState.shortlisted),
-            }));
+        async function writePersistedMatchState(candidateId) {
+            if (!matchStateEndpoint || !candidateId) return;
+
+            const response = await fetch(matchStateEndpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    candidate_id: Number(candidateId),
+                    hidden: persistedMatchState.hidden.has(candidateId),
+                    shortlisted: persistedMatchState.shortlisted.has(candidateId),
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Could not save match review state.");
+            }
+        }
+
+        function replaceSetContents(targetSet, sourceSet) {
+            targetSet.clear();
+            sourceSet.forEach((value) => targetSet.add(value));
+        }
+
+        function showMatchStateError() {
+            window.alert("Could not save match review state.");
         }
 
         function getMatchResultsContainers() {
@@ -481,27 +507,50 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        function hideCard(card) {
+        async function hideCard(card) {
             const cardId = getCardId(card);
-            if (cardId) persistedMatchState.hidden.add(cardId);
-            writePersistedMatchState();
+            if (!cardId) return;
+
+            persistedMatchState.hidden.add(cardId);
             moveCardToHidden(card);
             refreshMatchUi();
+
+            try {
+                await writePersistedMatchState(cardId);
+            } catch (_error) {
+                persistedMatchState.hidden.delete(cardId);
+                moveCardToOrigin(card);
+                refreshMatchUi();
+                showMatchStateError();
+            }
         }
 
-        function restoreCard(card) {
+        async function restoreCard(card) {
             const cardId = getCardId(card);
-            if (cardId) persistedMatchState.hidden.delete(cardId);
-            writePersistedMatchState();
+            if (!cardId) return;
+
+            persistedMatchState.hidden.delete(cardId);
             moveCardToOrigin(card);
             refreshMatchUi();
+
+            try {
+                await writePersistedMatchState(cardId);
+            } catch (_error) {
+                persistedMatchState.hidden.add(cardId);
+                moveCardToHidden(card);
+                refreshMatchUi();
+                showMatchStateError();
+            }
         }
 
-        function toggleShortlist(card) {
+        async function toggleShortlist(card) {
             const cardId = getCardId(card);
             if (!cardId) return;
 
             const isShortlisted = persistedMatchState.shortlisted.has(cardId);
+            const previousHidden = new Set(persistedMatchState.hidden);
+            const previousShortlisted = new Set(persistedMatchState.shortlisted);
+
             if (isShortlisted) {
                 persistedMatchState.shortlisted.delete(cardId);
             } else {
@@ -509,8 +558,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             setCardShortlistState(card, !isShortlisted);
-            writePersistedMatchState();
             refreshMatchUi();
+
+            try {
+                await writePersistedMatchState(cardId);
+            } catch (_error) {
+                replaceSetContents(persistedMatchState.hidden, previousHidden);
+                replaceSetContents(persistedMatchState.shortlisted, previousShortlisted);
+                setCardShortlistState(card, isShortlisted);
+                refreshMatchUi();
+                showMatchStateError();
+            }
         }
 
         function applyPersistedMatchState() {
@@ -576,27 +634,39 @@ document.addEventListener("DOMContentLoaded", () => {
             const removeShortlistButton = event.target.closest("[data-remove-shortlist]");
             if (removeShortlistButton) {
                 const candidateId = String(removeShortlistButton.dataset.removeShortlist || "");
+                const previousHidden = new Set(persistedMatchState.hidden);
+                const previousShortlisted = new Set(persistedMatchState.shortlisted);
                 persistedMatchState.shortlisted.delete(candidateId);
 
                 const card = getAllMatchCards().find((item) => getCardId(item) === candidateId);
                 if (card) setCardShortlistState(card, false);
 
-                writePersistedMatchState();
                 refreshMatchUi();
+                writePersistedMatchState(candidateId).catch(() => {
+                    replaceSetContents(persistedMatchState.hidden, previousHidden);
+                    replaceSetContents(persistedMatchState.shortlisted, previousShortlisted);
+                    if (card) setCardShortlistState(card, true);
+                    refreshMatchUi();
+                    showMatchStateError();
+                });
                 return;
             }
 
             const hideButton = event.target.closest("[data-hide-match]");
             if (hideButton) {
                 const card = hideButton.closest("[data-match-card]");
-                if (card) hideCard(card);
+                if (card) {
+                    hideCard(card);
+                }
                 return;
             }
 
             const restoreButton = event.target.closest("[data-restore-match]");
             if (restoreButton) {
                 const card = restoreButton.closest("[data-match-card]");
-                if (card) restoreCard(card);
+                if (card) {
+                    restoreCard(card);
+                }
             }
         });
 

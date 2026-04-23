@@ -134,6 +134,7 @@
         })();
     </script>
     {% if page.form and page.form.type == "language_tandem" %}
+        <script src="{{ url_for('static', filename='js/tandem-form-steps.js') }}"></script>
         <script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
         <script>
             initOccupationOther();

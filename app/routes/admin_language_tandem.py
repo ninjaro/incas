@@ -1,6 +1,6 @@
 import json
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, flash, jsonify, redirect, render_template, request, url_for
 
 from app.duplicate_review import (
     DUPLICATE_REVIEW_CONFIG,
@@ -11,7 +11,7 @@ from app.duplicate_review import (
     get_older_and_newer_request,
 )
 from app.matching import MATCH_CONFIG, build_match_groups
-from app.models import LanguageTandemRequest, TandemDuplicateDecision, db
+from app.models import LanguageTandemRequest, TandemDuplicateDecision, TandemMatchReviewState, db
 from app.routes import bp
 from app.routes.helpers.access import (
     has_tandem_correction_access,
@@ -80,6 +80,7 @@ def admin_language_tandem_edit(request_id):
     )
 
     if request.method == "POST":
+        errors = {}
         values = {
             "first_name": request.form.get("first_name", "").strip(),
             "last_name": request.form.get("last_name", "").strip(),
@@ -127,33 +128,37 @@ def admin_language_tandem_edit(request_id):
             else values["occupation"]
         )
 
-        if not values["first_name"] or not values["last_name"] or not values["email"]:
-            flash("First name, last name, and email are required.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+        if not values["first_name"]:
+            errors["first_name"] = "First name is required."
+        if not values["last_name"]:
+            errors["last_name"] = "Last name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
 
-        if not values["occupation"] or not values["gender"] or not values["country_of_origin"]:
-            flash("Occupation, gender, and country of origin are required.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+        if not values["occupation"]:
+            errors["occupation"] = "Occupation is required."
+        if not values["gender"]:
+            errors["gender"] = "Gender is required."
+        if not values["country_of_origin"]:
+            errors["country_of_origin"] = "Country of origin is required."
 
         if values["occupation"] == "other" and not values["occupation_other"]:
-            flash("Enter occupation.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+            errors["occupation_other"] = "Enter occupation."
 
         if birth_year is None:
-            flash("Enter a valid birth year.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+            errors["birth_year"] = "Enter a valid birth year."
 
         if departure_date is None:
-            flash("Enter a valid departure date.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+            errors["departure_date"] = "Enter a valid departure date."
 
         if not values["offered_languages"]:
-            flash("Select at least one offered language.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+            errors["offered_languages"] = "Select at least one offered language."
 
         if not values["requested_languages"]:
-            flash("Select at least one requested language.")
-            return render_admin_language_tandem_edit_page(item, values, return_to)
+            errors["requested_languages"] = "Select at least one requested language."
+
+        if errors:
+            return render_admin_language_tandem_edit_page(item, values, return_to, errors=errors)
 
         item.first_name = values["first_name"]
         item.last_name = values["last_name"]
@@ -266,15 +271,82 @@ def admin_language_tandem_detail(request_id):
         config=MATCH_CONFIG,
     )
 
+    review_states = TandemMatchReviewState.query.filter_by(source_request_id=item.id).all()
+    match_review_state = {
+        "hidden": [
+            str(state.candidate_request_id)
+            for state in review_states
+            if state.is_hidden
+        ],
+        "shortlisted": [
+            str(state.candidate_request_id)
+            for state in review_states
+            if state.is_shortlisted
+        ],
+    }
+
     return render_template(
         "admin/language_tandem/detail.html",
         item=item,
         match_groups=match_groups,
         match_limits=MATCH_CONFIG["limits"],
+        match_review_state=match_review_state,
         auto_marked_viewed=auto_marked_viewed,
         return_to=return_to,
         can_edit_requests=has_tandem_correction_access(),
     )
+
+
+@bp.route("/admin/language-tandem/<int:request_id>/match-state", methods=["POST"])
+def admin_language_tandem_match_state(request_id):
+    guard = require_scope("language_tandem")
+    if guard:
+        return guard
+
+    item = LanguageTandemRequest.query.get_or_404(request_id)
+    payload = request.get_json(silent=True) or {}
+
+    try:
+        candidate_id = int(payload.get("candidate_id"))
+    except (TypeError, ValueError):
+        abort(400)
+
+    if candidate_id == item.id:
+        abort(400)
+
+    candidate_exists = LanguageTandemRequest.query.filter_by(id=candidate_id).first()
+    if candidate_exists is None:
+        abort(404)
+
+    is_hidden = bool(payload.get("hidden"))
+    is_shortlisted = bool(payload.get("shortlisted"))
+
+    state = TandemMatchReviewState.query.filter_by(
+        source_request_id=item.id,
+        candidate_request_id=candidate_id,
+    ).first()
+
+    if is_hidden or is_shortlisted:
+        if state is None:
+            state = TandemMatchReviewState(
+                source_request_id=item.id,
+                candidate_request_id=candidate_id,
+            )
+            db.session.add(state)
+
+        state.is_hidden = is_hidden
+        state.is_shortlisted = is_shortlisted
+    elif state is not None:
+        db.session.delete(state)
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "candidate_id": candidate_id,
+        "hidden": is_hidden,
+        "shortlisted": is_shortlisted,
+    })
 
 @bp.route("/admin/language-tandem/<int:request_id>/duplicates")
 def admin_language_tandem_duplicates(request_id):

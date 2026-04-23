@@ -1,24 +1,53 @@
 {% set form_errors = errors|default({}) %}
+{% set error_targets = {
+    "first_name": "first_name",
+    "last_name": "last_name",
+    "email": "email",
+    "occupation": "occupation",
+    "occupation_other": "occupation_other",
+    "gender": "gender",
+    "birth_year": "birth_year",
+    "departure_date": "departure_date",
+    "country_of_origin": "country_of_origin_lookup",
+    "offered_languages": "offered_language_lookup",
+    "requested_languages": "requested_language_lookup"
+} %}
 <form method="post" action="{{ form_action or url_for('main.language_tandem_form') }}" class="card shadow-sm incas-form incas-tandem-form">
     {% if form_return_to %}
         <input type="hidden" name="return_to" value="{{ form_return_to }}">
     {% endif %}
 
     <div class="card-body">
-        {% if form_errors %}
-            <div class="alert alert-danger" role="alert">
-                <div class="fw-semibold">Check these fields</div>
-                <ul class="mb-0 ps-3">
-                    {% for message in form_errors.values() %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
+        {% include "forms/_error_summary.html" %}
+
+        <div class="incas-tandem-stepper" data-tandem-stepper aria-label="Language tandem form sections">
+            <div class="small text-muted mb-2">Jump between sections</div>
+            <div class="incas-tandem-step-list">
+                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-contact">
+                    <span class="incas-tandem-step-number">1</span>
+                    <span class="incas-tandem-step-label">Contact</span>
+                </button>
+                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-stay">
+                    <span class="incas-tandem-step-number">2</span>
+                    <span class="incas-tandem-step-label">Stay</span>
+                </button>
+                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-languages">
+                    <span class="incas-tandem-step-number">3</span>
+                    <span class="incas-tandem-step-label">Languages</span>
+                </button>
+                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-preferences">
+                    <span class="incas-tandem-step-number">4</span>
+                    <span class="incas-tandem-step-label">Preferences</span>
+                </button>
             </div>
-        {% endif %}
+        </div>
 
         <div class="row g-3">
-            <fieldset class="col-12 incas-form-section">
-                <legend class="incas-form-legend">Contact</legend>
+            <fieldset class="col-12 incas-form-section" id="tandem-section-contact" data-form-step tabindex="-1">
+                <legend class="incas-form-legend">
+                    <span>Contact</span>
+                    <span class="incas-tandem-step-counter">Step 1 of 4</span>
+                </legend>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
@@ -74,10 +103,17 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="incas-tandem-step-actions" aria-label="Contact section navigation">
+                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-stay">Next: Stay</button>
+                </div>
             </fieldset>
 
-            <fieldset class="col-12 incas-form-section">
-                <legend class="incas-form-legend">Stay</legend>
+            <fieldset class="col-12 incas-form-section" id="tandem-section-stay" data-form-step tabindex="-1">
+                <legend class="incas-form-legend">
+                    <span>Stay</span>
+                    <span class="incas-tandem-step-counter">Step 2 of 4</span>
+                </legend>
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
@@ -94,7 +130,7 @@
 
                     <div class="col-md-4">
                         <label class="form-label" for="birth_year">Year of Birth <span class="text-danger">*</span></label>
-                        <input class="form-control{% if form_errors.get('birth_year') %} is-invalid{% endif %}" id="birth_year" name="birth_year" type="number" inputmode="numeric" min="1900" autocomplete="bday-year" required value="{{ values.birth_year }}" {% if form_errors.get('birth_year') %}aria-describedby="birth_year_error"{% endif %}>
+                        <input class="form-control{% if form_errors.get('birth_year') %} is-invalid{% endif %}" id="birth_year" name="birth_year" type="number" inputmode="numeric" min="1900" max="{{ birth_year_max }}" autocomplete="bday-year" required value="{{ values.birth_year }}" {% if form_errors.get('birth_year') %}aria-describedby="birth_year_error"{% endif %}>
                         {% if form_errors.get('birth_year') %}
                             <div class="invalid-feedback" id="birth_year_error">{{ form_errors.birth_year }}</div>
                         {% endif %}
@@ -102,7 +138,7 @@
 
                     <div class="col-md-4">
                         <label class="form-label" for="departure_date">Departure Date <span class="text-danger">*</span></label>
-                        <input class="form-control{% if form_errors.get('departure_date') %} is-invalid{% endif %}" id="departure_date" name="departure_date" type="date" autocomplete="off" required value="{{ values.departure_date }}" {% if form_errors.get('departure_date') %}aria-describedby="departure_date_error"{% endif %}>
+                        <input class="form-control{% if form_errors.get('departure_date') %} is-invalid{% endif %}" id="departure_date" name="departure_date" type="date" min="{{ departure_date_min }}" autocomplete="off" required value="{{ values.departure_date }}" {% if form_errors.get('departure_date') %}aria-describedby="departure_date_error"{% endif %}>
                         {% if form_errors.get('departure_date') %}
                             <div class="invalid-feedback" id="departure_date_error">{{ form_errors.departure_date }}</div>
                         {% endif %}
@@ -136,10 +172,18 @@
                         </script>
                     </div>
                 </div>
+
+                <div class="incas-tandem-step-actions" aria-label="Stay section navigation">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-contact">Back</button>
+                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-languages">Next: Languages</button>
+                </div>
             </fieldset>
 
-            <fieldset class="col-12 incas-form-section">
-                <legend class="incas-form-legend">Languages</legend>
+            <fieldset class="col-12 incas-form-section" id="tandem-section-languages" data-form-step tabindex="-1">
+                <legend class="incas-form-legend">
+                    <span>Languages</span>
+                    <span class="incas-tandem-step-counter">Step 3 of 4</span>
+                </legend>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="language-picker-panel">
@@ -268,10 +312,18 @@
                         </script>
                     </div>
                 </div>
+
+                <div class="incas-tandem-step-actions" aria-label="Languages section navigation">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-stay">Back</button>
+                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-preferences">Next: Preferences</button>
+                </div>
             </fieldset>
 
-            <fieldset class="col-12 incas-form-section">
-                <legend class="incas-form-legend">Preferences</legend>
+            <fieldset class="col-12 incas-form-section" id="tandem-section-preferences" data-form-step tabindex="-1">
+                <legend class="incas-form-legend">
+                    <span>Preferences</span>
+                    <span class="incas-tandem-step-counter">Step 4 of 4</span>
+                </legend>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="form-check">
@@ -289,8 +341,12 @@
 
                     <div class="col-12">
                         <label class="form-label" for="comment">Comment</label>
-                        <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
+                        <textarea class="form-control" id="comment" name="comment" rows="5" autocomplete="off" autocapitalize="sentences" spellcheck="true">{{ values.comment }}</textarea>
                     </div>
+                </div>
+
+                <div class="incas-tandem-step-actions" aria-label="Preferences section navigation">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-languages">Back</button>
                 </div>
             </fieldset>
         </div>

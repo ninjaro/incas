@@ -155,6 +155,40 @@ class LanguageTandemRequest(db.Model):
         return json.loads(self.requested_languages or "[]")
 
 
+class TandemMatchReviewState(db.Model):
+    __tablename__ = "tandem_match_review_states"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "source_request_id",
+            "candidate_request_id",
+            name="uq_tandem_match_review_state_pair",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    source_request_id = db.Column(
+        db.Integer,
+        db.ForeignKey("language_tandem_requests.id"),
+        nullable=False,
+        index=True,
+    )
+    candidate_request_id = db.Column(
+        db.Integer,
+        db.ForeignKey("language_tandem_requests.id"),
+        nullable=False,
+        index=True,
+    )
+    is_hidden = db.Column(db.Boolean, nullable=False, default=False)
+    is_shortlisted = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+
 class TandemDuplicateDecision(db.Model):
     __tablename__ = "tandem_duplicate_decisions"
 

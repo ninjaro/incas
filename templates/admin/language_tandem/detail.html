@@ -169,7 +169,11 @@
     ("weak", "Weak Matches", "text-bg-warning")
 ] %}
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" data-match-source-id="{{ item.id }}">
+<div
+    class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"
+    data-match-source-id="{{ item.id }}"
+    data-match-state-endpoint="{{ url_for('main.admin_language_tandem_match_state', request_id=item.id) }}"
+>
     <div class="small text-muted">
         Match count badges show how many full, partial, and weak matches each request currently has.
     </div>
@@ -188,6 +192,8 @@
         </button>
     </div>
 </div>
+
+<script type="application/json" id="match-review-state-json">{{ match_review_state|tojson }}</script>
 
 {% for key, title, badge_class in sections %}
     <div class="card shadow-sm mb-4">
