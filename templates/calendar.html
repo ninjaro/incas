@@ -5,7 +5,7 @@
 {% block content %}
 <div class="calendar-toolbar d-flex justify-content-between align-items-center flex-wrap mb-4">
     <a
-        href="{{ url_for('main.calendar_view', month=prev_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_view', month=prev_month_value) }}"
+        href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=prev_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=prev_month_value) }}"
         class="btn btn-outline-secondary btn-sm"
         aria-label="Previous month"
         title="Previous month"
@@ -16,7 +16,7 @@
     <h1 class="h3 m-0 calendar-toolbar-title">{{ month_label }}</h1>
 
     <a
-        href="{{ url_for('main.calendar_view', month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_view', month=next_month_value) }}"
+        href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}"
         class="btn btn-outline-secondary btn-sm"
         aria-label="Next month"
         title="Next month"
@@ -25,6 +25,7 @@
     </a>
 
     <form class="calendar-month-form ms-md-auto" method="get">
+        <input type="hidden" name="view" value="{{ calendar_mode }}">
         {% if event_kind_filter %}
             <input type="hidden" name="kind" value="{{ event_kind_filter }}">
         {% endif %}
@@ -37,15 +38,35 @@
                 aria-label="Jump to month"
             >
             <button class="btn btn-outline-secondary" type="submit">Go</button>
-            <a href="{{ url_for('main.calendar_view', month=today_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_view', month=today_month_value) }}" class="btn btn-outline-secondary">Today</a>
+            <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=today_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=today_month_value) }}" class="btn btn-outline-secondary">Today</a>
         </div>
     </form>
+</div>
+
+{% set calendar_mode_options = [
+    ("default", "Default"),
+    ("mini", "Mini"),
+    ("agenda", "Agenda"),
+    ("timeline", "Timeline"),
+    ("cards", "Cards"),
+    ("hardcore", "Hardcore"),
+] %}
+<div class="calendar-mode-tabs btn-group btn-group-sm mb-3" role="group" aria-label="Calendar interface">
+    {% for option_mode, option_label in calendar_mode_options %}
+        <a
+            href="{{ url_for('main.calendar_mode', mode=option_mode, month=current_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=option_mode, month=current_month_value) }}"
+            class="btn {% if calendar_mode == option_mode %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+            aria-current="{{ 'page' if calendar_mode == option_mode else 'false' }}"
+        >
+            {{ option_label }}
+        </a>
+    {% endfor %}
 </div>
 
 {% if event_kind_options %}
     <nav class="calendar-filter-bar mb-3" aria-label="Event category filters">
         <a
-            href="{{ url_for('main.calendar_view', month=current_month_value) }}"
+            href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}"
             class="calendar-filter-chip{% if not event_kind_filter %} is-active{% endif %}"
             aria-current="{{ 'true' if not event_kind_filter else 'false' }}"
         >
@@ -56,7 +77,7 @@
         {% for option in event_kind_options %}
             {% set meta = event_kind_meta(option.kind) %}
             <a
-                href="{{ url_for('main.calendar_view', month=current_month_value, kind=option.kind) }}"
+                href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value, kind=option.kind) }}"
                 class="calendar-filter-chip{% if event_kind_filter == option.kind %} is-active{% endif %}"
                 aria-current="{{ 'true' if event_kind_filter == option.kind else 'false' }}"
             >
@@ -83,6 +104,310 @@
     </div>
 {% endif %}
 
+{% if calendar_mode == "mini" %}
+    <div class="calendar-mini-shell mb-4">
+        <div class="calendar-mini-weekdays" aria-hidden="true">
+            {% for day_name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+                <span>{{ day_name }}</span>
+            {% endfor %}
+        </div>
+        <div class="calendar-mini-grid">
+            {% for week in month_matrix %}
+                {% for day in week %}
+                    {% set day_items = events_by_day.get(day, []) %}
+                    {% set is_other_month = day.month != current_month %}
+                    {% set is_today = day == today %}
+                    {% if day_items %}
+                        <button
+                            type="button"
+                            class="calendar-mini-day{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}"
+                            data-bs-toggle="modal"
+                            data-bs-target="#calendar-day-modal-{{ day.isoformat() }}"
+                        >
+                            <span class="calendar-mini-date">{{ day.day }}</span>
+                            <span class="calendar-mini-count">{{ day_items|length }}</span>
+                            <span class="calendar-mini-title">{{ day_items[0].title }}</span>
+                        </button>
+                    {% else %}
+                        <div class="calendar-mini-day{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}">
+                            <span class="calendar-mini-date">{{ day.day }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="calendar-agenda-view calendar-agenda-view-force mb-4">
+        {% if agenda_days %}
+            {% for group in agenda_days %}
+                <section class="calendar-day-group">
+                    <div class="calendar-day-heading">
+                        <time datetime="{{ group['date'].isoformat() }}">{{ group["date"].strftime("%a, %d %b") }}</time>
+                        <span class="small text-muted">{{ group["items"]|length }} event{% if group["items"]|length != 1 %}s{% endif %}</span>
+                    </div>
+
+                    {% for item in group["items"] %}
+                        <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-event-row">
+                            {% set meta = event_kind_meta(item.event_kind) %}
+                            <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                            <span>
+                                <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ item.title }}</span>
+                                    {% if meta %}
+                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                    {% endif %}
+                                </span>
+                                {% if item.summary %}
+                                    <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
+                                {% endif %}
+                            </span>
+                        </a>
+                    {% endfor %}
+                </section>
+            {% endfor %}
+        {% else %}
+            <div class="calendar-empty-state">
+                <p class="mb-3 text-muted">Nothing scheduled for this month yet.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg"></i> Suggest an event
+                    </a>
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Next month
+                    </a>
+                    {% if event_kind_filter %}
+                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                            Clear filter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% elif calendar_mode == "agenda" %}
+    <div class="calendar-agenda-view calendar-agenda-view-force mb-4">
+        {% if agenda_days %}
+            {% for group in agenda_days %}
+                <section class="calendar-day-group">
+                    <div class="calendar-day-heading">
+                        <time datetime="{{ group['date'].isoformat() }}">{{ group["date"].strftime("%a, %d %b") }}</time>
+                        <span class="small text-muted">{{ group["items"]|length }} event{% if group["items"]|length != 1 %}s{% endif %}</span>
+                    </div>
+
+                    {% for item in group["items"] %}
+                        <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-event-row">
+                            {% set meta = event_kind_meta(item.event_kind) %}
+                            <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                            <span>
+                                <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ item.title }}</span>
+                                    {% if meta %}
+                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                    {% endif %}
+                                </span>
+                                {% if item.summary %}
+                                    <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
+                                {% endif %}
+                            </span>
+                        </a>
+                    {% endfor %}
+                </section>
+            {% endfor %}
+        {% else %}
+            <div class="calendar-empty-state">
+                <p class="mb-3 text-muted">Nothing scheduled for this month yet.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg"></i> Suggest an event
+                    </a>
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Next month
+                    </a>
+                    {% if event_kind_filter %}
+                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                            Clear filter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% elif calendar_mode == "timeline" %}
+    <div class="calendar-timeline mb-4">
+        {% if agenda_days %}
+            {% for group in agenda_days %}
+                <section class="calendar-timeline-day">
+                    <div class="calendar-timeline-date">
+                        <time datetime="{{ group['date'].isoformat() }}">
+                            <span>{{ group["date"].strftime("%a") }}</span>
+                            <strong>{{ group["date"].strftime("%d") }}</strong>
+                            <span>{{ group["date"].strftime("%b") }}</span>
+                        </time>
+                    </div>
+                    <div class="calendar-timeline-items">
+                        {% for item in group["items"] %}
+                            {% set meta = event_kind_meta(item.event_kind) %}
+                            {% set is_upcoming = now_local < item.ends_at %}
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-timeline-item">
+                                <span class="calendar-timeline-dot bg-{{ meta.color if meta else 'secondary' }}"></span>
+                                <span class="calendar-timeline-content">
+                                    <span class="calendar-timeline-meta">
+                                        <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                                        {% if meta %}
+                                            <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                        {% endif %}
+                                        <span class="badge {% if is_upcoming %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+                                            {% if is_upcoming %}Upcoming{% else %}Past{% endif %}
+                                        </span>
+                                    </span>
+                                    <span class="calendar-timeline-title">{{ item.title }}</span>
+                                    {% if item.summary %}
+                                        <span class="calendar-timeline-summary">{{ item.summary }}</span>
+                                    {% endif %}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        {% else %}
+            <div class="calendar-empty-state">
+                <p class="mb-3 text-muted">Nothing scheduled for this month yet.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg"></i> Suggest an event
+                    </a>
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Next month
+                    </a>
+                    {% if event_kind_filter %}
+                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                            Clear filter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% elif calendar_mode == "cards" %}
+    {% if month_items %}
+        <div class="calendar-card-grid mb-4">
+            {% for item in month_items %}
+                {% set meta = event_kind_meta(item.event_kind) %}
+                {% set is_upcoming = now_local < item.ends_at %}
+                <article class="calendar-event-card">
+                    <div class="calendar-event-card-body">
+                        <div class="calendar-event-card-meta">
+                            <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%a, %d %b · %H:%M") }}</time>
+                            <span class="badge {% if is_upcoming %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+                                {% if is_upcoming %}Upcoming{% else %}Past{% endif %}
+                            </span>
+                        </div>
+                        <h2 class="h5 mb-2">
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                        </h2>
+                        {% if meta %}
+                            <div class="mb-2">
+                                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                            </div>
+                        {% endif %}
+                        {% if item.summary %}
+                            <p class="calendar-event-card-summary">{{ item.summary }}</p>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="calendar-empty-state">
+            <p class="mb-3 text-muted">Nothing scheduled for this month yet.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Suggest an event
+                </a>
+                <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                    Next month
+                </a>
+                {% if event_kind_filter %}
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Clear filter
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% elif calendar_mode == "hardcore" %}
+    <div class="calendar-hardcore-panel mb-4">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0 calendar-hardcore-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Event</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Summary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in month_items %}
+                        {% set meta = event_kind_meta(item.event_kind) %}
+                        {% set is_upcoming = now_local < item.ends_at %}
+                        <tr>
+                            <td class="text-nowrap">
+                                <time datetime="{{ item.starts_at.date().isoformat() }}">{{ item.starts_at.strftime("%Y-%m-%d") }}</time>
+                            </td>
+                            <td class="text-nowrap">
+                                <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="fw-semibold text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                            </td>
+                            <td>
+                                {% if meta %}
+                                    <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                {% else %}
+                                    <span class="text-muted">General</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if is_upcoming %}
+                                    <span class="badge text-bg-success">Upcoming</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Past</span>
+                                {% endif %}
+                            </td>
+                            <td class="calendar-hardcore-summary">{{ item.summary }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="calendar-empty-state">
+                                    <p class="mb-3 text-muted">Nothing scheduled for this month yet.</p>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus-lg"></i> Suggest an event
+                                        </a>
+                                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                                            Next month
+                                        </a>
+                                        {% if event_kind_filter %}
+                                            <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                                                Clear filter
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
 <div class="card shadow-sm mb-4 overflow-hidden calendar-grid-view">
     <div class="table-responsive">
         <table class="table table-bordered align-top mb-0">
@@ -121,9 +446,14 @@
                                                     </a>
                                                 {% endfor %}
                                                 {% if day_items|length > visible_day_items|length %}
-                                                    <div class="cal-more-count small text-muted">
+                                                    <button
+                                                        type="button"
+                                                        class="cal-more-count btn btn-link btn-sm text-muted text-decoration-none text-start p-0"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#calendar-day-modal-{{ day.isoformat() }}"
+                                                    >
                                                         +{{ day_items|length - visible_day_items|length }} more
-                                                    </div>
+                                                    </button>
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -173,9 +503,14 @@
                 <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-plus-lg"></i> Suggest an event
                 </a>
-                <a href="{{ url_for('main.calendar_view', month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_view', month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
                     Next month
                 </a>
+                {% if event_kind_filter %}
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Clear filter
+                    </a>
+                {% endif %}
             </div>
         </div>
     {% endif %}
@@ -268,4 +603,45 @@
         {% endif %}
     </div>
 </div>
+{% endif %}
+
+{% for group in day_modal_groups %}
+    <div
+        class="modal fade"
+        id="calendar-day-modal-{{ group['date'].isoformat() }}"
+        tabindex="-1"
+        aria-labelledby="calendar-day-modal-title-{{ group['date'].isoformat() }}"
+        aria-hidden="true"
+    >
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="calendar-day-modal-title-{{ group['date'].isoformat() }}">
+                        {{ group["date"].strftime("%A, %d %B") }}
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    {% for item in group["items"] %}
+                        <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-event-row">
+                            {% set meta = event_kind_meta(item.event_kind) %}
+                            <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                            <span>
+                                <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ item.title }}</span>
+                                    {% if meta %}
+                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                    {% endif %}
+                                </span>
+                                {% if item.summary %}
+                                    <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
+                                {% endif %}
+                            </span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
 {% endblock %}

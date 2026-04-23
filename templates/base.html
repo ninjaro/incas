@@ -49,7 +49,29 @@
         <div class="collapse navbar-collapse" id="site-navbar">
             <div class="navbar-nav me-lg-auto py-3 py-lg-0">
                 <a class="nav-link" href="{{ url_for('main.index') }}">{{ t("nav.home") }}</a>
-                <a class="nav-link" href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a>
+
+                <div class="nav-item dropdown d-flex align-items-center">
+                    <a class="nav-link pe-1" href="{{ url_for('main.calendar_mode', mode='default') }}">
+                        {{ t("nav.calendar") }}
+                    </a>
+                    <a
+                        class="nav-link dropdown-toggle dropdown-toggle-split ps-1"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <span class="visually-hidden">Toggle Calendar menu</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='default') }}">calendar-default</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='mini') }}">calendar-mini</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='agenda') }}">calendar-agenda</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='timeline') }}">calendar-timeline</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='cards') }}">calendar-cards</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('main.calendar_mode', mode='hardcore') }}">calendar-hardcore</a></li>
+                    </ul>
+                </div>
 
                 <div class="nav-item dropdown d-flex align-items-center">
                     <a class="nav-link pe-1" href="{{ url_for('main.about') }}">
@@ -214,7 +236,7 @@
                 <h2 class="footer-heading">Links</h2>
                 <ul class="footer-links">
                     <li><a href="{{ url_for('main.about') }}">{{ t("nav.about_us") }}</a></li>
-                    <li><a href="{{ url_for('main.calendar_view') }}">{{ t("nav.calendar") }}</a></li>
+                    <li><a href="{{ url_for('main.calendar_mode', mode='default') }}">{{ t("nav.calendar") }}</a></li>
                     <li><a href="{{ url_for('main.contacts') }}">{{ t("nav.contacts") }}</a></li>
                 </ul>
             </div>

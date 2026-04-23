@@ -1,11 +1,10 @@
 import calendar
 import json
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from flask import abort, current_app, flash, g, make_response, redirect, render_template, request, url_for
+from flask import abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db
+from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db, get_configured_local_now
 from app.routes import bp
 from app.routes.helpers.content import parse_calendar_month
 from app.routes.helpers.tandem_form import (
@@ -30,17 +29,11 @@ EVENT_KIND_ORDER = [
     "karaoke",
     "housing",
 ]
+CALENDAR_MODES = {"default", "mini", "agenda", "timeline", "cards", "hardcore"}
 
 
 def get_local_now():
-    timezone_name = current_app.config.get("LOCAL_TIMEZONE", "Europe/Berlin")
-
-    try:
-        timezone = ZoneInfo(timezone_name)
-    except Exception:
-        timezone = ZoneInfo("Europe/Berlin")
-
-    return datetime.now(timezone).replace(tzinfo=None)
+    return get_configured_local_now()
 
 
 @bp.route("/")
@@ -281,8 +274,8 @@ def international_tuesday():
 def offer_language_tandem():
     return render_site_content_page("language_tandem")
 
-@bp.route("/calendar")
-def calendar_view():
+def render_calendar_page(mode="default"):
+    calendar_mode = mode if mode in CALENDAR_MODES else "default"
     now_local = get_local_now()
     today = now_local.date()
 
@@ -318,13 +311,17 @@ def calendar_view():
             continue
         event_kind_counts[item.event_kind] = event_kind_counts.get(item.event_kind, 0) + 1
 
-    if event_kind_filter not in event_kind_counts:
+    valid_event_kinds = set(EVENT_KIND_ORDER) | set(event_kind_counts)
+    if event_kind_filter not in valid_event_kinds:
         event_kind_filter = ""
 
     event_kind_options = [
         {"kind": kind, "count": count}
         for kind, count in event_kind_counts.items()
     ]
+    if event_kind_filter and event_kind_filter not in event_kind_counts:
+        event_kind_options.append({"kind": event_kind_filter, "count": 0})
+
     event_kind_options.sort(
         key=lambda option: (
             EVENT_KIND_ORDER.index(option["kind"])
@@ -359,6 +356,12 @@ def calendar_view():
         for day in week
         if day.month == month and events_by_day.get(day)
     ]
+    day_modal_groups = [
+        {"date": day, "items": events_by_day.get(day, [])}
+        for week in month_matrix
+        for day in week
+        if events_by_day.get(day)
+    ]
 
     prev_year = year
     prev_month = month - 1
@@ -374,6 +377,7 @@ def calendar_view():
 
     return render_template(
         "calendar.html",
+        calendar_mode=calendar_mode,
         month_matrix=month_matrix,
         events_by_day=events_by_day,
         current_year=year,
@@ -387,11 +391,23 @@ def calendar_view():
         event_kind_options=event_kind_options,
         event_kind_total_count=len(unfiltered_month_items),
         agenda_days=agenda_days,
+        day_modal_groups=day_modal_groups,
+        month_items=month_items,
         upcoming_items=upcoming_items,
         archived_items=archived_items,
         now_local=now_local,
         today=today,
     )
+
+@bp.route("/calendar")
+def calendar_view():
+    return render_calendar_page(request.args.get("view", "default"))
+
+@bp.route("/calendar-<mode>")
+def calendar_mode(mode):
+    if mode not in CALENDAR_MODES:
+        abort(404)
+    return render_calendar_page(mode)
 
 @bp.route("/suggest-event", methods=["GET", "POST"])
 def suggest_event_form():

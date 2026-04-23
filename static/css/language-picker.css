@@ -55,14 +55,14 @@
 
 .lang-level-bar {
     display: inline-grid;
-    grid-template-columns: repeat(5, minmax(2rem, 1fr));
+    grid-template-columns: repeat(5, minmax(2.5rem, 1fr));
     gap: 4px;
     flex-shrink: 0;
 }
 
 .lang-level-pip {
-    min-width: 2rem;
-    min-height: 2rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
     padding: 0;
     border: 1px solid var(--bs-border-color);
     border-radius: 0.35rem;
@@ -135,12 +135,18 @@
     }
 
     .lang-level-bar {
-        width: calc(100% - 2.25rem);
+        width: calc(100% - 2.75rem);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .lang-level-pip {
+        min-width: 0;
+        min-height: 2.75rem;
     }
 
     .language-chip-remove {
-        min-width: 2rem;
-        min-height: 2rem;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
         margin-left: auto;
     }
 }
