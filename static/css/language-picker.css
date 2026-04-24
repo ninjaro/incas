@@ -25,7 +25,8 @@
 }
 
 .language-lookup-item:hover,
-.language-lookup-item:focus {
+.language-lookup-item:focus,
+.language-lookup-item.is-active {
     background: var(--bs-tertiary-bg);
 }
 

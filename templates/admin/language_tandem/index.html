@@ -3,13 +3,32 @@
 {% block title %}Language Tandem · INCAS{% endblock %}
 
 {% block content %}
+{% macro request_sort_button(key, label, type='string') -%}
+    {% set default_direction = sort_defaults.get(key, 'asc') %}
+    {% set next_direction = default_direction %}
+    {% if filters.sort_by == key %}
+        {% set next_direction = 'desc' if filters.sort_dir == 'asc' else 'asc' %}
+    {% endif %}
+    {% set sort_url = build_overview_url(sort_by=key, sort_dir=next_direction, all_page=1, unviewed_page=1, viewed_page=1) %}
+    <a
+        href="{{ sort_url }}"
+        class="table-sort-button"
+        data-sort-key="{{ key }}"
+        data-sort-type="{{ type }}"
+        data-sort-default-direction="{{ default_direction }}"
+        data-sort-url="{{ sort_url }}"
+    >
+        {{ label }} <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
+    </a>
+{%- endmacro %}
 {% set has_advanced_filters = filters.gender or filters.occupation or filters.country or filters.native_only or filters.same_gender_only %}
+{% set overview_return_to = request.full_path if request.query_string else request.path %}
 
 <div class="admin-page-header mb-4">
     <div>
         <h1 class="h3 m-0">Language Tandem</h1>
         <div class="text-muted small">
-            {{ stats.filtered_requests }} shown · {{ stats.filtered_unviewed_requests }} need review
+            {{ stats.filtered_requests }} matching · {{ stats.filtered_unviewed_requests }} need review
         </div>
     </div>
     <div class="admin-header-actions">
@@ -31,7 +50,7 @@
         <div class="admin-kpi-value">{{ stats.viewed_requests }}</div>
     </div>
     <div class="admin-kpi">
-        <div class="admin-kpi-label">Shown</div>
+        <div class="admin-kpi-label">Filtered</div>
         <div class="admin-kpi-value">{{ stats.filtered_requests }}</div>
     </div>
 </div>
@@ -39,6 +58,11 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
+            <input type="hidden" name="sort_by" value="{{ filters.sort_by }}">
+            <input type="hidden" name="sort_dir" value="{{ filters.sort_dir }}">
+            <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+            <input type="hidden" name="grouping" value="{{ filters.grouping }}">
+
             <div class="col-lg-5">
                 <label class="form-label" for="q">Search</label>
                 <input
@@ -164,7 +188,7 @@
 
         {% if stats.filtered_unviewed_requests > 0 %}
             <form method="post" action="{{ url_for('main.admin_language_tandem_mark_filtered_viewed') }}" class="mt-3">
-                <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                <input type="hidden" name="return_to" value="{{ overview_return_to }}">
                 <input type="hidden" name="q" value="{{ filters.q }}">
                 <input type="hidden" name="status" value="{{ filters.status }}">
                 <input type="hidden" name="gender" value="{{ filters.gender }}">
@@ -188,42 +212,196 @@
 </div>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <div class="small text-muted">{{ stats.filtered_requests }} request{% if stats.filtered_requests != 1 %}s{% endif %}</div>
-    <div class="btn-group btn-group-sm" role="group" aria-label="Request view">
-        <button type="button" class="btn btn-primary active" data-set-request-view-mode="list" aria-pressed="true" title="List layout">
-            <i class="bi bi-list-ul"></i>
-            <span class="visually-hidden">List layout</span>
-        </button>
-        <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid" aria-pressed="false" title="Grid layout">
-            <i class="bi bi-grid-3x3-gap"></i>
-            <span class="visually-hidden">Grid layout</span>
-        </button>
-        <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="table" aria-pressed="false" title="Table layout">
-            <i class="bi bi-table"></i>
-            <span class="visually-hidden">Table layout</span>
-        </button>
+    <div class="small text-muted">
+        {{ stats.visible_requests }} on this page · {{ stats.filtered_requests }} total
+    </div>
+    <div class="d-flex align-items-end flex-wrap gap-2">
+        <form method="get" class="d-flex align-items-end flex-wrap gap-2">
+            <input type="hidden" name="q" value="{{ filters.q }}">
+            <input type="hidden" name="status" value="{{ filters.status }}">
+            <input type="hidden" name="gender" value="{{ filters.gender }}">
+            <input type="hidden" name="occupation" value="{{ filters.occupation }}">
+            <input type="hidden" name="country" value="{{ filters.country }}">
+            <input type="hidden" name="offered_language" value="{{ filters.offered_language }}">
+            <input type="hidden" name="requested_language" value="{{ filters.requested_language }}">
+            <input type="hidden" name="native_only" value="{{ filters.native_only }}">
+            <input type="hidden" name="same_gender_only" value="{{ filters.same_gender_only }}">
+            <input type="hidden" name="grouping" value="{{ filters.grouping }}">
+
+            {% if can_edit_requests %}
+                <input type="hidden" name="duplicate_status" value="{{ filters.duplicate_status }}">
+            {% endif %}
+
+            <div>
+                <label class="form-label form-label-sm mb-1" for="overview-sort-by">Sort</label>
+                <select class="form-select form-select-sm" id="overview-sort-by" name="sort_by">
+                    {% for option in sort_options %}
+                        <option value="{{ option.key }}" {% if filters.sort_by == option.key %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label form-label-sm mb-1" for="overview-sort-dir">Direction</label>
+                <select class="form-select form-select-sm" id="overview-sort-dir" name="sort_dir">
+                    <option value="desc" {% if filters.sort_dir == "desc" %}selected{% endif %}>Descending</option>
+                    <option value="asc" {% if filters.sort_dir == "asc" %}selected{% endif %}>Ascending</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="form-label form-label-sm mb-1" for="overview-per-page">Page size</label>
+                <select class="form-select form-select-sm" id="overview-per-page" name="per_page">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>
+        </form>
+
+        {% if filters.status == "all" %}
+            <div>
+                <div class="small text-muted mb-1">Sequence</div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Request sequence">
+                    <a
+                        href="{{ build_overview_url(grouping='split', all_page=1, unviewed_page=1, viewed_page=1) }}"
+                        class="btn {% if filters.grouping == 'split' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                    >
+                        Split
+                    </a>
+                    <a
+                        href="{{ build_overview_url(grouping='combined', all_page=1, unviewed_page=1, viewed_page=1) }}"
+                        class="btn {% if filters.grouping == 'combined' %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                    >
+                        All Requests
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="btn-group btn-group-sm" role="group" aria-label="Request view">
+            <button type="button" class="btn btn-primary active" data-set-request-view-mode="list" aria-pressed="true" title="List layout">
+                <i class="bi bi-list-ul"></i>
+                <span class="visually-hidden">List layout</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="grid" aria-pressed="false" title="Grid layout">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span class="visually-hidden">Grid layout</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-set-request-view-mode="table" aria-pressed="false" title="Table layout">
+                <i class="bi bi-table"></i>
+                <span class="visually-hidden">Table layout</span>
+            </button>
+        </div>
     </div>
 </div>
 
-{% set sections = [
-    ("unviewed", "Unviewed Requests", "text-bg-dark", unviewed_groups, stats.filtered_unviewed_requests),
-    ("viewed", "Viewed Requests", "text-bg-secondary", viewed_groups, stats.filtered_viewed_requests),
-] %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="fw-semibold">Match Count Legend</div>
+                <div class="small text-muted">{{ match_count_legend.summary }}</div>
+            </div>
+            <div class="tandem-match-legend" aria-label="Match count legend">
+                {% for item in match_count_legend.entries %}
+                    <div class="tandem-match-legend-item">
+                        <span class="badge {{ item.badge_class }}">{{ item.label }}</span>
+                        <span class="small text-muted">{{ item.rule }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 
-{% for section_key, section_title, section_badge_class, section_groups, section_count in sections %}
+{% for section in overview_sections %}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 m-0">{{ section_title }}</h2>
-                <span class="badge {{ section_badge_class }}">{{ section_count }}</span>
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="h5 m-0">{{ section.title }}</h2>
+                    {% if section.pagination.total_items %}
+                        <div class="small text-muted mt-1">
+                            Showing {{ section.pagination.start_index }}-{{ section.pagination.end_index }} of {{ section.pagination.total_items }}
+                            {% if section.pagination.pages > 1 %}
+                                · Page {{ section.pagination.page }} of {{ section.pagination.pages }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="badge {{ section.badge_class }}">{{ section.count }}</span>
+                    {% if section.pagination.pages > 1 %}
+                        {% set prev_page_url = build_overview_page_url(section.page_key, section.pagination.prev_page) if section.pagination.has_prev else '#' %}
+                        {% set next_page_url = build_overview_page_url(section.page_key, section.pagination.next_page) if section.pagination.has_next else '#' %}
+                        <nav aria-label="{{ section.title }} pages">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a
+                                    href="{{ prev_page_url }}"
+                                    class="btn btn-outline-secondary {% if not section.pagination.has_prev %}disabled{% endif %}"
+                                    {% if not section.pagination.has_prev %}aria-disabled="true"{% endif %}
+                                >
+                                    Previous
+                                </a>
+                                <span class="btn btn-outline-secondary disabled" aria-disabled="true">
+                                    {{ section.pagination.page }}/{{ section.pagination.pages }}
+                                </span>
+                                <a
+                                    href="{{ next_page_url }}"
+                                    class="btn btn-outline-secondary {% if not section.pagination.has_next %}disabled{% endif %}"
+                                    {% if not section.pagination.has_next %}aria-disabled="true"{% endif %}
+                                >
+                                    Next
+                                </a>
+                            </div>
+                        </nav>
+                    {% endif %}
+                </div>
             </div>
 
-            {% if section_groups %}
+            {% if section.groups %}
                 <div class="tandem-request-results" data-request-results data-view-mode="list">
-                    {% for group in section_groups %}
+                    {% for group in section.groups %}
                         {% for item in group.requests %}
                             <div class="tandem-request-item">
-                                <div class="border rounded p-3 h-100 d-flex flex-column tandem-request-card" data-request-card data-details-open="false">
+                                <div
+                                    class="border rounded p-3 h-100 d-flex flex-column tandem-request-card"
+                                    data-request-card
+                                    data-details-open="false"
+                                    data-request-id="{{ item.id }}"
+                                    data-request-created="{{ item.created_at.isoformat() }}"
+                                    data-request-created-label="{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}"
+                                    data-request-name="{{ item.first_name }} {{ item.last_name }}"
+                                    data-request-sort-name="{{ (item.last_name ~ ' ' ~ item.first_name)|lower }}"
+                                    data-request-email="{{ item.email }}"
+                                    data-request-country="{{ item.country_of_origin_display }}"
+                                    data-request-occupation="{{ item.occupation }}"
+                                    data-request-gender="{{ item.gender }}"
+                                    data-request-birth="{{ item.birth_year }}"
+                                    data-request-departure="{{ item.departure_date.isoformat() }}"
+                                    data-request-departure-label="{{ item.departure_date.strftime('%Y-%m-%d') }}"
+                                    data-request-offered="{% for lang in item.offered_languages_with_levels %}{{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}"
+                                    data-request-requested="{{ ', '.join(item.requested_languages_display) }}"
+                                    data-request-full="{{ item.match_counts.full }}"
+                                    data-request-partial="{{ item.match_counts.partial }}"
+                                    data-request-weak="{{ item.match_counts.weak }}"
+                                    data-request-total="{{ item.match_counts.total }}"
+                                    data-request-comment="{{ item.comment or '' }}"
+                                    data-request-is-viewed="{{ 'true' if item.is_viewed else 'false' }}"
+                                    data-request-requested-native-only="{{ 'true' if item.requested_native_only else 'false' }}"
+                                    data-request-same-gender-only="{{ 'true' if item.same_gender_only else 'false' }}"
+                                    data-request-has-same-email-group="{{ 'true' if can_edit_requests and item.has_same_email_group else 'false' }}"
+                                    data-request-has-likely-duplicate="{{ 'true' if can_edit_requests and item.has_likely_duplicate else 'false' }}"
+                                    data-request-match-url="{% if can_open_matching %}{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
+                                    data-request-edit-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
+                                    data-request-duplicates-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
+                                    data-request-toggle-viewed-url="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}"
+                                    data-request-toggle-viewed-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
+                                    data-request-return-to="{{ overview_return_to }}"
+                                >
                                     <div class="mb-2 tandem-request-summary">
                                         <div class="min-w-0">
                                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
@@ -253,7 +431,7 @@
                                         <div class="request-actions">
                                             {% if can_open_matching %}
                                                 <a
-                                                    href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                    href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=overview_return_to) }}"
                                                     class="btn btn-sm btn-dark"
                                                 >
                                                     Match
@@ -283,7 +461,7 @@
                                                         <li>
                                                             <a
                                                                 class="dropdown-item"
-                                                                href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                                href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=overview_return_to) }}"
                                                             >
                                                                 Edit
                                                             </a>
@@ -291,7 +469,7 @@
                                                         <li>
                                                             <a
                                                                 class="dropdown-item"
-                                                                href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
+                                                                href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=overview_return_to) }}"
                                                             >
                                                                 Duplicates
                                                             </a>
@@ -299,7 +477,7 @@
                                                     {% endif %}
                                                     <li>
                                                         <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
-                                                            <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
+                                                            <input type="hidden" name="return_to" value="{{ overview_return_to }}">
                                                             <button type="submit" class="dropdown-item">
                                                                 {% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}
                                                             </button>
@@ -378,193 +556,63 @@
                 </div>
                 <div class="tandem-request-table-view">
                     <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0 tandem-request-table" data-sortable-table>
+                        <table
+                            class="table table-sm align-middle mb-0 tandem-request-table"
+                            data-sortable-table
+                            data-sort-mode="server"
+                            data-sort-key="{{ filters.sort_by }}"
+                            data-sort-direction="{{ filters.sort_dir }}"
+                        >
                             <thead>
                                 <tr>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="id" data-sort-type="number" data-sort-default-direction="desc">
-                                            ID <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("id", "ID", "number") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="created" data-sort-type="date" data-sort-default-direction="desc">
-                                            Submitted <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("created", "Submitted", "date") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="name">
-                                            Name <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("name", "Name") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="email">
-                                            Email <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("email", "Email") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="country">
-                                            Country <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("country", "Country") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="occupation">
-                                            Occupation <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("occupation", "Occupation") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="gender">
-                                            Gender <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("gender", "Gender") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="birth" data-sort-type="number">
-                                            Birth <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("birth", "Birth", "number") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="departure" data-sort-type="date">
-                                            Departure <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("departure", "Departure", "date") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="offered">
-                                            Offered <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("offered", "Offered") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="requested">
-                                            Requested <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("requested", "Requested") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="full" data-sort-type="number" data-sort-default-direction="desc">
-                                            Full <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("full", "Full", "number") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="partial" data-sort-type="number" data-sort-default-direction="desc">
-                                            Partial <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("partial", "Partial", "number") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        <button type="button" class="table-sort-button" data-sort-key="weak" data-sort-type="number" data-sort-default-direction="desc">
-                                            Weak <i class="bi bi-arrow-down-up ms-1" data-sort-icon></i>
-                                        </button>
+                                        {{ request_sort_button("weak", "Weak", "number") }}
                                     </th>
                                     <th scope="col">Flags</th>
                                     <th scope="col">Comment</th>
                                     <th scope="col"><span class="visually-hidden">Actions</span></th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for group in section_groups %}
-                                    {% for item in group.requests %}
-                                        <tr
-                                            data-sort-id="{{ item.id }}"
-                                            data-sort-created="{{ item.created_at.isoformat() }}"
-                                            data-sort-name="{{ (item.last_name ~ ' ' ~ item.first_name)|lower }}"
-                                            data-sort-email="{{ item.email|lower }}"
-                                            data-sort-country="{{ item.country_of_origin_display|lower }}"
-                                            data-sort-occupation="{{ item.occupation|lower }}"
-                                            data-sort-gender="{{ item.gender|lower }}"
-                                            data-sort-birth="{{ item.birth_year }}"
-                                            data-sort-departure="{{ item.departure_date.isoformat() }}"
-                                            data-sort-offered="{{ ', '.join(item.offered_languages_display)|lower }}"
-                                            data-sort-requested="{{ ', '.join(item.requested_languages_display)|lower }}"
-                                            data-sort-full="{{ item.match_counts.full }}"
-                                            data-sort-partial="{{ item.match_counts.partial }}"
-                                            data-sort-weak="{{ item.match_counts.weak }}"
-                                            data-sort-total="{{ item.match_counts.total }}"
-                                        >
-                                            <td class="text-nowrap">#{{ item.id }}</td>
-                                            <td class="text-nowrap">{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
-                                            <td class="text-nowrap">
-                                                <span class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</span>
-                                                <span class="d-block small text-muted">
-                                                    {% if item.is_viewed %}Viewed{% else %}Unviewed{% endif %}
-                                                </span>
-                                            </td>
-                                            <td>{{ item.email }}</td>
-                                            <td>{{ item.country_of_origin_display }}</td>
-                                            <td>{{ item.occupation }}</td>
-                                            <td>{{ item.gender }}</td>
-                                            <td>{{ item.birth_year }}</td>
-                                            <td class="text-nowrap">{{ item.departure_date.strftime("%Y-%m-%d") }}</td>
-                                            <td class="tandem-table-languages">
-                                                {% for lang in item.offered_languages_with_levels %}
-                                                    {{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}
-                                                {% endfor %}
-                                            </td>
-                                            <td class="tandem-table-languages">{{ ", ".join(item.requested_languages_display) }}</td>
-                                            <td class="text-end fw-semibold">{{ item.match_counts.full }}</td>
-                                            <td class="text-end fw-semibold">{{ item.match_counts.partial }}</td>
-                                            <td class="text-end fw-semibold">{{ item.match_counts.weak }}</td>
-                                            <td>
-                                                <div class="d-flex flex-wrap gap-1">
-                                                    {% if item.requested_native_only %}
-                                                        <span class="badge text-bg-warning">Native</span>
-                                                    {% endif %}
-                                                    {% if item.same_gender_only %}
-                                                        <span class="badge text-bg-warning">Same gender</span>
-                                                    {% endif %}
-                                                    {% if can_edit_requests and item.has_same_email_group %}
-                                                        <span class="badge text-bg-light border">Same email</span>
-                                                    {% endif %}
-                                                    {% if can_edit_requests and item.has_likely_duplicate %}
-                                                        <span class="badge text-bg-light border">Likely duplicate</span>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                            <td class="tandem-table-comment pre-line">{{ item.comment }}</td>
-                                            <td class="text-end">
-                                                <div class="btn-group btn-group-sm" role="group" aria-label="Request actions">
-                                                    {% if can_open_matching %}
-                                                        <a
-                                                            href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
-                                                            class="btn btn-dark"
-                                                            title="Match"
-                                                        >
-                                                            <i class="bi bi-arrow-left-right"></i>
-                                                            <span class="visually-hidden">Match</span>
-                                                        </a>
-                                                    {% endif %}
-
-                                                    {% if can_edit_requests %}
-                                                        <a
-                                                            href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
-                                                            class="btn btn-outline-secondary"
-                                                            title="Edit"
-                                                        >
-                                                            <i class="bi bi-pencil"></i>
-                                                            <span class="visually-hidden">Edit</span>
-                                                        </a>
-                                                        <a
-                                                            href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=request.full_path if request.query_string else request.path) }}"
-                                                            class="btn btn-outline-secondary"
-                                                            title="Duplicates"
-                                                        >
-                                                            <i class="bi bi-files"></i>
-                                                            <span class="visually-hidden">Duplicates</span>
-                                                        </a>
-                                                    {% endif %}
-
-                                                    <form method="post" action="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}">
-                                                        <input type="hidden" name="return_to" value="{{ request.full_path if request.query_string else request.path }}">
-                                                        <button
-                                                            type="submit"
-                                                            class="btn btn-outline-secondary"
-                                                            title="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
-                                                        >
-                                                            <i class="bi {% if item.is_viewed %}bi-eye-slash{% else %}bi-eye{% endif %}"></i>
-                                                            <span class="visually-hidden">{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}</span>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                {% endfor %}
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>

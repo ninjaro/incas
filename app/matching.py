@@ -51,6 +51,91 @@ LEVEL_LABELS = {
     5: "Native",
 }
 
+
+def build_match_rubric(config=None):
+    config = config or MATCH_CONFIG
+    weights = config["weights"]
+    thresholds = config["thresholds"]
+    gap_rules = config["departure_gap_days"]
+
+    return {
+        "summary": (
+            f"Full >= {thresholds['full']} with mutual exchange · "
+            f"Partial >= {thresholds['partial']} · "
+            f"Weak >= {thresholds['weak']}"
+        ),
+        "thresholds": [
+            {
+                "label": "Full",
+                "badge_class": "text-bg-dark",
+                "rule": f"Needs mutual exchange and at least {thresholds['full']} points.",
+            },
+            {
+                "label": "Partial",
+                "badge_class": "text-bg-secondary",
+                "rule": f"Needs at least {thresholds['partial']} points.",
+            },
+            {
+                "label": "Weak",
+                "badge_class": "text-bg-warning",
+                "rule": f"Needs at least {thresholds['weak']} points.",
+            },
+        ],
+        "requested_level_scores": [
+            {
+                "level": level,
+                "label": LEVEL_LABELS[level],
+                "points": weights["requested_level_scores"][level],
+            }
+            for level in sorted(weights["requested_level_scores"])
+        ],
+        "reverse_level_scores": [
+            {
+                "level": level,
+                "label": LEVEL_LABELS[level],
+                "points": weights["reverse_level_scores"][level],
+            }
+            for level in sorted(weights["reverse_level_scores"])
+        ],
+        "bonuses": [
+            {
+                "label": "Each extra requested-language overlap after the strongest one",
+                "points": weights["extra_requested_overlap"],
+            },
+            {
+                "label": "Each extra reverse-language overlap after the strongest one",
+                "points": weights["extra_reverse_overlap"],
+            },
+        ],
+        "penalties": [
+            {
+                "label": "Same country",
+                "points": weights["same_country_penalty"],
+            },
+            {
+                "label": "Gender preference mismatch",
+                "points": weights["gender_preference_mismatch_penalty"],
+            },
+            {
+                "label": "Native preference not confirmed",
+                "points": weights["native_preference_unconfirmed_penalty"],
+            },
+            {
+                "label": f"Departure gap of {gap_rules['medium']}+ days",
+                "points": weights["departure_gap_medium_penalty"],
+            },
+            {
+                "label": f"Departure gap of {gap_rules['large']}+ days",
+                "points": weights["departure_gap_large_penalty"],
+            },
+        ],
+        "caps": [
+            "If the best requested level is Beginner, the result cannot exceed weak.",
+            "If the best requested level is Intermediate, the result cannot exceed partial.",
+            "If native-only is requested but the best requested level is below Native, the result cannot exceed partial.",
+        ],
+    }
+
 def _labels_for_codes(codes, label_map):
     return [label_map.get(code, code) for code in codes]
 
@@ -143,6 +228,8 @@ def evaluate_match(source_item, candidate_item, language_labels, config=None):
     reasons = []
     warnings = []
     warning_keys = []
+    departure_gap_days = None
+    departure_overlap_status = "unknown"
 
     score += _score_language_levels(
         requested_overlap_details,
@@ -201,15 +288,20 @@ def evaluate_match(source_item, candidate_item, language_labels, config=None):
 
     if source_item.departure_date and candidate_item.departure_date:
         gap_days = abs((source_item.departure_date - candidate_item.departure_date).days)
+        departure_gap_days = gap_days
 
         if gap_days >= gap_rules["large"]:
+            departure_overlap_status = "large"
             score -= weights["departure_gap_large_penalty"]
             warnings.append("Large departure gap")
             warning_keys.append("departure_gap")
         elif gap_days >= gap_rules["medium"]:
+            departure_overlap_status = "medium"
             score -= weights["departure_gap_medium_penalty"]
             warnings.append("Departure gap")
             warning_keys.append("departure_gap")
+        else:
+            departure_overlap_status = "overlap"
 
     score = max(score, 0)
 
@@ -254,12 +346,19 @@ def evaluate_match(source_item, candidate_item, language_labels, config=None):
         "warnings": warnings,
         "warning_keys": warning_keys,
         "is_mutual": bool(reverse_overlap),
+        "departure_gap_days": departure_gap_days,
+        "departure_overlap_status": departure_overlap_status,
     }
 
 def build_match_groups(source_item, candidate_items, language_labels, config=None):
     config = config or MATCH_CONFIG
 
     grouped = defaultdict(list)
+    totals = {
+        "full": 0,
+        "partial": 0,
+        "weak": 0,
+    }
 
     for candidate_item in candidate_items:
         match = evaluate_match(
@@ -272,6 +371,7 @@ def build_match_groups(source_item, candidate_items, language_labels, config=Non
             continue
 
         grouped[match["category"]].append(match)
+        totals[match["category"]] += 1
 
     for category in ("full", "partial", "weak"):
         grouped[category].sort(
@@ -286,9 +386,12 @@ def build_match_groups(source_item, candidate_items, language_labels, config=Non
         grouped[category] = grouped[category][:config["limits"][category]]
 
     return {
-        "full": grouped["full"],
-        "partial": grouped["partial"],
-        "weak": grouped["weak"],
+        "groups": {
+            "full": grouped["full"],
+            "partial": grouped["partial"],
+            "weak": grouped["weak"],
+        },
+        "totals": totals,
     }
 
 def build_match_counts(source_items, candidate_items, language_labels, config=None):

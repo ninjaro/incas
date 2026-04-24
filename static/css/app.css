@@ -684,6 +684,12 @@ button.calendar-mini-day:focus {
     line-height: 1.2;
 }
 
+.incas-tandem-stepper,
+.incas-tandem-step-actions,
+.incas-tandem-step-counter {
+    display: none;
+}
+
 .mobile-sticky-submit {
     display: none;
 }
@@ -976,6 +982,62 @@ button.calendar-mini-day:focus {
         padding: 0;
     }
 
+    .incas-tandem-stepper {
+        position: sticky;
+        top: 0.5rem;
+        z-index: 1015;
+        display: block;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: rgba(var(--bs-body-bg-rgb), 0.94);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.75rem;
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(10px);
+    }
+
+    .incas-tandem-step-list {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(8rem, 1fr);
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+    }
+
+    .incas-tandem-step-button {
+        display: grid;
+        gap: 0.2rem;
+        min-height: 3.25rem;
+        padding: 0.65rem 0.75rem;
+        color: var(--bs-body-color);
+        text-align: left;
+        background: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.75rem;
+        white-space: normal;
+    }
+
+    .incas-tandem-step-button.is-current {
+        color: var(--incas-neutral-dark);
+        background: var(--incas-primary);
+        border-color: var(--incas-primary);
+    }
+
+    .incas-tandem-step-number {
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        text-transform: uppercase;
+        opacity: 0.75;
+    }
+
+    .incas-tandem-step-label {
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
     .incas-form .form-submit-footer {
         display: none !important;
     }
@@ -1002,6 +1064,63 @@ button.calendar-mini-day:focus {
     .incas-form-section {
         padding-top: 1rem;
         margin-top: 1rem;
+    }
+
+    .incas-tandem-form .incas-form-section {
+        padding: 1rem;
+        margin-top: 0;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.9rem;
+        background: var(--bs-body-bg);
+        scroll-margin-top: 5.5rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .incas-tandem-form .incas-form-section:first-child {
+        padding-top: 1rem;
+        margin-top: 0;
+        border-top: 1px solid var(--bs-border-color);
+    }
+
+    .incas-tandem-form .incas-form-section.is-current {
+        border-color: rgba(var(--bs-primary-rgb), 0.55);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.08);
+    }
+
+    .incas-tandem-form .incas-form-legend {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .incas-tandem-step-counter {
+        display: inline-flex;
+        padding: 0.25rem 0.6rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: var(--bs-tertiary-bg);
+        border-radius: 999px;
+    }
+
+    .incas-tandem-step-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 0.9rem;
+        border-top: 1px dashed var(--bs-border-color);
+    }
+
+    .incas-tandem-step-actions .btn {
+        flex: 1 1 0;
+        min-height: 2.75rem;
+    }
+
+    .incas-tandem-step-actions .btn:first-child:last-child {
+        margin-left: auto;
+        flex-basis: auto;
     }
 
     .scroll-action {

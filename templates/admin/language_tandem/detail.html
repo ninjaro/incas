@@ -117,6 +117,86 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
+        <details>
+            <summary class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span class="fw-semibold">Score Rubric</span>
+                <span class="small text-muted">{{ match_rubric.summary }}</span>
+            </summary>
+
+            <div class="row g-3 mt-2">
+                <div class="col-xl-4">
+                    <div class="small text-muted mb-2">Thresholds</div>
+                    <div class="d-grid gap-2">
+                        {% for threshold in match_rubric.thresholds %}
+                            <div class="border rounded p-2">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge {{ threshold.badge_class }}">{{ threshold.label }}</span>
+                                    <span class="small">{{ threshold.rule }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="small text-muted mb-2">Language Scores</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Level</th>
+                                    <th scope="col">Requested Fit</th>
+                                    <th scope="col">Mutual Fit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for requested in match_rubric.requested_level_scores %}
+                                    {% set reverse = match_rubric.reverse_level_scores[loop.index0] %}
+                                    <tr>
+                                        <th scope="row">{{ requested.label }}</th>
+                                        <td>+{{ requested.points }}</td>
+                                        <td>+{{ reverse.points }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        The strongest overlap at each side uses the table above. Additional overlaps add smaller bonuses.
+                    </div>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="small text-muted mb-2">Bonuses and Penalties</div>
+                    <div class="d-grid gap-2">
+                        {% for bonus in match_rubric.bonuses %}
+                            <div class="border rounded p-2">
+                                <div class="small"><strong>+{{ bonus.points }}</strong> {{ bonus.label }}</div>
+                            </div>
+                        {% endfor %}
+                        {% for penalty in match_rubric.penalties %}
+                            <div class="border rounded p-2">
+                                <div class="small"><strong>-{{ penalty.points }}</strong> {{ penalty.label }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="small text-muted mb-2">Category Caps</div>
+                    <div class="d-grid gap-2">
+                        {% for cap in match_rubric.caps %}
+                            <div class="border rounded p-2 small">{{ cap }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </details>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
         <div class="row g-3 align-items-end">
             <div class="col-md-6 col-xl-3">
                 <label class="form-label" for="match-sort-mode">Sort</label>
@@ -160,6 +240,55 @@
                     <option value="5">Native only</option>
                 </select>
             </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-native-filter">Native Preference</label>
+                <select class="form-select form-select-sm" id="match-native-filter">
+                    <option value="all">All</option>
+                    <option value="satisfied">Satisfied</option>
+                    <option value="needs_review">Needs review</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-gender-filter">Same-Gender</label>
+                <select class="form-select form-select-sm" id="match-gender-filter">
+                    <option value="all">All</option>
+                    <option value="satisfied">Satisfied</option>
+                    <option value="needs_review">Needs review</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-country-filter">Country</label>
+                <select class="form-select form-select-sm" id="match-country-filter">
+                    <option value="all">All countries</option>
+                    {% for option in match_country_options %}
+                        <option value="{{ option.value }}">{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-departure-filter">Departure</label>
+                <select class="form-select form-select-sm" id="match-departure-filter">
+                    <option value="all">All</option>
+                    <option value="overlap">Overlap / close</option>
+                    <option value="medium">Medium gap</option>
+                    <option value="large">Large gap</option>
+                </select>
+            </div>
+
+            <div class="col-md-6 col-xl-3">
+                <label class="form-label" for="match-duplicate-filter">Duplicate Review</label>
+                <select class="form-select form-select-sm" id="match-duplicate-filter">
+                    <option value="all">All</option>
+                    <option value="clear">No duplicate concern</option>
+                    <option value="needs_review">Needs review</option>
+                    <option value="reviewed_ignore">Ignored</option>
+                    <option value="reviewed_different">Marked different</option>
+                </select>
+            </div>
         </div>
     </div>
 </div>
@@ -169,7 +298,12 @@
     ("weak", "Weak Matches", "text-bg-warning")
 ] %}
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3" data-match-source-id="{{ item.id }}">
+<div
+    class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"
+    data-match-source-id="{{ item.id }}"
+    data-match-source-email="{{ item.email }}"
+    data-match-state-endpoint="{{ url_for('main.admin_language_tandem_match_state', request_id=item.id) }}"
+>
     <div class="small text-muted">
         Match count badges show how many full, partial, and weak matches each request currently has.
     </div>
@@ -189,13 +323,21 @@
     </div>
 </div>
 
+<script type="application/json" id="match-review-state-json">{{ match_review_state|tojson }}</script>
+
 {% for key, title, badge_class in sections %}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h5 m-0">{{ title }}</h2>
                 <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                    <span class="small text-muted">Showing up to {{ match_limits[key] }}</span>
+                    <span class="small text-muted">
+                        {% if match_group_totals[key] > match_limits[key] %}
+                            Showing top {{ match_limits[key] }} of {{ match_group_totals[key] }}
+                        {% else %}
+                            Showing {{ match_group_totals[key] }} of {{ match_group_totals[key] }}
+                        {% endif %}
+                    </span>
                     <span class="badge {{ badge_class }}" data-count-for="{{ key }}">{{ match_groups[key]|length }}</span>
                 </div>
             </div>
@@ -221,6 +363,11 @@
                         data-warning-keys="{{ match.warning_keys|join(',') }}"
                         data-is-mutual="{{ 'true' if match.is_mutual else 'false' }}"
                         data-best-requested-level="{{ match.best_requested_level }}"
+                        data-native-preference="{{ 'needs_review' if 'native_unconfirmed' in match.warning_keys else 'satisfied' }}"
+                        data-gender-preference="{{ 'needs_review' if 'gender_mismatch' in match.warning_keys else 'satisfied' }}"
+                        data-country-code="{{ candidate.country_of_origin }}"
+                        data-departure-overlap="{{ match.departure_overlap_status }}"
+                        data-duplicate-review="{{ match.duplicate_review_status }}"
                     >
                         <div class="match-card border rounded p-3 h-100">
                             <div class="match-candidate-cell">
@@ -235,6 +382,10 @@
                                 </div>
                                 <div class="small text-muted mt-2">
                                     Submitted <time datetime="{{ candidate.created_at.isoformat() }}">{{ candidate.created_at.strftime("%Y-%m-%d %H:%M") }}</time>
+                                </div>
+                                <div class="match-review-badges mt-2">
+                                    <span class="badge text-bg-info d-none" data-contacted-status></span>
+                                    <span class="badge text-bg-success d-none" data-final-pair-status></span>
                                 </div>
                             </div>
 
@@ -284,9 +435,17 @@
                                         <i class="bi bi-envelope"></i>
                                         <span>Email</span>
                                     </a>
+                                    <a href="mailto:{{ item.email }},{{ candidate.email }}?subject=INCAS%20Language%20Tandem" class="btn btn-outline-secondary" title="Email requester and candidate together">
+                                        <i class="bi bi-envelope"></i>
+                                        <span>Pair email</span>
+                                    </a>
                                     <button type="button" class="btn btn-outline-secondary" data-copy-text="{{ candidate.email }}" title="Copy email">
                                         <i class="bi bi-clipboard"></i>
                                         <span data-copy-label>Copy</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" data-copy-text="{{ item.email }}, {{ candidate.email }}" title="Copy requester and candidate emails">
+                                        <i class="bi bi-clipboard"></i>
+                                        <span data-copy-label>Copy both</span>
                                     </button>
                                 </div>
 
@@ -294,6 +453,14 @@
                                     <button type="button" class="btn btn-sm btn-outline-warning" data-toggle-shortlist>
                                         <i class="bi bi-star"></i>
                                         <span data-shortlist-label>Shortlist</span>
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-info" data-toggle-contacted aria-pressed="false">
+                                        <span data-contacted-label>Mark contacted</span>
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-success" data-toggle-final-pair aria-pressed="false">
+                                        <span data-final-pair-label>Mark final pair</span>
                                     </button>
 
                                     <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>

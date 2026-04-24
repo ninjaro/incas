@@ -1,8 +1,9 @@
+import calendar
 import json
 import random
 from datetime import datetime, time, timedelta
 
-from app.models import LanguageTandemRequest, Post, db
+from app.models import LanguageTandemRequest, Post, db, get_configured_local_now
 
 DEMO_FIRST_NAMES = [
     "Anna", "Mariam", "Luca", "Noah", "Sofia", "Elena", "Yuki", "Omar",
@@ -71,6 +72,73 @@ DEMO_COMMENTS = [
 ]
 
 DEMO_LANGUAGE_LEVELS = {"1", "2", "3", "4", "5"}
+DEMO_EVENT_MONTHS_BEFORE = 3
+DEMO_EVENT_MONTHS_AFTER = 3
+
+DEMO_TUESDAY_SPECIAL_EVENTS = [
+    {
+        "slug": "board-game-tuesday",
+        "title": "Board Game Tuesday",
+        "summary": "Easy-to-join games, mixed tables and snacks from 20:00 until around midnight.",
+        "body": "Join our Tuesday evening from 20:00 for relaxed rounds of party games and strategy games. New people can drop in at any time and usually stay until around midnight.",
+        "event_kind": "board_games",
+        "image_url": "/static/img/site/international-tuesday.webp",
+    },
+    {
+        "slug": "karaoke-night",
+        "title": "Karaoke Night",
+        "summary": "International karaoke, group songs and open mic energy from 20:00 onward.",
+        "body": "Our Tuesday karaoke evening starts at 20:00 and usually runs until around midnight. Bring a song, join a duet or just cheer on the room.",
+        "event_kind": "karaoke",
+        "image_url": "/static/img/site/international-tuesday.webp",
+    },
+    {
+        "slug": "dance-social",
+        "title": "Dance Social",
+        "summary": "Simple partner-dance basics, playlist requests and a social floor until late.",
+        "body": "We start with a short beginner-friendly dance warm-up at 20:00 and keep the room open as a social until around midnight.",
+        "event_kind": "dance",
+        "image_url": "/static/img/site/international-tuesday.webp",
+    },
+    {
+        "slug": "games-and-mixer",
+        "title": "Games & Mixer Night",
+        "summary": "Conversation rounds, team games and an easy first stop for new students.",
+        "body": "This Tuesday evening combines simple mixer games and open tables from 20:00 until around midnight, making it easy to meet people even if you come alone.",
+        "event_kind": "board_games",
+        "image_url": "/static/img/site/international-tuesday.webp",
+    },
+]
+
+DEMO_COUNTRY_EVENING_THEMES = [
+    ("Spain", "Tapas stories, regional playlists and a short culture quiz."),
+    ("Japan", "Festivals, daily life and student tips between cities and campus."),
+    ("Brazil", "Music, language basics and stories from local celebrations."),
+    ("Turkey", "Tea, food traditions and city life from different regions."),
+    ("Italy", "Regional food, travel routes and a quick guide to everyday phrases."),
+    ("Mexico", "Street food, celebrations and photo impressions from home."),
+    ("Poland", "Music, comfort food and snapshots of student life."),
+]
+
+DEMO_BREAKFAST_THEMES = [
+    ("Turkish Breakfast Table", "Menemen, breads, spreads and plenty of tea."),
+    ("Pancakes & Fruit Brunch", "Sweet breakfast classics with coffee and fruit."),
+    ("Latin American Breakfast", "Warm dishes, juices and a relaxed Saturday start."),
+    ("European Brunch Buffet", "Fresh rolls, cheese, jam and easy conversation."),
+    ("Waffle Breakfast", "Homemade waffles, toppings and coffee refills."),
+    ("Breakfast Around the World", "A mixed buffet with dishes from several countries."),
+    ("Spring Brunch", "Light breakfast plates and seasonal fruit."),
+]
+
+DEMO_TRIP_DESTINATIONS = [
+    ("Maastricht Day Out", "Old town walk, riverside break and a relaxed afternoon in the center."),
+    ("Cologne Museum Saturday", "Train trip, museum stop and time for food in the city."),
+    ("Mons Discovery Trip", "Architecture walk, coffee stop and small-group exploring."),
+    ("Bonn Riverside Day", "Museum mile options and a long walk by the Rhine."),
+    ("Liège Food & City Trip", "Local snacks, markets and an easy day schedule."),
+    ("Drachenfels Hike Day", "A beginner-friendly outing with views and a group picnic."),
+    ("Luxembourg Old Town Trip", "A full Saturday with viewpoints, cafés and an evening return."),
+]
 
 def build_demo_offered_language_levels(country_code, offered_languages):
     native_languages = set(DEMO_COUNTRY_LANGUAGES.get(country_code, []))
@@ -503,86 +571,172 @@ def build_random_demo_tandem_request(now, index):
         created_at=created_at,
     )
 
+def iter_demo_months(anchor_date, months_before=DEMO_EVENT_MONTHS_BEFORE, months_after=DEMO_EVENT_MONTHS_AFTER):
+    anchor_month_index = anchor_date.year * 12 + (anchor_date.month - 1)
+
+    for offset in range(-months_before, months_after + 1):
+        month_index = anchor_month_index + offset
+        year = month_index // 12
+        month = month_index % 12 + 1
+        yield year, month
+
+def month_weekdays(year, month, weekday):
+    month_calendar = calendar.Calendar(firstweekday=0)
+    return [
+        day
+        for week in month_calendar.monthdatescalendar(year, month)
+        for day in week
+        if day.month == month and day.weekday() == weekday
+    ]
+
+def create_demo_post(
+    *,
+    slug,
+    title,
+    summary="",
+    body,
+    starts_at=None,
+    is_active=True,
+    is_pinned=False,
+    event_kind=None,
+    image_url="",
+):
+    return Post(
+        slug=slug,
+        title=title,
+        summary=summary,
+        body=body,
+        starts_at=starts_at,
+        is_active=is_active,
+        is_pinned=is_pinned,
+        event_kind=event_kind,
+        image_url=image_url,
+    )
+
+def create_dated_demo_event(template, event_date, starts_at_time):
+    return create_demo_post(
+        slug=f"{template['slug']}-{event_date.isoformat()}",
+        title=template["title"],
+        summary=template["summary"],
+        body=template["body"],
+        starts_at=datetime.combine(event_date, starts_at_time),
+        event_kind=template["event_kind"],
+        image_url=template["image_url"],
+    )
+
+def create_cafe_lingua_event(event_date):
+    month_label = event_date.strftime("%B")
+    return create_demo_post(
+        slug=f"cafe-lingua-{event_date.isoformat()}",
+        title=f"Café Lingua · {month_label}",
+        summary="Language tables and tandem-friendly conversation rounds from 20:00 until around midnight.",
+        body="Café Lingua is our regular Tuesday language exchange evening. Join from 20:00, choose a language table, switch groups during the night and stay for as long as you like.",
+        starts_at=datetime.combine(event_date, time(20, 0, 0)),
+        event_kind="cafe_lingua",
+        image_url="/static/img/site/cafe-lingua.webp",
+    )
+
+def create_country_evening_event(event_date, country_name, description):
+    return create_demo_post(
+        slug=f"country-evening-{country_name.lower().replace(' ', '-')}-{event_date.isoformat()}",
+        title=f"Country Evening: {country_name}",
+        summary=description,
+        body=f"Our Tuesday country evening starts at 20:00 and usually lasts until around midnight. This edition focuses on {country_name} with photos, music, stories, food ideas and time for questions.",
+        starts_at=datetime.combine(event_date, time(20, 0, 0)),
+        event_kind="country_evening",
+        image_url="/static/img/site/country-evening.webp",
+    )
+
+def create_breakfast_event(event_date, theme_title, description):
+    return create_demo_post(
+        slug=f"international-breakfast-{event_date.isoformat()}",
+        title=f"International Breakfast: {theme_title}",
+        summary=f"{description} One Saturday breakfast this month, starting at 10:00.",
+        body=f"Start the Saturday slowly with our monthly breakfast from 10:00. {description} The event is designed as an easy social start to the weekend.",
+        starts_at=datetime.combine(event_date, time(10, 0, 0)),
+        event_kind="breakfast",
+        image_url="/static/img/site/international-breakfast.webp",
+    )
+
+def create_trip_event(event_date, trip_title, description):
+    return create_demo_post(
+        slug=f"international-weekend-{event_date.isoformat()}",
+        title=f"International Weekend: {trip_title}",
+        summary=f"{description} Monthly Saturday day trip with morning departure and evening return.",
+        body=f"This is our monthly Saturday day out. We meet in the morning, travel together and return in the evening. {description}",
+        starts_at=datetime.combine(event_date, time(9, 30, 0)),
+        event_kind="trip",
+        image_url="/static/img/site/international-weekend.webp",
+    )
+
 def seed_posts_demo_data():
     if Post.query.count() > 0:
         return
 
-    now = datetime.utcnow()
-
-    days_until_tuesday = (1 - now.weekday()) % 7
-    if days_until_tuesday == 0:
-        days_until_tuesday = 7
-
-    days_until_saturday = (5 - now.weekday()) % 7
-    if days_until_saturday == 0:
-        days_until_saturday = 7
-
-    next_tuesday = (now + timedelta(days=days_until_tuesday)).date()
-    next_saturday = (now + timedelta(days=days_until_saturday)).date()
-    previous_tuesday = next_tuesday - timedelta(days=7)
-
+    now = get_configured_local_now()
     items = [
-        Post(
+        create_demo_post(
             slug="incas-community-update",
             title="INCAS Community Update",
-            body="This is a regular post. It stays live until it is manually deactivated.",
-            starts_at=None,
-            is_active=True,
+            summary="Demo content for the public site and admin panel.",
+            body="This seeded post stays live until it is manually deactivated. The seeded calendar now includes weekly Tuesday evening examples and monthly Saturday breakfast and trip examples across several months.",
             is_pinned=True,
-            event_kind=None,
-            image_url="",
-        ),
-        Post(
-            slug="karaoke-night",
-            title="Karaoke Night",
-            body="Join us for an international karaoke evening.",
-            starts_at=datetime.combine(next_tuesday, time(19, 30, 0)),
-            is_active=True,
-            is_pinned=False,
-            event_kind="karaoke",
-            image_url="",
-        ),
-        Post(
-            slug="cafe-lingua",
-            title="Café Lingua",
-            body="Meet new people and switch between languages during the evening.",
-            starts_at=datetime.combine(next_tuesday, time(17, 30, 0)),
-            is_active=True,
-            is_pinned=False,
-            event_kind="cafe_lingua",
-            image_url="",
-        ),
-        Post(
-            slug="international-breakfast",
-            title="International Breakfast",
-            body="Start the weekend with breakfast and conversation.",
-            starts_at=datetime.combine(next_saturday, time(10, 0, 0)),
-            is_active=True,
-            is_pinned=False,
-            event_kind="breakfast",
-            image_url="/static/img/site/international-breakfast.webp",
-        ),
-        Post(
-            slug="country-evening",
-            title="Country Evening",
-            body="A themed evening focused on one country and its culture.",
-            starts_at=datetime.combine(previous_tuesday, time(19, 0, 0)),
-            is_active=True,
-            is_pinned=False,
-            event_kind="country_evening",
-            image_url="/static/img/site/international-tuesday.webp",
-        ),
-        Post(
-            slug="housing-hours",
-            title="Housing Consultation Hours",
-            body="This support slot is currently not active.",
-            starts_at=datetime.combine(next_saturday, time(12, 0, 0)),
-            is_active=False,
-            is_pinned=False,
-            event_kind="housing",
-            image_url="",
         ),
     ]
+    tuesday_special_index = 0
+    country_evening_index = 0
+    breakfast_index = 0
+    trip_index = 0
+
+    for year, month in iter_demo_months(now.date()):
+        tuesdays = month_weekdays(year, month, 1)
+        saturdays = month_weekdays(year, month, 5)
+
+        if tuesdays:
+            items.append(
+                create_dated_demo_event(
+                    DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)],
+                    tuesdays[0],
+                    time(20, 0, 0),
+                )
+            )
+            tuesday_special_index += 1
+
+        if len(tuesdays) > 1:
+            items.append(create_cafe_lingua_event(tuesdays[1]))
+
+        if len(tuesdays) > 2:
+            country_name, description = DEMO_COUNTRY_EVENING_THEMES[
+                country_evening_index % len(DEMO_COUNTRY_EVENING_THEMES)
+            ]
+            items.append(create_country_evening_event(tuesdays[2], country_name, description))
+            country_evening_index += 1
+
+        for event_date in tuesdays[3:]:
+            items.append(
+                create_dated_demo_event(
+                    DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)],
+                    event_date,
+                    time(20, 0, 0),
+                )
+            )
+            tuesday_special_index += 1
+
+        if saturdays:
+            theme_title, description = DEMO_BREAKFAST_THEMES[
+                breakfast_index % len(DEMO_BREAKFAST_THEMES)
+            ]
+            breakfast_slot = saturdays[0]
+            items.append(create_breakfast_event(breakfast_slot, theme_title, description))
+            breakfast_index += 1
+
+        if len(saturdays) > 2:
+            trip_title, description = DEMO_TRIP_DESTINATIONS[
+                trip_index % len(DEMO_TRIP_DESTINATIONS)
+            ]
+            trip_slot = saturdays[2]
+            items.append(create_trip_event(trip_slot, trip_title, description))
+            trip_index += 1
 
     for item in items:
         db.session.add(item)

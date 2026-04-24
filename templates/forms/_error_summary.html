@@ -1,0 +1,23 @@
+{% if form_errors %}
+    <div class="alert alert-danger form-error-summary" role="alert" data-form-error-summary>
+        <div class="fw-semibold">Check these fields</div>
+        <ul class="mb-0 ps-3">
+            {% for field_name, message in form_errors.items() %}
+                {% set target_id = error_targets.get(field_name) %}
+                <li>
+                    {% if target_id %}
+                        <a
+                            href="#{{ target_id }}"
+                            class="alert-link form-error-summary-link"
+                            data-error-target="{{ target_id }}"
+                        >
+                            {{ message }}
+                        </a>
+                    {% else %}
+                        {{ message }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

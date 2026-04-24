@@ -8,7 +8,7 @@ from babel import Locale
 from babel.languages import get_official_languages
 from flask import render_template
 
-from app.models import LanguageTandemRequest
+from app.models import LanguageTandemRequest, get_configured_local_now
 
 
 def normalize_country_code(value):
@@ -165,6 +165,7 @@ def build_language_field_context(selected_codes, hint_codes, popularity_counts):
 
 def build_language_tandem_form_context(values):
     offered_counts = get_offered_language_counts()
+    local_now = get_configured_local_now()
 
     offered_field = build_language_field_context(
         selected_codes=values["offered_languages"],
@@ -182,6 +183,8 @@ def build_language_tandem_form_context(values):
         "country_options": get_country_options(),
         "offered_field": offered_field,
         "requested_field": requested_field,
+        "birth_year_max": local_now.year,
+        "departure_date_min": local_now.date().isoformat(),
     }
 
 
@@ -277,8 +280,9 @@ def build_tandem_form_values(item=None):
     }
 
 
-def render_admin_language_tandem_edit_page(item, values, return_to):
+def render_admin_language_tandem_edit_page(item, values, return_to, errors=None):
     offered_counts = get_offered_language_counts()
+    local_now = get_configured_local_now()
 
     offered_field = build_language_field_context(
         selected_codes=values["offered_languages"],
@@ -297,9 +301,12 @@ def render_admin_language_tandem_edit_page(item, values, return_to):
         item=item,
         values=values,
         return_to=return_to,
+        errors=errors or {},
         country_options=get_country_options(),
         offered_field=offered_field,
         requested_field=requested_field,
+        birth_year_max=local_now.year,
+        departure_date_min=local_now.date().isoformat(),
     )
 
 def normalize_single_language_code(value):

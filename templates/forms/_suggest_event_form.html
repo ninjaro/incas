@@ -1,19 +1,17 @@
 {% set form_errors = errors|default({}) %}
+{% set error_targets = {
+    "kind": "kind",
+    "country": "country",
+    "contact_name": "contact_name",
+    "contact_email": "contact_email",
+    "contact_phone": "contact_phone"
+} %}
 <form method="post" action="{{ form_action or url_for('main.suggest_event_form') }}" class="card shadow-sm incas-form">
     {% if form_return_to %}
         <input type="hidden" name="return_to" value="{{ form_return_to }}">
     {% endif %}
     <div class="card-body">
-        {% if form_errors %}
-            <div class="alert alert-danger" role="alert">
-                <div class="fw-semibold">Check these fields</div>
-                <ul class="mb-0 ps-3">
-                    {% for message in form_errors.values()|unique %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endif %}
+        {% include "forms/_error_summary.html" %}
 
         <div class="row g-3">
             {% if form_preset_kind %}
@@ -70,7 +68,7 @@
 
             <div class="col-12">
                 <label class="form-label" for="comment">Comment</label>
-                <textarea class="form-control" id="comment" name="comment" rows="5">{{ values.comment }}</textarea>
+                <textarea class="form-control" id="comment" name="comment" rows="5" autocomplete="off" autocapitalize="sentences" spellcheck="true">{{ values.comment }}</textarea>
             </div>
         </div>
     </div>
