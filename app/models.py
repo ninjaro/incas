@@ -180,6 +180,8 @@ class TandemMatchReviewState(db.Model):
     )
     is_hidden = db.Column(db.Boolean, nullable=False, default=False)
     is_shortlisted = db.Column(db.Boolean, nullable=False, default=False)
+    contacted_at = db.Column(db.DateTime, nullable=True)
+    final_pair_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime,

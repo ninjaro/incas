@@ -71,6 +71,230 @@ document.addEventListener("DOMContentLoaded", () => {
             return Array.from(document.querySelectorAll("[data-request-card]"));
         }
 
+        function getRequestTable(container) {
+            return container?.nextElementSibling?.querySelector("[data-sortable-table]") || null;
+        }
+
+        function createRequestActionLink(href, className, title, iconClass, label) {
+            const link = document.createElement("a");
+            link.href = href;
+            link.className = className;
+            link.title = title;
+            link.innerHTML = `<i class="bi ${iconClass}"></i><span class="visually-hidden">${label}</span>`;
+            return link;
+        }
+
+        function createRequestActionForm(action, returnTo, title, iconClass, label) {
+            const form = document.createElement("form");
+            form.method = "post";
+            form.action = action;
+
+            const returnInput = document.createElement("input");
+            returnInput.type = "hidden";
+            returnInput.name = "return_to";
+            returnInput.value = returnTo;
+
+            const button = document.createElement("button");
+            button.type = "submit";
+            button.className = "btn btn-outline-secondary";
+            button.title = title;
+            button.innerHTML = `<i class="bi ${iconClass}"></i><span class="visually-hidden">${label}</span>`;
+
+            form.appendChild(returnInput);
+            form.appendChild(button);
+            return form;
+        }
+
+        function appendRequestCell(row, text, className = "") {
+            const cell = document.createElement("td");
+            if (className) cell.className = className;
+            cell.textContent = text;
+            row.appendChild(cell);
+            return cell;
+        }
+
+        function createRequestFlagsCell(card) {
+            const cell = document.createElement("td");
+            const flags = document.createElement("div");
+            flags.className = "d-flex flex-wrap gap-1";
+
+            if (card.dataset.requestRequestedNativeOnly === "true") {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-warning";
+                badge.textContent = "Native";
+                flags.appendChild(badge);
+            }
+
+            if (card.dataset.requestSameGenderOnly === "true") {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-warning";
+                badge.textContent = "Same gender";
+                flags.appendChild(badge);
+            }
+
+            if (card.dataset.requestHasSameEmailGroup === "true") {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-light border";
+                badge.textContent = "Same email";
+                flags.appendChild(badge);
+            }
+
+            if (card.dataset.requestHasLikelyDuplicate === "true") {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-light border";
+                badge.textContent = "Likely duplicate";
+                flags.appendChild(badge);
+            }
+
+            cell.appendChild(flags);
+            return cell;
+        }
+
+        function createRequestActionsCell(card) {
+            const cell = document.createElement("td");
+            cell.className = "text-end";
+
+            const group = document.createElement("div");
+            group.className = "btn-group btn-group-sm";
+            group.setAttribute("role", "group");
+            group.setAttribute("aria-label", "Request actions");
+
+            if (card.dataset.requestMatchUrl) {
+                group.appendChild(
+                    createRequestActionLink(
+                        card.dataset.requestMatchUrl,
+                        "btn btn-dark",
+                        "Match",
+                        "bi-arrow-left-right",
+                        "Match",
+                    ),
+                );
+            }
+
+            if (card.dataset.requestEditUrl) {
+                group.appendChild(
+                    createRequestActionLink(
+                        card.dataset.requestEditUrl,
+                        "btn btn-outline-secondary",
+                        "Edit",
+                        "bi-pencil",
+                        "Edit",
+                    ),
+                );
+            }
+
+            if (card.dataset.requestDuplicatesUrl) {
+                group.appendChild(
+                    createRequestActionLink(
+                        card.dataset.requestDuplicatesUrl,
+                        "btn btn-outline-secondary",
+                        "Duplicates",
+                        "bi-files",
+                        "Duplicates",
+                    ),
+                );
+            }
+
+            group.appendChild(
+                createRequestActionForm(
+                    card.dataset.requestToggleViewedUrl || "",
+                    card.dataset.requestReturnTo || "",
+                    card.dataset.requestToggleViewedLabel || "Toggle viewed",
+                    card.dataset.requestIsViewed === "true" ? "bi-eye-slash" : "bi-eye",
+                    card.dataset.requestToggleViewedLabel || "Toggle viewed",
+                ),
+            );
+
+            cell.appendChild(group);
+            return cell;
+        }
+
+        function createRequestTableRow(card) {
+            const row = document.createElement("tr");
+
+            row.setAttribute("data-sort-id", card.dataset.requestId || "");
+            row.setAttribute("data-sort-created", card.dataset.requestCreated || "");
+            row.setAttribute("data-sort-name", card.dataset.requestSortName || "");
+            row.setAttribute("data-sort-email", card.dataset.requestEmail || "");
+            row.setAttribute("data-sort-country", card.dataset.requestCountry || "");
+            row.setAttribute("data-sort-occupation", card.dataset.requestOccupation || "");
+            row.setAttribute("data-sort-gender", card.dataset.requestGender || "");
+            row.setAttribute("data-sort-birth", card.dataset.requestBirth || "");
+            row.setAttribute("data-sort-departure", card.dataset.requestDeparture || "");
+            row.setAttribute("data-sort-offered", card.dataset.requestOffered || "");
+            row.setAttribute("data-sort-requested", card.dataset.requestRequested || "");
+            row.setAttribute("data-sort-full", card.dataset.requestFull || "0");
+            row.setAttribute("data-sort-partial", card.dataset.requestPartial || "0");
+            row.setAttribute("data-sort-weak", card.dataset.requestWeak || "0");
+            row.setAttribute("data-sort-total", card.dataset.requestTotal || "0");
+
+            appendRequestCell(row, `#${card.dataset.requestId || ""}`, "text-nowrap");
+            appendRequestCell(row, card.dataset.requestCreatedLabel || "", "text-nowrap");
+
+            const nameCell = document.createElement("td");
+            nameCell.className = "text-nowrap";
+            const name = document.createElement("span");
+            name.className = "fw-semibold";
+            name.textContent = card.dataset.requestName || "";
+            const status = document.createElement("span");
+            status.className = "d-block small text-muted";
+            status.textContent = card.dataset.requestIsViewed === "true" ? "Viewed" : "Unviewed";
+            nameCell.appendChild(name);
+            nameCell.appendChild(status);
+            row.appendChild(nameCell);
+
+            appendRequestCell(row, card.dataset.requestEmail || "");
+            appendRequestCell(row, card.dataset.requestCountry || "");
+            appendRequestCell(row, card.dataset.requestOccupation || "");
+            appendRequestCell(row, card.dataset.requestGender || "");
+            appendRequestCell(row, card.dataset.requestBirth || "");
+            appendRequestCell(row, card.dataset.requestDepartureLabel || "", "text-nowrap");
+            appendRequestCell(row, card.dataset.requestOffered || "", "tandem-table-languages");
+            appendRequestCell(row, card.dataset.requestRequested || "", "tandem-table-languages");
+            appendRequestCell(row, card.dataset.requestFull || "0", "text-end fw-semibold");
+            appendRequestCell(row, card.dataset.requestPartial || "0", "text-end fw-semibold");
+            appendRequestCell(row, card.dataset.requestWeak || "0", "text-end fw-semibold");
+            row.appendChild(createRequestFlagsCell(card));
+            appendRequestCell(row, card.dataset.requestComment || "", "tandem-table-comment pre-line");
+            row.appendChild(createRequestActionsCell(card));
+
+            return row;
+        }
+
+        function renderRequestTable(table, container) {
+            if (!table || !container) return;
+
+            const body = table.querySelector("tbody");
+            if (!body) return;
+
+            body.innerHTML = "";
+
+            const fragment = document.createDocumentFragment();
+            container.querySelectorAll("[data-request-card]").forEach((card) => {
+                fragment.appendChild(createRequestTableRow(card));
+            });
+            body.appendChild(fragment);
+
+            const activeKey = table.dataset.sortKey || "";
+            if (activeKey) {
+                const activeButton = table.querySelector(`[data-sort-key="${activeKey}"]`);
+                if (activeButton) {
+                    const activeType = activeButton.dataset.sortType || "string";
+                    const activeDirection = table.dataset.sortDirection || activeButton.dataset.sortDefaultDirection || "asc";
+                    sortTableRows(table, activeKey, activeType, activeDirection);
+                } else {
+                    updateSortableHeaders(table);
+                }
+            } else {
+                updateSortableHeaders(table);
+            }
+        }
+
+        function clearRequestTable(table) {
+            const body = table?.querySelector("tbody");
+            if (body) body.innerHTML = "";
+        }
+
         function getOverviewPanels() {
             return Array.from(document.querySelectorAll("[data-admin-overview-panel]"));
         }
@@ -115,6 +339,12 @@ document.addEventListener("DOMContentLoaded", () => {
         function applyRequestUiState() {
             getRequestResultsContainers().forEach((container) => {
                 container.dataset.viewMode = tandemRequestUiState.viewMode;
+                const table = getRequestTable(container);
+                if (tandemRequestUiState.viewMode === "table") {
+                    renderRequestTable(table, container);
+                } else {
+                    clearRequestTable(table);
+                }
             });
 
             getRequestCards().forEach((card) => {
@@ -190,7 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const hasMatchViewControls = Boolean(document.querySelector("[data-set-view-mode]"));
         const matchSource = document.querySelector("[data-match-source-id]");
         const matchStateEndpoint = matchSource ? (matchSource.dataset.matchStateEndpoint || "") : "";
+        const matchSourceEmail = matchSource ? (matchSource.dataset.matchSourceEmail || "") : "";
         const matchStateScript = document.getElementById("match-review-state-json");
+        const MATCH_EMAIL_SUBJECT = "INCAS Language Tandem";
 
         const matchUiState = {
             viewMode: hasMatchViewControls
@@ -200,28 +432,83 @@ document.addEventListener("DOMContentLoaded", () => {
             warningFilter: "all",
             mutualFilter: "all",
             levelFilter: "all",
+            nativeFilter: "all",
+            sameGenderFilter: "all",
+            countryFilter: "all",
+            departureFilter: "all",
+            duplicateFilter: "all",
         };
 
         const persistedMatchState = {
             hidden: new Set(),
             shortlisted: new Set(),
+            contacted: new Map(),
+            finalPairs: new Map(),
         };
+
+        function clearPersistedMatchState() {
+            persistedMatchState.hidden.clear();
+            persistedMatchState.shortlisted.clear();
+            persistedMatchState.contacted.clear();
+            persistedMatchState.finalPairs.clear();
+        }
+
+        function replaceSetContents(targetSet, sourceSet) {
+            targetSet.clear();
+            sourceSet.forEach((value) => targetSet.add(value));
+        }
+
+        function replaceMapContents(targetMap, sourceMap) {
+            targetMap.clear();
+            sourceMap.forEach((value, key) => {
+                targetMap.set(key, value ? { ...value } : {});
+            });
+        }
+
+        function replacePersistedMatchState(rawState) {
+            clearPersistedMatchState();
+            (rawState.hidden || []).forEach((id) => persistedMatchState.hidden.add(String(id)));
+            (rawState.shortlisted || []).forEach((id) => persistedMatchState.shortlisted.add(String(id)));
+
+            Object.entries(rawState.contacted || {}).forEach(([id, value]) => {
+                persistedMatchState.contacted.set(String(id), value ? { ...value } : {});
+            });
+
+            Object.entries(rawState.final_pairs || {}).forEach(([id, value]) => {
+                persistedMatchState.finalPairs.set(String(id), value ? { ...value } : {});
+            });
+        }
+
+        function clonePersistedMatchState() {
+            return {
+                hidden: new Set(persistedMatchState.hidden),
+                shortlisted: new Set(persistedMatchState.shortlisted),
+                contacted: new Map(
+                    Array.from(persistedMatchState.contacted.entries(), ([key, value]) => [key, value ? { ...value } : {}]),
+                ),
+                finalPairs: new Map(
+                    Array.from(persistedMatchState.finalPairs.entries(), ([key, value]) => [key, value ? { ...value } : {}]),
+                ),
+            };
+        }
+
+        function restorePersistedMatchState(snapshot) {
+            replaceSetContents(persistedMatchState.hidden, snapshot.hidden);
+            replaceSetContents(persistedMatchState.shortlisted, snapshot.shortlisted);
+            replaceMapContents(persistedMatchState.contacted, snapshot.contacted);
+            replaceMapContents(persistedMatchState.finalPairs, snapshot.finalPairs);
+        }
 
         function readPersistedMatchState() {
             try {
-                const rawState = JSON.parse(matchStateScript?.textContent || "{}");
-                persistedMatchState.hidden.clear();
-                persistedMatchState.shortlisted.clear();
-                (rawState.hidden || []).forEach((id) => persistedMatchState.hidden.add(String(id)));
-                (rawState.shortlisted || []).forEach((id) => persistedMatchState.shortlisted.add(String(id)));
+                replacePersistedMatchState(JSON.parse(matchStateScript?.textContent || "{}"));
             } catch (_error) {
-                persistedMatchState.hidden.clear();
-                persistedMatchState.shortlisted.clear();
+                clearPersistedMatchState();
             }
         }
 
         async function writePersistedMatchState(candidateId) {
-            if (!matchStateEndpoint || !candidateId) return;
+            if (!matchStateEndpoint || !candidateId) return null;
 
             const response = await fetch(matchStateEndpoint, {
                 method: "POST",
@@ -233,17 +520,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     candidate_id: Number(candidateId),
                     hidden: persistedMatchState.hidden.has(candidateId),
                     shortlisted: persistedMatchState.shortlisted.has(candidateId),
+                    contacted: persistedMatchState.contacted.has(candidateId),
+                    final_pair: persistedMatchState.finalPairs.has(candidateId),
                 }),
             });
 
             if (!response.ok) {
                 throw new Error("Could not save match review state.");
             }
-        }
 
-        function replaceSetContents(targetSet, sourceSet) {
-            targetSet.clear();
-            sourceSet.forEach((value) => targetSet.add(value));
+            return response.json();
         }
 
         function showMatchStateError() {
@@ -264,6 +550,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function getCardId(card) {
             return String(card.dataset.candidateId || "");
+        }
+
+        function normalizeEmailValue(value) {
+            return String(value || "").trim();
+        }
+
+        function buildMailtoHref(addresses) {
+            const recipients = addresses
+                .map(normalizeEmailValue)
+                .filter(Boolean)
+                .join(",");
+            const subject = encodeURIComponent(MATCH_EMAIL_SUBJECT);
+
+            return recipients ? `mailto:${recipients}?subject=${subject}` : `mailto:?subject=${subject}`;
+        }
+
+        function buildPairEmailText(candidateEmail) {
+            return [matchSourceEmail, candidateEmail]
+                .map(normalizeEmailValue)
+                .filter(Boolean)
+                .join(", ");
         }
 
         function parseCreatedAt(card) {
@@ -328,12 +635,106 @@ document.addEventListener("DOMContentLoaded", () => {
             return candidateLevel >= requiredLevel;
         }
 
+        function matchesNativeFilter(card) {
+            if (matchUiState.nativeFilter === "all") return true;
+            return (card.dataset.nativePreference || "satisfied") === matchUiState.nativeFilter;
+        }
+
+        function matchesSameGenderFilter(card) {
+            if (matchUiState.sameGenderFilter === "all") return true;
+            return (card.dataset.genderPreference || "satisfied") === matchUiState.sameGenderFilter;
+        }
+
+        function matchesCountryFilter(card) {
+            if (matchUiState.countryFilter === "all") return true;
+            return (card.dataset.countryCode || "") === matchUiState.countryFilter;
+        }
+
+        function matchesDepartureFilter(card) {
+            if (matchUiState.departureFilter === "all") return true;
+            return (card.dataset.departureOverlap || "unknown") === matchUiState.departureFilter;
+        }
+
+        function matchesDuplicateFilter(card) {
+            if (matchUiState.duplicateFilter === "all") return true;
+            return (card.dataset.duplicateReview || "clear") === matchUiState.duplicateFilter;
+        }
+
         function setCardHiddenState(card, isHidden) {
             const hideButton = card.querySelector("[data-hide-match]");
             const restoreButton = card.querySelector("[data-restore-match]");
 
             if (hideButton) hideButton.classList.toggle("d-none", isHidden);
             if (restoreButton) restoreButton.classList.toggle("d-none", !isHidden);
+        }
+
+        function buildReviewStatusLabel(label, meta) {
+            return meta?.label ? `${label} · ${meta.label}` : label;
+        }
+
+        function createReviewBadges(candidateId, extraClass = "") {
+            const contactedMeta = persistedMatchState.contacted.get(candidateId) || null;
+            const finalPairMeta = persistedMatchState.finalPairs.get(candidateId) || null;
+
+            if (!contactedMeta && !finalPairMeta) return null;
+
+            const badges = document.createElement("div");
+            badges.className = "match-review-badges";
+
+            if (extraClass) {
+                badges.classList.add(extraClass);
+            }
+
+            if (contactedMeta) {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-info";
+                badge.textContent = buildReviewStatusLabel("Contacted", contactedMeta);
+                badges.appendChild(badge);
+            }
+
+            if (finalPairMeta) {
+                const badge = document.createElement("span");
+                badge.className = "badge text-bg-success";
+                badge.textContent = buildReviewStatusLabel("Final pair", finalPairMeta);
+                badges.appendChild(badge);
+            }
+
+            return badges;
+        }
+
+        function createShortlistStateBadges(candidateId, extraClass = "") {
+            const isHidden = persistedMatchState.hidden.has(candidateId);
+            const reviewBadges = createReviewBadges(candidateId);
+
+            if (!isHidden && !reviewBadges) return null;
+
+            const badges = document.createElement("div");
+            badges.className = "match-review-badges";
+
+            if (extraClass) {
+                badges.classList.add(extraClass);
+            }
+
+            if (isHidden) {
+                const hiddenBadge = document.createElement("span");
+                hiddenBadge.className = "badge text-bg-secondary";
+                hiddenBadge.textContent = "Hidden in results";
+                badges.appendChild(hiddenBadge);
+            }
+
+            reviewBadges?.childNodes.forEach((node) => {
+                badges.appendChild(node.cloneNode(true));
+            });
+
+            return badges;
+        }
+
+        function setCardReviewBadgeState(card, selector, isActive, label, meta) {
+            const badge = card.querySelector(selector);
+            if (!badge) return;
+
+            badge.classList.toggle("d-none", !isActive);
+            badge.textContent = isActive ? buildReviewStatusLabel(label, meta) : "";
         }
 
         function setCardShortlistState(card, isShortlisted) {
@@ -353,6 +754,42 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (label) label.textContent = isShortlisted ? "Shortlisted" : "Shortlist";
+        }
+
+        function setCardContactedState(card, contactedMeta) {
+            const button = card.querySelector("[data-toggle-contacted]");
+            const label = button?.querySelector("[data-contacted-label]");
+            const isContacted = Boolean(contactedMeta);
+
+            if (button) {
+                button.classList.toggle("btn-info", isContacted);
+                button.classList.toggle("btn-outline-info", !isContacted);
+                button.setAttribute("aria-pressed", isContacted ? "true" : "false");
+            }
+
+            if (label) {
+                label.textContent = isContacted ? "Contacted" : "Mark contacted";
+            }
+
+            setCardReviewBadgeState(card, "[data-contacted-status]", isContacted, "Contacted", contactedMeta);
+        }
+
+        function setCardFinalPairState(card, finalPairMeta) {
+            const button = card.querySelector("[data-toggle-final-pair]");
+            const label = button?.querySelector("[data-final-pair-label]");
+            const isFinalPair = Boolean(finalPairMeta);
+
+            if (button) {
+                button.classList.toggle("btn-success", isFinalPair);
+                button.classList.toggle("btn-outline-success", !isFinalPair);
+                button.setAttribute("aria-pressed", isFinalPair ? "true" : "false");
+            }
+
+            if (label) {
+                label.textContent = isFinalPair ? "Final pair" : "Mark final pair";
+            }
+
+            setCardReviewBadgeState(card, "[data-final-pair-status]", isFinalPair, "Final pair", finalPairMeta);
         }
 
         function moveCardToHidden(card) {
@@ -384,7 +821,12 @@ document.addEventListener("DOMContentLoaded", () => {
             cards.forEach((card) => {
                 const isVisible = matchesWarningFilter(card)
                     && matchesMutualFilter(card)
-                    && matchesLevelFilter(card);
+                    && matchesLevelFilter(card)
+                    && matchesNativeFilter(card)
+                    && matchesSameGenderFilter(card)
+                    && matchesCountryFilter(card)
+                    && matchesDepartureFilter(card)
+                    && matchesDuplicateFilter(card);
 
                 card.classList.toggle("d-none", !isVisible);
             });
@@ -407,8 +849,11 @@ document.addEventListener("DOMContentLoaded", () => {
             emptyState.classList.toggle("d-none", shortlistedCards.length > 0);
 
             shortlistedCards.forEach((card) => {
+                const cardId = getCardId(card);
+                const isHidden = persistedMatchState.hidden.has(cardId);
                 const row = document.createElement("div");
                 row.className = "match-shortlist-row";
+                row.classList.toggle("match-shortlist-row-hidden", isHidden);
 
                 const summary = document.createElement("div");
                 summary.className = "match-shortlist-summary";
@@ -424,13 +869,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 summary.appendChild(name);
                 summary.appendChild(meta);
 
+                const stateBadges = createShortlistStateBadges(cardId, "mt-2");
+                if (stateBadges) {
+                    summary.appendChild(stateBadges);
+                }
+
                 const actions = document.createElement("div");
                 actions.className = "match-shortlist-actions";
 
                 const mailLink = document.createElement("a");
                 mailLink.className = "btn btn-sm btn-outline-secondary";
-                mailLink.href = `mailto:${card.dataset.candidateEmail || ""}?subject=INCAS%20Language%20Tandem`;
+                mailLink.href = buildMailtoHref([card.dataset.candidateEmail || ""]);
                 mailLink.textContent = "Email";
+
+                const pairMailLink = document.createElement("a");
+                pairMailLink.className = "btn btn-sm btn-outline-secondary";
+                pairMailLink.href = buildMailtoHref([matchSourceEmail, card.dataset.candidateEmail || ""]);
+                pairMailLink.textContent = "Pair email";
 
                 const copyButton = document.createElement("button");
                 copyButton.type = "button";
@@ -438,14 +893,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 copyButton.dataset.copyText = card.dataset.candidateEmail || "";
                 copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span data-copy-label>Copy</span>';
 
+                const copyBothButton = document.createElement("button");
+                copyBothButton.type = "button";
+                copyBothButton.className = "btn btn-sm btn-outline-secondary";
+                copyBothButton.dataset.copyText = buildPairEmailText(card.dataset.candidateEmail || "");
+                copyBothButton.innerHTML = '<i class="bi bi-clipboard"></i> <span data-copy-label>Copy both</span>';
+
                 const removeButton = document.createElement("button");
                 removeButton.type = "button";
                 removeButton.className = "btn btn-sm btn-outline-secondary";
-                removeButton.dataset.removeShortlist = getCardId(card);
+                removeButton.dataset.removeShortlist = cardId;
                 removeButton.textContent = "Remove";
 
                 actions.appendChild(mailLink);
+                actions.appendChild(pairMailLink);
                 actions.appendChild(copyButton);
+                actions.appendChild(copyBothButton);
                 actions.appendChild(removeButton);
 
                 row.appendChild(summary);
@@ -507,49 +970,52 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        async function persistMatchStateChange(candidateId, previousState) {
+            try {
+                const payload = await writePersistedMatchState(candidateId);
+                if (payload?.state) {
+                    replacePersistedMatchState(payload.state);
+                }
+            } catch (_error) {
+                restorePersistedMatchState(previousState);
+                applyPersistedMatchState();
+                refreshMatchUi();
+                showMatchStateError();
+                return;
+            }
+
+            applyPersistedMatchState();
+            refreshMatchUi();
+        }
+
         async function hideCard(card) {
             const cardId = getCardId(card);
             if (!cardId) return;
 
+            const previousState = clonePersistedMatchState();
             persistedMatchState.hidden.add(cardId);
-            moveCardToHidden(card);
+            applyPersistedMatchState();
             refreshMatchUi();
-
-            try {
-                await writePersistedMatchState(cardId);
-            } catch (_error) {
-                persistedMatchState.hidden.delete(cardId);
-                moveCardToOrigin(card);
-                refreshMatchUi();
-                showMatchStateError();
-            }
+            await persistMatchStateChange(cardId, previousState);
         }
 
         async function restoreCard(card) {
             const cardId = getCardId(card);
             if (!cardId) return;
 
+            const previousState = clonePersistedMatchState();
             persistedMatchState.hidden.delete(cardId);
-            moveCardToOrigin(card);
+            applyPersistedMatchState();
             refreshMatchUi();
-
-            try {
-                await writePersistedMatchState(cardId);
-            } catch (_error) {
-                persistedMatchState.hidden.add(cardId);
-                moveCardToHidden(card);
-                refreshMatchUi();
-                showMatchStateError();
-            }
+            await persistMatchStateChange(cardId, previousState);
         }
 
         async function toggleShortlist(card) {
             const cardId = getCardId(card);
             if (!cardId) return;
 
+            const previousState = clonePersistedMatchState();
             const isShortlisted = persistedMatchState.shortlisted.has(cardId);
-            const previousHidden = new Set(persistedMatchState.hidden);
-            const previousShortlisted = new Set(persistedMatchState.shortlisted);
 
             if (isShortlisted) {
                 persistedMatchState.shortlisted.delete(cardId);
@@ -557,18 +1023,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 persistedMatchState.shortlisted.add(cardId);
             }
 
-            setCardShortlistState(card, !isShortlisted);
+            applyPersistedMatchState();
             refreshMatchUi();
+            await persistMatchStateChange(cardId, previousState);
+        }
 
-            try {
-                await writePersistedMatchState(cardId);
-            } catch (_error) {
-                replaceSetContents(persistedMatchState.hidden, previousHidden);
-                replaceSetContents(persistedMatchState.shortlisted, previousShortlisted);
-                setCardShortlistState(card, isShortlisted);
-                refreshMatchUi();
-                showMatchStateError();
+        async function toggleContacted(card) {
+            const cardId = getCardId(card);
+            if (!cardId) return;
+
+            const previousState = clonePersistedMatchState();
+            if (persistedMatchState.contacted.has(cardId)) {
+                persistedMatchState.contacted.delete(cardId);
+            } else {
+                persistedMatchState.contacted.set(cardId, {});
             }
+
+            applyPersistedMatchState();
+            refreshMatchUi();
+            await persistMatchStateChange(cardId, previousState);
+        }
+
+        async function toggleFinalPair(card) {
+            const cardId = getCardId(card);
+            if (!cardId) return;
+
+            const previousState = clonePersistedMatchState();
+            const isFinalPair = persistedMatchState.finalPairs.has(cardId);
+
+            if (isFinalPair) {
+                persistedMatchState.finalPairs.delete(cardId);
+            } else {
+                const currentMeta = persistedMatchState.finalPairs.get(cardId) || {};
+                persistedMatchState.finalPairs.clear();
+                persistedMatchState.finalPairs.set(cardId, currentMeta);
+            }
+
+            applyPersistedMatchState();
+            refreshMatchUi();
+            await persistMatchStateChange(cardId, previousState);
         }
 
         function applyPersistedMatchState() {
@@ -578,9 +1071,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (persistedMatchState.hidden.has(cardId)) {
                     moveCardToHidden(card);
+                } else {
+                    moveCardToOrigin(card);
                 }
 
                 setCardShortlistState(card, persistedMatchState.shortlisted.has(cardId));
+                setCardContactedState(card, persistedMatchState.contacted.get(cardId) || null);
+                setCardFinalPairState(card, persistedMatchState.finalPairs.get(cardId) || null);
             });
         }
 
@@ -623,6 +1120,46 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
+        const nativeFilterSelect = document.getElementById("match-native-filter");
+        if (nativeFilterSelect) {
+            nativeFilterSelect.addEventListener("change", () => {
+                matchUiState.nativeFilter = nativeFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
+        const sameGenderFilterSelect = document.getElementById("match-gender-filter");
+        if (sameGenderFilterSelect) {
+            sameGenderFilterSelect.addEventListener("change", () => {
+                matchUiState.sameGenderFilter = sameGenderFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
+        const countryFilterSelect = document.getElementById("match-country-filter");
+        if (countryFilterSelect) {
+            countryFilterSelect.addEventListener("change", () => {
+                matchUiState.countryFilter = countryFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
+        const departureFilterSelect = document.getElementById("match-departure-filter");
+        if (departureFilterSelect) {
+            departureFilterSelect.addEventListener("change", () => {
+                matchUiState.departureFilter = departureFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
+        const duplicateFilterSelect = document.getElementById("match-duplicate-filter");
+        if (duplicateFilterSelect) {
+            duplicateFilterSelect.addEventListener("change", () => {
+                matchUiState.duplicateFilter = duplicateFilterSelect.value;
+                refreshMatchUi();
+            });
+        }
+
         document.addEventListener("click", (event) => {
             const shortlistButton = event.target.closest("[data-toggle-shortlist]");
             if (shortlistButton) {
@@ -631,24 +1168,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            const contactedButton = event.target.closest("[data-toggle-contacted]");
+            if (contactedButton) {
+                const card = contactedButton.closest("[data-match-card]");
+                if (card) toggleContacted(card);
+                return;
+            }
+
+            const finalPairButton = event.target.closest("[data-toggle-final-pair]");
+            if (finalPairButton) {
+                const card = finalPairButton.closest("[data-match-card]");
+                if (card) toggleFinalPair(card);
+                return;
+            }
+
             const removeShortlistButton = event.target.closest("[data-remove-shortlist]");
             if (removeShortlistButton) {
                 const candidateId = String(removeShortlistButton.dataset.removeShortlist || "");
-                const previousHidden = new Set(persistedMatchState.hidden);
-                const previousShortlisted = new Set(persistedMatchState.shortlisted);
+                if (!candidateId) return;
+
+                const previousState = clonePersistedMatchState();
                 persistedMatchState.shortlisted.delete(candidateId);
-
-                const card = getAllMatchCards().find((item) => getCardId(item) === candidateId);
-                if (card) setCardShortlistState(card, false);
-
+                applyPersistedMatchState();
                 refreshMatchUi();
-                writePersistedMatchState(candidateId).catch(() => {
-                    replaceSetContents(persistedMatchState.hidden, previousHidden);
-                    replaceSetContents(persistedMatchState.shortlisted, previousShortlisted);
-                    if (card) setCardShortlistState(card, true);
-                    refreshMatchUi();
-                    showMatchStateError();
-                });
+                persistMatchStateChange(candidateId, previousState);
                 return;
             }
 
@@ -762,19 +1305,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function sortTable(table, button) {
-        const key = button.dataset.sortKey;
-        const type = button.dataset.sortType || "string";
-        const defaultDirection = button.dataset.sortDefaultDirection || "asc";
-        const currentDirection = table.dataset.sortDirection || "";
-        let direction = defaultDirection;
+    function sortTableRows(table, key, type = "string", direction = "asc") {
         const body = table.querySelector("tbody");
 
         if (!key || !body) return;
-
-        if (table.dataset.sortKey === key) {
-            direction = currentDirection === "asc" ? "desc" : "asc";
-        }
 
         const rows = Array.from(body.querySelectorAll("tr"));
         const multiplier = direction === "desc" ? -1 : 1;
@@ -798,11 +1332,33 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSortableHeaders(table);
     }
 
+    function sortTable(table, button) {
+        const key = button.dataset.sortKey;
+        const type = button.dataset.sortType || "string";
+        const defaultDirection = button.dataset.sortDefaultDirection || "asc";
+        const currentDirection = table.dataset.sortDirection || "";
+        let direction = defaultDirection;
+
+        if (!key) return;
+
+        if (table.dataset.sortKey === key) {
+            direction = currentDirection === "asc" ? "desc" : "asc";
+        }
+
+        sortTableRows(table, key, type, direction);
+    }
+
     document.querySelectorAll("[data-sortable-table]").forEach(updateSortableHeaders);
 
     document.addEventListener("click", (event) => {
         const sortButton = event.target.closest("[data-sortable-table] [data-sort-key]");
         if (!sortButton) return;
+
+        if (sortButton.dataset.sortUrl) {
+            event.preventDefault();
+            window.location.assign(sortButton.dataset.sortUrl);
+            return;
+        }
 
         const table = sortButton.closest("[data-sortable-table]");
         if (table) sortTable(table, sortButton);

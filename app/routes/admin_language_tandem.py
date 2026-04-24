@@ -8,10 +8,17 @@ from app.duplicate_review import (
     build_duplicate_candidates,
     build_duplicate_merge_rows,
     canonicalize_duplicate_pair,
+    evaluate_duplicate_candidate,
     get_older_and_newer_request,
 )
-from app.matching import MATCH_CONFIG, build_match_groups
-from app.models import LanguageTandemRequest, TandemDuplicateDecision, TandemMatchReviewState, db
+from app.matching import MATCH_CONFIG, build_match_groups, build_match_rubric
+from app.models import (
+    LanguageTandemRequest,
+    TandemDuplicateDecision,
+    TandemMatchReviewState,
+    db,
+    get_configured_local_now,
+)
 from app.routes import bp
 from app.routes.helpers.access import (
     has_tandem_correction_access,
@@ -44,6 +51,50 @@ from app.routes.helpers.tandem_form import (
 )
 
 
+def serialize_match_review_timestamp(value):
+    if value is None:
+        return None
+
+    return {
+        "iso": value.isoformat(timespec="minutes"),
+        "label": value.strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+def match_review_state_is_active(state):
+    return (
+        state.is_hidden
+        or state.is_shortlisted
+        or state.contacted_at is not None
+        or state.final_pair_at is not None
+    )
+
+
+def build_match_review_state_snapshot(review_states):
+    return {
+        "hidden": [
+            str(state.candidate_request_id)
+            for state in review_states
+            if state.is_hidden
+        ],
+        "shortlisted": [
+            str(state.candidate_request_id)
+            for state in review_states
+            if state.is_shortlisted
+        ],
+        "contacted": {
+            str(state.candidate_request_id): serialize_match_review_timestamp(state.contacted_at)
+            for state in review_states
+            if state.contacted_at is not None
+        },
+        "final_pairs": {
+            str(state.candidate_request_id): serialize_match_review_timestamp(state.final_pair_at)
+            for state in review_states
+            if state.final_pair_at is not None
+        },
+    }
+
+
 @bp.route("/admin/language-tandem")
 def admin_language_tandem():
     guard = require_tandem_any_access()
@@ -61,9 +112,19 @@ def admin_language_tandem():
         allow_duplicate_filters=allow_duplicate_filters,
     )
 
+    def build_overview_url(**overrides):
+        params = dict(filters)
+        params.update(overrides)
+        return url_for("main.admin_language_tandem", **params)
+
+    def build_overview_page_url(page_key, page_value):
+        return build_overview_url(**{page_key: page_value})
+
     return render_template(
         "admin/language_tandem/index.html",
         **context,
+        build_overview_url=build_overview_url,
+        build_overview_page_url=build_overview_page_url,
         can_open_matching=has_tandem_matching_access(),
         can_edit_requests=has_tandem_correction_access(),
     )
@@ -264,33 +325,82 @@ def admin_language_tandem_detail(request_id):
         language_labels=language_labels,
     )
 
-    match_groups = build_match_groups(
+    match_results = build_match_groups(
         source_item=item,
         candidate_items=candidate_items,
         language_labels=language_labels,
         config=MATCH_CONFIG,
     )
+    match_groups = match_results["groups"]
+    match_group_totals = match_results["totals"]
+
+    decision_map = get_duplicate_decision_map_for_request(item.id)
+    duplicate_status_by_candidate = {}
+
+    for candidate in candidate_items:
+        pair_key = canonicalize_duplicate_pair(item.id, candidate.id)
+        decision = decision_map.get(pair_key)
+
+        if decision:
+            duplicate_status_by_candidate[candidate.id] = {
+                "status": f"reviewed_{decision.decision}",
+                "label": DUPLICATE_DECISION_LABELS.get(decision.decision, "Reviewed"),
+            }
+            continue
+
+        duplicate_candidate = evaluate_duplicate_candidate(
+            source_item=item,
+            candidate_item=candidate,
+            config=DUPLICATE_REVIEW_CONFIG,
+        )
+        if duplicate_candidate is not None:
+            duplicate_status_by_candidate[candidate.id] = {
+                "status": "needs_review",
+                "label": "Needs duplicate review",
+            }
+        else:
+            duplicate_status_by_candidate[candidate.id] = {
+                "status": "clear",
+                "label": "No duplicate review needed",
+            }
+
+    for group in match_groups.values():
+        for match in group:
+            duplicate_meta = duplicate_status_by_candidate.get(
+                match["candidate"].id,
+                {"status": "clear", "label": "No duplicate review needed"},
+            )
+            match["duplicate_review_status"] = duplicate_meta["status"]
+            match["duplicate_review_label"] = duplicate_meta["label"]
+
+    match_country_options = [
+        {
+            "value": code,
+            "label": country_labels.get(code, code),
+        }
+        for code in sorted(
+            {
+                match["candidate"].country_of_origin
+                for group in match_groups.values()
+                for match in group
+                if match["candidate"].country_of_origin
+            },
+            key=lambda code: country_labels.get(code, code),
+        )
+    ]
 
     review_states = TandemMatchReviewState.query.filter_by(source_request_id=item.id).all()
-    match_review_state = {
-        "hidden": [
-            str(state.candidate_request_id)
-            for state in review_states
-            if state.is_hidden
-        ],
-        "shortlisted": [
-            str(state.candidate_request_id)
-            for state in review_states
-            if state.is_shortlisted
-        ],
-    }
+    match_review_state = build_match_review_state_snapshot(review_states)
 
     return render_template(
         "admin/language_tandem/detail.html",
         item=item,
         match_groups=match_groups,
+        match_group_totals=match_group_totals,
         match_limits=MATCH_CONFIG["limits"],
+        match_rubric=build_match_rubric(MATCH_CONFIG),
         match_review_state=match_review_state,
+        match_country_options=match_country_options,
         auto_marked_viewed=auto_marked_viewed,
         return_to=return_to,
         can_edit_requests=has_tandem_correction_access(),
@@ -320,13 +430,15 @@ def admin_language_tandem_match_state(request_id):
 
     is_hidden = bool(payload.get("hidden"))
     is_shortlisted = bool(payload.get("shortlisted"))
+    is_contacted = bool(payload.get("contacted"))
+    is_final_pair = bool(payload.get("final_pair"))
 
     state = TandemMatchReviewState.query.filter_by(
         source_request_id=item.id,
         candidate_request_id=candidate_id,
     ).first()
 
-    if is_hidden or is_shortlisted:
+    if is_hidden or is_shortlisted or is_contacted or is_final_pair:
         if state is None:
             state = TandemMatchReviewState(
                 source_request_id=item.id,
@@ -334,19 +446,40 @@ def admin_language_tandem_match_state(request_id):
             )
             db.session.add(state)
 
+        local_now = get_configured_local_now()
         state.is_hidden = is_hidden
         state.is_shortlisted = is_shortlisted
+        state.contacted_at = (state.contacted_at or local_now) if is_contacted else None
+        state.final_pair_at = (state.final_pair_at or local_now) if is_final_pair else None
+
+        if is_final_pair:
+            other_final_pair_states = (
+                TandemMatchReviewState.query
+                .filter(
+                    TandemMatchReviewState.source_request_id == item.id,
+                    TandemMatchReviewState.candidate_request_id != candidate_id,
+                    TandemMatchReviewState.final_pair_at.isnot(None),
+                )
+                .all()
+            )
+
+            for other_state in other_final_pair_states:
+                other_state.final_pair_at = None
+                if not match_review_state_is_active(other_state):
+                    db.session.delete(other_state)
     elif state is not None:
         db.session.delete(state)
 
     db.session.commit()
 
+    review_states = TandemMatchReviewState.query.filter_by(source_request_id=item.id).all()
+
     return jsonify({
         "ok": True,
         "candidate_id": candidate_id,
-        "hidden": is_hidden,
-        "shortlisted": is_shortlisted,
+        "state": build_match_review_state_snapshot(review_states),
     })
+
 
 @bp.route("/admin/language-tandem/<int:request_id>/duplicates")
 def admin_language_tandem_duplicates(request_id):

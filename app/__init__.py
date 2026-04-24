@@ -43,14 +43,27 @@ def create_app():
     with app.app_context():
         db.create_all()
         with db.engine.connect() as conn:
-            try:
-                conn.execute(text(
+            schema_updates = (
+                (
                     "ALTER TABLE language_tandem_requests "
                     "ADD COLUMN offered_language_levels TEXT NOT NULL DEFAULT '{}'"
-                ))
-                conn.commit()
-            except Exception:
-                pass
+                ),
+                (
+                    "ALTER TABLE tandem_match_review_states "
+                    "ADD COLUMN contacted_at DATETIME"
+                ),
+                (
+                    "ALTER TABLE tandem_match_review_states "
+                    "ADD COLUMN final_pair_at DATETIME"
+                ),
+            )
+
+            for statement in schema_updates:
+                try:
+                    conn.execute(text(statement))
+                    conn.commit()
+                except Exception:
+                    pass
         seed_demo_data()
 
     from app.routes import bp
