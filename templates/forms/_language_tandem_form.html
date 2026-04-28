@@ -23,30 +23,22 @@
         <div class="incas-tandem-stepper" data-tandem-stepper aria-label="Language tandem form sections">
             <div class="small text-muted mb-2">Jump between sections</div>
             <div class="incas-tandem-step-list">
-                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-contact">
+                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-personal">
                     <span class="incas-tandem-step-number">1</span>
-                    <span class="incas-tandem-step-label">Contact</span>
-                </button>
-                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-stay">
-                    <span class="incas-tandem-step-number">2</span>
-                    <span class="incas-tandem-step-label">Stay</span>
-                </button>
-                <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-languages">
-                    <span class="incas-tandem-step-number">3</span>
-                    <span class="incas-tandem-step-label">Languages</span>
+                    <span class="incas-tandem-step-label">Personal Details</span>
                 </button>
                 <button type="button" class="incas-tandem-step-button" data-step-target="tandem-section-preferences">
-                    <span class="incas-tandem-step-number">4</span>
+                    <span class="incas-tandem-step-number">2</span>
                     <span class="incas-tandem-step-label">Preferences</span>
                 </button>
             </div>
         </div>
 
         <div class="row g-3">
-            <fieldset class="col-12 incas-form-section" id="tandem-section-contact" data-form-step tabindex="-1">
+            <fieldset class="col-12 incas-form-section" id="tandem-section-personal" data-form-step tabindex="-1">
                 <legend class="incas-form-legend">
-                    <span>Contact</span>
-                    <span class="incas-tandem-step-counter">Step 1 of 4</span>
+                    <span>Personal Details</span>
+                    <span class="incas-tandem-step-counter">Step 1 of 2</span>
                 </legend>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -102,19 +94,7 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
 
-                <div class="incas-tandem-step-actions" aria-label="Contact section navigation">
-                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-stay">Next: Stay</button>
-                </div>
-            </fieldset>
-
-            <fieldset class="col-12 incas-form-section" id="tandem-section-stay" data-form-step tabindex="-1">
-                <legend class="incas-form-legend">
-                    <span>Stay</span>
-                    <span class="incas-tandem-step-counter">Step 2 of 4</span>
-                </legend>
-                <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
                         <select class="form-select{% if form_errors.get('gender') %} is-invalid{% endif %}" id="gender" name="gender" autocomplete="sex" required {% if form_errors.get('gender') %}aria-describedby="gender_error"{% endif %}>
@@ -171,24 +151,11 @@
                             ]
                         </script>
                     </div>
-                </div>
 
-                <div class="incas-tandem-step-actions" aria-label="Stay section navigation">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-contact">Back</button>
-                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-languages">Next: Languages</button>
-                </div>
-            </fieldset>
-
-            <fieldset class="col-12 incas-form-section" id="tandem-section-languages" data-form-step tabindex="-1">
-                <legend class="incas-form-legend">
-                    <span>Languages</span>
-                    <span class="incas-tandem-step-counter">Step 3 of 4</span>
-                </legend>
-                <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <div class="language-picker-panel">
                             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
-                                <label class="form-label m-0" for="offered_language_lookup">Offered Languages <span class="text-danger">*</span></label>
+                                <label class="form-label m-0" for="offered_language_lookup">Languages I can offer <span class="text-danger">*</span></label>
                                 <div class="btn-group btn-group-sm">
                                     <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="alpha">A-Z</button>
                                     <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="offered" data-sort-mode="popularity">Popular</button>
@@ -257,11 +224,23 @@
                             ]
                         </script>
                     </div>
+                </div>
 
-                    <div class="col-md-6">
+                <div class="incas-tandem-step-actions" aria-label="Personal details section navigation">
+                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-preferences">Next: Preferences</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="col-12 incas-form-section" id="tandem-section-preferences" data-form-step tabindex="-1">
+                <legend class="incas-form-legend">
+                    <span>Preferences</span>
+                    <span class="incas-tandem-step-counter">Step 2 of 2</span>
+                </legend>
+                <div class="row g-3">
+                    <div class="col-md-8">
                         <div class="language-picker-panel">
                             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2">
-                                <label class="form-label m-0" for="requested_language_lookup">Requested Languages <span class="text-danger">*</span></label>
+                                <label class="form-label m-0" for="requested_language_lookup">Languages I want to learn <span class="text-danger">*</span></label>
                                 <div class="btn-group btn-group-sm">
                                     <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="alpha">A-Z</button>
                                     <button type="button" class="btn btn-outline-secondary language-sort" data-target-picker="requested" data-sort-mode="popularity">Popular</button>
@@ -298,6 +277,11 @@
                             <div id="requested_language_inputs"></div>
                         </div>
 
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
+                            <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
+                        </div>
+
                         <script type="application/json" id="requested_language_options_json">
                             [
                                 {% for choice in requested_field.all_choices %}
@@ -311,32 +295,16 @@
                             ]
                         </script>
                     </div>
-                </div>
 
-                <div class="incas-tandem-step-actions" aria-label="Languages section navigation">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-stay">Back</button>
-                    <button type="button" class="btn btn-dark btn-sm" data-step-target="tandem-section-preferences">Next: Preferences</button>
-                </div>
-            </fieldset>
-
-            <fieldset class="col-12 incas-form-section" id="tandem-section-preferences" data-form-step tabindex="-1">
-                <legend class="incas-form-legend">
-                    <span>Preferences</span>
-                    <span class="incas-tandem-step-counter">Step 4 of 4</span>
-                </legend>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" id="requested_native_only" name="requested_native_only" type="checkbox" {% if values.requested_native_only %}checked{% endif %}>
-                            <label class="form-check-label" for="requested_native_only">I only want a native speaker</label>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-check">
-                            <input class="form-check-input" id="same_gender_only" name="same_gender_only" type="checkbox" {% if values.same_gender_only %}checked{% endif %}>
-                            <label class="form-check-label" for="same_gender_only">Same gender tandems only</label>
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="preferred_gender">Preferred partner gender</label>
+                        <select class="form-select" id="preferred_gender" name="preferred_gender">
+                            <option value="" {% if not values.preferred_gender %}selected{% endif %}>No preference</option>
+                            <option value="Female" {% if values.preferred_gender == "Female" %}selected{% endif %}>Female</option>
+                            <option value="Male" {% if values.preferred_gender == "Male" %}selected{% endif %}>Male</option>
+                            <option value="Non-binary / Diverse" {% if values.preferred_gender == "Non-binary / Diverse" %}selected{% endif %}>Non-binary / Diverse</option>
+                            <option value="same" {% if values.preferred_gender == "same" %}selected{% endif %}>Same as mine</option>
+                        </select>
                     </div>
 
                     <div class="col-12">
@@ -346,7 +314,7 @@
                 </div>
 
                 <div class="incas-tandem-step-actions" aria-label="Preferences section navigation">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-languages">Back</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-step-target="tandem-section-personal">Back</button>
                 </div>
             </fieldset>
         </div>

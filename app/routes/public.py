@@ -481,7 +481,7 @@ def language_tandem_form():
         "offered_language_levels": {},
         "requested_languages": [],
         "requested_native_only": False,
-        "same_gender_only": False,
+        "preferred_gender": "",
         "comment": "",
     }
     errors = {}
@@ -499,7 +499,7 @@ def language_tandem_form():
         values["offered_languages"] = normalize_language_codes(request.form.getlist("offered_languages"))
         values["requested_languages"] = normalize_language_codes(request.form.getlist("requested_languages"))
         values["requested_native_only"] = request.form.get("requested_native_only") == "on"
-        values["same_gender_only"] = request.form.get("same_gender_only") == "on"
+        values["preferred_gender"] = request.form.get("preferred_gender", "").strip()
         values["comment"] = request.form.get("comment", "").strip()
 
         valid_levels = {"1", "2", "3", "4", "5"}
@@ -576,7 +576,8 @@ def language_tandem_form():
             offered_language_levels=json.dumps(offered_language_levels),
             requested_languages=json.dumps(values["requested_languages"]),
             requested_native_only=values["requested_native_only"],
-            same_gender_only=values["same_gender_only"],
+            preferred_gender=values["preferred_gender"],
+            same_gender_only=(values["preferred_gender"] == "same"),
             comment=values["comment"],
         )
 

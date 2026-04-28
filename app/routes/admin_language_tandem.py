@@ -157,7 +157,7 @@ def admin_language_tandem_edit(request_id):
             "offered_language_levels": {},
             "requested_languages": normalize_language_codes(request.form.getlist("requested_languages")),
             "requested_native_only": request.form.get("requested_native_only") == "on",
-            "same_gender_only": request.form.get("same_gender_only") == "on",
+            "preferred_gender": request.form.get("preferred_gender", "").strip(),
             "comment": request.form.get("comment", "").strip(),
         }
 
@@ -234,7 +234,8 @@ def admin_language_tandem_edit(request_id):
         item.offered_language_levels = json.dumps(offered_language_levels)
         item.requested_languages = json.dumps(values["requested_languages"])
         item.requested_native_only = values["requested_native_only"]
-        item.same_gender_only = values["same_gender_only"]
+        item.preferred_gender = values["preferred_gender"]
+        item.same_gender_only = (values["preferred_gender"] == "same")
         item.comment = values["comment"]
 
         db.session.commit()
