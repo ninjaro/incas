@@ -371,44 +371,31 @@
                     >
                         <div class="match-card border rounded p-3 h-100">
                             <div class="match-candidate-cell">
-                                <div class="fw-semibold">
-                                    {{ candidate.first_name }} {{ candidate.last_name }}
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="fw-semibold">{{ candidate.first_name }} {{ candidate.last_name }}</div>
+                                    <div class="match-review-badges d-flex gap-1 flex-shrink-0">
+                                        <span class="badge text-bg-info d-none" data-contacted-status></span>
+                                        <span class="badge text-bg-success d-none" data-final-pair-status></span>
+                                    </div>
                                 </div>
-                                <div class="match-person-meta mt-2">
+                                <div class="match-person-meta mt-1">
                                     <span>{{ candidate.email }}</span>
                                     <span>{{ candidate.occupation }}</span>
                                     <span>{{ candidate.gender }}</span>
                                     <span>{{ candidate.country_of_origin_display }}</span>
                                 </div>
-                                <div class="small text-muted mt-2">
-                                    Submitted <time datetime="{{ candidate.created_at.isoformat() }}">{{ candidate.created_at.strftime("%Y-%m-%d %H:%M") }}</time>
-                                </div>
-                                <div class="match-review-badges mt-2">
-                                    <span class="badge text-bg-info d-none" data-contacted-status></span>
-                                    <span class="badge text-bg-success d-none" data-final-pair-status></span>
-                                </div>
                             </div>
 
                             <div class="match-strength-cell">
-                                <div class="small text-muted mb-1">Strength</div>
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="badge {{ badge_class }}">
-                                        {% if key == "full" %}Full{% elif key == "partial" %}Partial{% else %}Weak{% endif %}
-                                    </span>
+                                    <span class="badge {{ badge_class }}">{% if key == "full" %}Full{% elif key == "partial" %}Partial{% else %}Weak{% endif %}</span>
                                     <span class="badge text-bg-light border">{{ match.score }} pts</span>
-                                </div>
-                                <div class="small mt-2">
-                                    <strong>Signal:</strong>
-                                    <span class="ms-1">{{ "▮" * match.signal_level }}{{ "▯" * (4 - match.signal_level) }}</span>
-                                </div>
-                                <div class="small text-muted">
-                                    {{ match.total_overlap_count }} overlap{% if match.total_overlap_count != 1 %}s{% endif %}
+                                    <span class="small text-muted">{{ "▮" * match.signal_level }}{{ "▯" * (4 - match.signal_level) }} · {{ match.total_overlap_count }} overlap{% if match.total_overlap_count != 1 %}s{% endif %}</span>
                                 </div>
                             </div>
 
                             <div class="match-counts-cell">
-                                <div class="small text-muted mb-1">Candidate match counts</div>
-                                <div class="tandem-match-counts" aria-label="Candidate match counts" title="Full, partial, and weak matches this candidate has across current tandem data.">
+                                <div class="tandem-match-counts" aria-label="Candidate match counts" title="Full, partial, and weak matches this candidate currently has.">
                                     <span class="badge text-bg-dark">{{ candidate.match_counts.full }} full</span>
                                     <span class="badge text-bg-secondary">{{ candidate.match_counts.partial }} partial</span>
                                     <span class="badge text-bg-warning">{{ candidate.match_counts.weak }} weak</span>
@@ -417,96 +404,79 @@
 
                             <div class="match-language-cell">
                                 <div class="small text-muted mb-1">Offered</div>
-                                <div class="small">
+                                <div class="tandem-lang-values">
                                     {% for lang in candidate.offered_languages_with_levels %}
-                                        {{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}
+                                        <span class="tandem-lang-chip">{{ lang.name }}{% if lang.level_label %} <span class="tandem-lang-level">{{ lang.level_label }}</span>{% endif %}</span>
                                     {% endfor %}
                                 </div>
                             </div>
 
                             <div class="match-language-cell">
                                 <div class="small text-muted mb-1">Requested</div>
-                                <div class="small">{{ ", ".join(candidate.requested_languages_display) }}</div>
+                                <div class="tandem-lang-values">
+                                    {% for value in candidate.requested_languages_display %}
+                                        <span class="tandem-lang-chip">{{ value }}</span>
+                                    {% endfor %}
+                                </div>
                             </div>
 
                             <div class="match-actions-cell">
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Candidate contact actions">
-                                    <a href="mailto:{{ candidate.email }}?subject=INCAS%20Language%20Tandem" class="btn btn-outline-secondary" title="Email candidate">
-                                        <i class="bi bi-envelope"></i>
-                                        <span>Email</span>
-                                    </a>
-                                    <a href="mailto:{{ item.email }},{{ candidate.email }}?subject=INCAS%20Language%20Tandem" class="btn btn-outline-secondary" title="Email requester and candidate together">
-                                        <i class="bi bi-envelope"></i>
-                                        <span>Pair email</span>
-                                    </a>
-                                    <button type="button" class="btn btn-outline-secondary" data-copy-text="{{ candidate.email }}" title="Copy email">
-                                        <i class="bi bi-clipboard"></i>
-                                        <span data-copy-label>Copy</span>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" data-copy-text="{{ item.email }}, {{ candidate.email }}" title="Copy requester and candidate emails">
-                                        <i class="bi bi-clipboard"></i>
-                                        <span data-copy-label>Copy both</span>
-                                    </button>
-                                </div>
-
-                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-envelope"></i> Email
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="mailto:{{ candidate.email }}?subject=INCAS%20Language%20Tandem"><i class="bi bi-envelope me-2"></i>Email candidate</a></li>
+                                            <li><a class="dropdown-item" href="mailto:{{ item.email }},{{ candidate.email }}?subject=INCAS%20Language%20Tandem"><i class="bi bi-envelope me-2"></i>Email both</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><button class="dropdown-item" type="button" data-copy-text="{{ candidate.email }}"><i class="bi bi-clipboard me-2"></i><span data-copy-label>Copy email</span></button></li>
+                                            <li><button class="dropdown-item" type="button" data-copy-text="{{ item.email }}, {{ candidate.email }}"><i class="bi bi-clipboard me-2"></i>Copy both</button></li>
+                                        </ul>
+                                    </div>
                                     <button type="button" class="btn btn-sm btn-outline-warning" data-toggle-shortlist>
                                         <i class="bi bi-star"></i>
                                         <span data-shortlist-label>Shortlist</span>
                                     </button>
-
                                     <button type="button" class="btn btn-sm btn-outline-info" data-toggle-contacted aria-pressed="false">
                                         <span data-contacted-label>Mark contacted</span>
                                     </button>
-
                                     <button type="button" class="btn btn-sm btn-outline-success" data-toggle-final-pair aria-pressed="false">
                                         <span data-final-pair-label>Mark final pair</span>
                                     </button>
-
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>
-                                        Hide
-                                    </button>
-
-                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-restore-match>
-                                        Restore
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-hide-match>Hide</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" data-restore-match>Restore</button>
                                 </div>
                             </div>
 
                             <div class="match-explanation-cell">
-                                <div class="small text-muted mb-1">Why it matches</div>
-
                                 <div class="match-reason-list">
                                     <div>
-                                        <strong>Requested fit:</strong>
+                                        <span class="small text-muted me-1">Requested fit:</span>
                                         {% for detail in match.requested_overlap_details %}
                                             <span class="badge text-bg-light border">{{ detail.label }} · {{ detail.level_label }}</span>
                                         {% endfor %}
                                     </div>
-
                                     <div>
-                                        <strong>Mutual fit:</strong>
+                                        <span class="small text-muted me-1">Mutual fit:</span>
                                         {% if match.reverse_overlap_details %}
                                             {% for detail in match.reverse_overlap_details %}
                                                 <span class="badge text-bg-light border">{{ detail.label }} · {{ detail.level_label }}</span>
                                             {% endfor %}
                                         {% else %}
-                                            <span class="text-muted">One-way match only</span>
+                                            <span class="small text-muted">One-way</span>
                                         {% endif %}
                                     </div>
-
                                     {% if match.reasons %}
                                         <div>
-                                            <strong>Notes:</strong>
+                                            <span class="small text-muted me-1">Notes:</span>
                                             {% for reason in match.reasons %}
                                                 <span class="badge text-bg-light border">{{ reason }}</span>
                                             {% endfor %}
                                         </div>
                                     {% endif %}
-
                                     {% if match.warnings %}
                                         <div>
-                                            <strong>Warnings:</strong>
                                             {% for warning in match.warnings %}
                                                 <span class="badge text-bg-warning">{{ warning }}</span>
                                             {% endfor %}

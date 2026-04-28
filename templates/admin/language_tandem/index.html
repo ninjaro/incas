@@ -402,8 +402,8 @@
                                     data-request-toggle-viewed-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
                                     data-request-return-to="{{ overview_return_to }}"
                                 >
-                                    <div class="mb-2 tandem-request-summary">
-                                        <div class="min-w-0">
+                                    <div class="tandem-card-header mb-2">
+                                        <div class="tandem-card-identity min-w-0">
                                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                                 <span class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</span>
                                                 {% if item.is_viewed %}
@@ -411,68 +411,44 @@
                                                 {% else %}
                                                     <span class="badge text-bg-dark">Unviewed</span>
                                                 {% endif %}
+                                                {% if can_edit_requests and item.has_same_email_group %}
+                                                    <span class="badge text-bg-warning">Dup email</span>
+                                                {% endif %}
+                                                {% if can_edit_requests and item.has_likely_duplicate %}
+                                                    <span class="badge text-bg-warning">Likely dup</span>
+                                                {% endif %}
                                             </div>
                                             <div class="small text-muted">
-                                                #{{ item.id }} · {{ item.email }} · {{ item.country_of_origin_display }}
-                                            </div>
-                                            <div class="small mt-2">
-                                                <span class="fw-semibold">Offers:</span> {{ ", ".join(item.offered_languages_display) }}
-                                            </div>
-                                            <div class="small">
-                                                <span class="fw-semibold">Wants:</span> {{ ", ".join(item.requested_languages_display) }}
-                                            </div>
-                                            <div class="tandem-match-counts mt-2" aria-label="Match counts">
-                                                <span class="badge text-bg-dark">{{ item.match_counts.full }} full</span>
-                                                <span class="badge text-bg-secondary">{{ item.match_counts.partial }} partial</span>
-                                                <span class="badge text-bg-warning">{{ item.match_counts.weak }} weak</span>
+                                                #{{ item.id }} · {{ item.email }} · {{ item.created_at.strftime("%Y-%m-%d") }}
                                             </div>
                                         </div>
-
                                         <div class="request-actions">
                                             {% if can_open_matching %}
                                                 <a
                                                     href="{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=overview_return_to) }}"
                                                     class="btn btn-sm btn-dark"
-                                                >
-                                                    Match
-                                                </a>
+                                                >Match</a>
                                             {% endif %}
-
-                                            <button
-                                                type="button"
-                                                class="btn btn-sm btn-outline-secondary"
-                                                data-toggle-request-details
-                                                aria-expanded="false"
-                                            >
-                                                Details
-                                            </button>
-
                                             <div class="dropdown">
                                                 <button
                                                     class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                     type="button"
                                                     data-bs-toggle="dropdown"
                                                     aria-expanded="false"
-                                                >
-                                                    More
-                                                </button>
+                                                >More</button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
                                                     {% if can_edit_requests %}
                                                         <li>
                                                             <a
                                                                 class="dropdown-item"
                                                                 href="{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=overview_return_to) }}"
-                                                            >
-                                                                Edit
-                                                            </a>
+                                                            >Edit</a>
                                                         </li>
                                                         <li>
                                                             <a
                                                                 class="dropdown-item"
                                                                 href="{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=overview_return_to) }}"
-                                                            >
-                                                                Duplicates
-                                                            </a>
+                                                            >Duplicates</a>
                                                         </li>
                                                     {% endif %}
                                                     <li>
@@ -488,67 +464,53 @@
                                         </div>
                                     </div>
 
-                                    <div class="tandem-request-details" data-request-details>
-                                        <div class="small text-muted mb-2">
-                                            Submitted {{ item.created_at.strftime("%Y-%m-%d %H:%M") }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Occupation:</strong> {{ item.occupation }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Gender:</strong> {{ item.gender }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Birth Year:</strong> {{ item.birth_year }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Departure Date:</strong> {{ item.departure_date.strftime("%Y-%m-%d") }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Country:</strong> {{ item.country_of_origin_display }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Offered:</strong> {% for lang in item.offered_languages_with_levels %}{{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Requested:</strong> {{ ", ".join(item.requested_languages_display) }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Native Only:</strong> {{ "Yes" if item.requested_native_only else "No" }}
-                                        </div>
-
-                                        <div class="small mb-1">
-                                            <strong>Same Gender Only:</strong> {{ "Yes" if item.same_gender_only else "No" }}
-                                        </div>
-
-                                        {% if can_edit_requests and item.same_email_other_ids %}
-                                            <div class="small mt-2">
-                                                <strong>Related request IDs:</strong>
-                                                {{ item.same_email_other_ids | join(", ") }}
+                                    <div class="tandem-card-languages mb-2">
+                                        <div class="tandem-lang-row">
+                                            <span class="tandem-lang-label">Offers</span>
+                                            <div class="tandem-lang-values">
+                                                {% for lang in item.offered_languages_with_levels %}
+                                                    <span class="tandem-lang-chip">{{ lang.name }}{% if lang.level_label %} <span class="tandem-lang-level">{{ lang.level_label }}</span>{% endif %}</span>
+                                                {% endfor %}
                                             </div>
-                                        {% endif %}
-
-                                        {% if can_edit_requests %}
-                                            <div class="small mt-2">
-                                                <strong>Internal Group Size:</strong> {{ group.count }}
+                                        </div>
+                                        <div class="tandem-lang-row">
+                                            <span class="tandem-lang-label">Wants</span>
+                                            <div class="tandem-lang-values">
+                                                {% for lang in item.requested_languages_display %}
+                                                    <span class="tandem-lang-chip">{{ lang }}</span>
+                                                {% endfor %}
+                                                {% if item.requested_native_only %}
+                                                    <span class="badge text-bg-secondary fw-normal">native only</span>
+                                                {% endif %}
+                                                {% if item.same_gender_only %}
+                                                    <span class="badge text-bg-secondary fw-normal">same gender</span>
+                                                {% endif %}
                                             </div>
-                                        {% endif %}
-
-                                        {% if item.comment %}
-                                            <div class="small mt-2 pre-line">
-                                                <strong>Comment:</strong><br>
-                                                {{ item.comment }}
-                                            </div>
-                                        {% endif %}
+                                        </div>
                                     </div>
+
+                                    <div class="small text-muted mb-2">
+                                        {{ item.gender }} · {{ item.birth_year }} · {{ item.country_of_origin_display }} · {{ item.occupation }} · departs {{ item.departure_date.strftime("%Y-%m-%d") }}
+                                    </div>
+
+                                    <div class="tandem-match-counts mb-2" aria-label="Match counts">
+                                        <span class="badge text-bg-dark">{{ item.match_counts.full }} full</span>
+                                        <span class="badge text-bg-secondary">{{ item.match_counts.partial }} partial</span>
+                                        <span class="badge text-bg-warning">{{ item.match_counts.weak }} weak</span>
+                                    </div>
+
+                                    {% if item.comment %}
+                                        <div class="tandem-card-comment small pre-line mb-2">{{ item.comment }}</div>
+                                    {% endif %}
+
+                                    {% if can_edit_requests %}
+                                        <div class="small text-muted mt-auto">
+                                            {% if item.same_email_other_ids %}
+                                                Related: {% for rid in item.same_email_other_ids %}#{{ rid }}{% if not loop.last %}, {% endif %}{% endfor %} ·
+                                            {% endif %}
+                                            Group size: {{ group.count }}
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endfor %}
