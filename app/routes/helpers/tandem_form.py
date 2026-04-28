@@ -253,7 +253,7 @@ def build_tandem_form_values(item=None):
             "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
-            "same_gender_only": False,
+            "preferred_gender": "",
             "comment": "",
         }
 
@@ -275,7 +275,7 @@ def build_tandem_form_values(item=None):
         "offered_language_levels": dict(item.offered_language_levels_dict),
         "requested_languages": list(item.requested_languages_list),
         "requested_native_only": bool(item.requested_native_only),
-        "same_gender_only": bool(item.same_gender_only),
+        "preferred_gender": item.preferred_gender or "",
         "comment": item.comment or "",
     }
 

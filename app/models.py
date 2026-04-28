@@ -122,6 +122,7 @@ class LanguageTandemRequest(db.Model):
     requested_native_only = db.Column(db.Boolean, nullable=False, default=False)
 
     same_gender_only = db.Column(db.Boolean, nullable=False, default=False)
+    preferred_gender = db.Column(db.String(40), nullable=False, default="")
     comment = db.Column(db.Text, nullable=False, default="")
 
     is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
