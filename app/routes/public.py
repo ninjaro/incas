@@ -6,6 +6,7 @@ from flask import abort, flash, g, make_response, redirect, render_template, req
 
 from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db, get_configured_local_now
 from app.routes import bp
+from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
 from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
@@ -36,13 +37,20 @@ def get_local_now():
     return get_configured_local_now()
 
 
+def get_public_posts_query():
+    return Post.query.filter(Post.is_active.is_(True))
+
+
 @bp.route("/")
 def index():
-    items = Post.query.order_by(Post.created_at.desc()).all()
+    items = [
+        item for item in get_public_posts_query().order_by(Post.created_at.desc()).all()
+        if item.is_publicly_accessible
+    ]
 
     live_events = [item for item in items if item.is_event and item.is_live]
     live_posts = [item for item in items if not item.is_event and item.is_live]
-    archived_items = [item for item in items if not item.is_live]
+    archived_items = [item for item in items if item.is_event and not item.is_live]
 
     active_items = live_events + live_posts
     active_items.sort(
@@ -165,24 +173,30 @@ def contact_form():
 
 @bp.route("/posts")
 def posts():
-    items = Post.query.order_by(Post.created_at.desc()).all()
+    items = [
+        item for item in get_public_posts_query().order_by(Post.created_at.desc()).all()
+        if item.is_publicly_accessible and not item.is_event
+    ]
     return render_template("posts.html", items=items, page_title="Posts")
 
 
 @bp.route("/events")
 def events():
     items = (
-        Post.query
+        get_public_posts_query()
         .filter(Post.starts_at.isnot(None))
         .order_by(Post.starts_at.asc())
         .all()
     )
+    items = [item for item in items if item.is_publicly_accessible]
     return render_template("posts.html", items=items, page_title="Events")
 
 
 @bp.route("/content/<slug>")
 def post_detail(slug):
     item = Post.query.filter_by(slug=slug).first_or_404()
+    if not has_scope("posts") and not item.is_publicly_accessible:
+        abort(404)
     return render_template("post_detail.html", item=item)
 
 def render_site_content_page(page_key):
@@ -293,13 +307,14 @@ def render_calendar_page(mode="default"):
     visible_end_at = datetime(visible_end.year, visible_end.month, visible_end.day, 23, 59, 59)
 
     items = (
-        Post.query
+        get_public_posts_query()
         .filter(Post.starts_at.isnot(None))
         .filter(Post.starts_at >= visible_start_at)
         .filter(Post.starts_at <= visible_end_at)
         .order_by(Post.starts_at.asc())
         .all()
     )
+    items = [item for item in items if item.is_publicly_accessible]
     unfiltered_month_items = [
         item for item in items
         if item.starts_at.year == year and item.starts_at.month == month

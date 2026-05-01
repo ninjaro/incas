@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 
 {% block title %}Calendar · INCAS{% endblock %}
 
@@ -95,10 +96,8 @@
             <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-next-item">
                 {% set meta = event_kind_meta(item.event_kind) %}
                 <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%d %b · %H:%M") }}</time>
-                <span>{{ item.title }}</span>
-                {% if meta %}
-                    <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                {% endif %}
+                {{ render_event_marker(item) }}
+                <span>{{ render_event_title_content(item) }}</span>
             </a>
         {% endfor %}
     </div>
@@ -126,7 +125,7 @@
                         >
                             <span class="calendar-mini-date">{{ day.day }}</span>
                             <span class="calendar-mini-count">{{ day_items|length }}</span>
-                            <span class="calendar-mini-title">{{ day_items[0].title }}</span>
+                            <span class="calendar-mini-title">{{ day_items[0].display_title }}</span>
                         </button>
                     {% else %}
                         <div class="calendar-mini-day{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}">
@@ -153,10 +152,8 @@
                             <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
                             <span>
                                 <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
-                                    <span>{{ item.title }}</span>
-                                    {% if meta %}
-                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                    {% endif %}
+                                    {{ render_event_marker(item) }}
+                                    <span>{{ render_event_title_content(item) }}</span>
                                 </span>
                                 {% if item.summary %}
                                     <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
@@ -201,10 +198,8 @@
                             <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
                             <span>
                                 <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
-                                    <span>{{ item.title }}</span>
-                                    {% if meta %}
-                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                    {% endif %}
+                                    {{ render_event_marker(item) }}
+                                    <span>{{ render_event_title_content(item) }}</span>
                                 </span>
                                 {% if item.summary %}
                                     <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
@@ -254,14 +249,12 @@
                                 <span class="calendar-timeline-content">
                                     <span class="calendar-timeline-meta">
                                         <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
-                                        {% if meta %}
-                                            <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                        {% endif %}
+                                        {{ render_event_marker(item) }}
                                         <span class="badge {% if is_upcoming %}text-bg-success{% else %}text-bg-secondary{% endif %}">
                                             {% if is_upcoming %}Upcoming{% else %}Past{% endif %}
                                         </span>
                                     </span>
-                                    <span class="calendar-timeline-title">{{ item.title }}</span>
+                                    <span class="calendar-timeline-title">{{ render_event_title_content(item) }}</span>
                                     {% if item.summary %}
                                         <span class="calendar-timeline-summary">{{ item.summary }}</span>
                                     {% endif %}
@@ -305,13 +298,8 @@
                             </span>
                         </div>
                         <h2 class="h5 mb-2">
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link d-inline-flex align-items-center gap-2 flex-wrap">{{ render_event_marker(item) }}{{ render_event_title_content(item) }}</a>
                         </h2>
-                        {% if meta %}
-                            <div class="mb-2">
-                                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                            </div>
-                        {% endif %}
                         {% if item.summary %}
                             <p class="calendar-event-card-summary">{{ item.summary }}</p>
                         {% endif %}
@@ -363,11 +351,13 @@
                                 <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
                             </td>
                             <td>
-                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="fw-semibold text-body text-decoration-none card-heading-link">{{ item.title }}</a>
+                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="fw-semibold text-body text-decoration-none card-heading-link d-inline-flex align-items-center gap-2 flex-wrap">{{ render_event_marker(item) }}{{ render_event_title_content(item) }}</a>
                             </td>
                             <td>
-                                {% if meta %}
+                                {% if meta and should_show_event_label(item) %}
                                     <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                {% elif meta %}
+                                    <span class="calendar-type-dot bg-{{ meta.color }}"></span>
                                 {% else %}
                                     <span class="text-muted">General</span>
                                 {% endif %}
@@ -440,7 +430,7 @@
                                                         <div class="cal-event-chip small border-start border-2 {% if meta %}border-{{ meta.color }}{% else %}border-secondary{% endif %}">
                                                             <div class="fw-semibold text-body">
                                                                 <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
-                                                                · {{ item.title }}
+                                                                · {{ item.display_title }}
                                                             </div>
                                                         </div>
                                                     </a>
@@ -483,10 +473,8 @@
                         <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
                         <span>
                             <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
-                                <span>{{ item.title }}</span>
-                                {% if meta %}
-                                    <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                {% endif %}
+                                {{ render_event_marker(item) }}
+                                <span>{{ render_event_title_content(item) }}</span>
                             </span>
                             {% if item.summary %}
                                 <span class="small text-muted d-block mt-1">{{ item.summary }}</span>
@@ -532,10 +520,8 @@
                         <div class="card-body d-flex flex-column">
                             {% set meta = event_kind_meta(item.event_kind) %}
                             <h3 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
-                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
-                                {% if meta %}
-                                    <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                {% endif %}
+                                {{ render_event_marker(item) }}
+                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ render_event_title_content(item) }}</a>
                             </h3>
                             {% set seconds_left = ((item.starts_at - now_local).total_seconds())|int %}
                             <div class="small text-muted mb-2 d-flex align-items-center gap-2 flex-wrap">
@@ -584,10 +570,8 @@
                             <div class="card-body d-flex flex-column">
                                 {% set meta = event_kind_meta(item.event_kind) %}
                                 <h3 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
-                                    <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
-                                    {% if meta %}
-                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                    {% endif %}
+                                    {{ render_event_marker(item) }}
+                                    <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ render_event_title_content(item) }}</a>
                                 </h3>
                                 <div class="small text-muted mb-2">
                                     <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%d %b · %H:%M") }}</time>
@@ -628,10 +612,8 @@
                             <time class="calendar-event-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
                             <span>
                                 <span class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
-                                    <span>{{ item.title }}</span>
-                                    {% if meta %}
-                                        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                                    {% endif %}
+                                    {{ render_event_marker(item) }}
+                                    <span>{{ render_event_title_content(item) }}</span>
                                 </span>
                                 {% if item.summary %}
                                     <span class="small text-muted d-block mt-1">{{ item.summary }}</span>

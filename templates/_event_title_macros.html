@@ -1,0 +1,23 @@
+{% macro render_event_marker(item) -%}
+    {% set meta = event_kind_meta(item.event_kind) %}
+    {% if meta and should_show_event_label(item) %}
+        <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+    {% elif meta %}
+        <span class="event-title-marker">
+            <span class="calendar-type-dot bg-{{ meta.color }}"></span>
+            <span class="visually-hidden">{{ meta.label }}</span>
+        </span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro render_event_title_content(item) -%}
+    {% set parts = item.display_title_parts %}
+    <span class="event-title-text">
+        {% if parts.focus %}
+            <span>{{ parts.prefix }}</span>
+            <span class="event-title-focus">{{ parts.focus }}</span>
+        {% else %}
+            <span>{{ item.display_title }}</span>
+        {% endif %}
+    </span>
+{%- endmacro %}

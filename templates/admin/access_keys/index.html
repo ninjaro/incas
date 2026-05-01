@@ -45,6 +45,7 @@
                         required
                         value="{{ values.expires_at }}"
                     >
+                    <div class="form-text">Defaults to the same local time on the next day.</div>
                 </div>
 
                 <div class="col-12">
@@ -66,6 +67,7 @@
                         <tr>
                             <th>Key</th>
                             <th>Scopes</th>
+                            <th>State</th>
                             <th>Expires</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
@@ -83,6 +85,13 @@
                                             </span>
                                         {% endfor %}
                                     </div>
+                                </td>
+                                <td>
+                                    {% if item.expires_at > now_local %}
+                                        <span class="badge text-bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">Expired</span>
+                                    {% endif %}
                                 </td>
                                 <td>{{ item.expires_at.strftime("%Y-%m-%d %H:%M") }}</td>
                                 <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>

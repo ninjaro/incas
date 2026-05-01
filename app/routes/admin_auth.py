@@ -5,24 +5,29 @@ from app.routes.helpers.access import (
     ACCESS_LABELS,
     get_access_scopes,
     get_scope_target,
-    grant_scope,
     grant_scopes,
     has_any_access,
     has_scope,
+    prune_expired_scopes,
     require_any_access,
-    resolve_scope_by_phrase,
-    resolve_scopes_by_phrase,
+    resolve_access_grant_by_phrase,
 )
+
+
+@bp.before_app_request
+def prune_access_session():
+    prune_expired_scopes()
 
 
 @bp.route("/admin", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         phrase = request.form.get("phrase", "").strip()
-        scopes = resolve_scopes_by_phrase(phrase)
+        grant = resolve_access_grant_by_phrase(phrase)
+        scopes = grant["scopes"]
 
         if scopes:
-            grant_scopes(scopes)
+            grant_scopes(scopes, expires_at=grant["expires_at"])
             return redirect(url_for("main.admin_corridor"))
 
         flash("Invalid access phrase.")
@@ -46,10 +51,11 @@ def admin_scope_access(scope):
 
     if request.method == "POST":
         phrase = request.form.get("phrase", "").strip()
-        resolved_scopes = resolve_scopes_by_phrase(phrase)
+        grant = resolve_access_grant_by_phrase(phrase)
+        resolved_scopes = grant["scopes"]
 
         if scope in resolved_scopes:
-            grant_scopes(resolved_scopes)
+            grant_scopes(resolved_scopes, expires_at=grant["expires_at"])
             return redirect(get_scope_target(scope))
 
         if resolved_scopes:

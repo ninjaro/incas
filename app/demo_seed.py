@@ -78,7 +78,7 @@ DEMO_EVENT_MONTHS_AFTER = 3
 DEMO_TUESDAY_SPECIAL_EVENTS = [
     {
         "slug": "board-game-tuesday",
-        "title": "Board Game Tuesday",
+        "title": "Board Game",
         "summary": "Easy-to-join games, mixed tables and snacks from 20:00 until around midnight.",
         "body": "Join our Tuesday evening from 20:00 for relaxed rounds of party games and strategy games. New people can drop in at any time and usually stay until around midnight.",
         "event_kind": "board_games",
@@ -94,7 +94,7 @@ DEMO_TUESDAY_SPECIAL_EVENTS = [
     },
     {
         "slug": "dance-social",
-        "title": "Dance Social",
+        "title": "Dance Workshops",
         "summary": "Simple partner-dance basics, playlist requests and a social floor until late.",
         "body": "We start with a short beginner-friendly dance warm-up at 20:00 and keep the room open as a social until around midnight.",
         "event_kind": "dance",
@@ -121,23 +121,23 @@ DEMO_COUNTRY_EVENING_THEMES = [
 ]
 
 DEMO_BREAKFAST_THEMES = [
-    ("Turkish Breakfast Table", "Menemen, breads, spreads and plenty of tea."),
-    ("Pancakes & Fruit Brunch", "Sweet breakfast classics with coffee and fruit."),
-    ("Latin American Breakfast", "Warm dishes, juices and a relaxed Saturday start."),
-    ("European Brunch Buffet", "Fresh rolls, cheese, jam and easy conversation."),
-    ("Waffle Breakfast", "Homemade waffles, toppings and coffee refills."),
-    ("Breakfast Around the World", "A mixed buffet with dishes from several countries."),
-    ("Spring Brunch", "Light breakfast plates and seasonal fruit."),
+    ("Turkey", "Menemen, breads, spreads and plenty of tea."),
+    ("North American culture", "Sweet breakfast classics with coffee and fruit."),
+    ("Latin American culture", "Warm dishes, juices and a relaxed Saturday start."),
+    ("European culture", "Fresh rolls, cheese, jam and easy conversation."),
+    ("Belgium", "Homemade waffles, toppings and coffee refills."),
+    ("Around the World", "A mixed buffet with dishes from several countries."),
+    ("Arab culture", "Light breakfast plates, dates and seasonal fruit."),
 ]
 
 DEMO_TRIP_DESTINATIONS = [
-    ("Maastricht Day Out", "Old town walk, riverside break and a relaxed afternoon in the center."),
-    ("Cologne Museum Saturday", "Train trip, museum stop and time for food in the city."),
-    ("Mons Discovery Trip", "Architecture walk, coffee stop and small-group exploring."),
-    ("Bonn Riverside Day", "Museum mile options and a long walk by the Rhine."),
-    ("Liège Food & City Trip", "Local snacks, markets and an easy day schedule."),
-    ("Drachenfels Hike Day", "A beginner-friendly outing with views and a group picnic."),
-    ("Luxembourg Old Town Trip", "A full Saturday with viewpoints, cafés and an evening return."),
+    ("Maastricht, Netherlands", "Old town walk, riverside break and a relaxed afternoon in the center."),
+    ("Cologne, Germany", "Train trip, museum stop and time for food in the city."),
+    ("Mons, Belgium", "Architecture walk, coffee stop and small-group exploring."),
+    ("Bonn, Germany", "Museum mile options and a long walk by the Rhine."),
+    ("Liège, Belgium", "Local snacks, markets and an easy day schedule."),
+    ("Drachenfels, Germany", "A beginner-friendly outing with views and a group picnic."),
+    ("Luxembourg City, Luxembourg", "A full Saturday with viewpoints, cafés and an evening return."),
 ]
 
 def build_demo_offered_language_levels(country_code, offered_languages):
@@ -625,10 +625,9 @@ def create_dated_demo_event(template, event_date, starts_at_time):
     )
 
 def create_cafe_lingua_event(event_date):
-    month_label = event_date.strftime("%B")
     return create_demo_post(
         slug=f"cafe-lingua-{event_date.isoformat()}",
-        title=f"Café Lingua · {month_label}",
+        title="Café Lingua",
         summary="Language tables and tandem-friendly conversation rounds from 20:00 until around midnight.",
         body="Café Lingua is our regular Tuesday language exchange evening. Join from 20:00, choose a language table, switch groups during the night and stay for as long as you like.",
         starts_at=datetime.combine(event_date, time(20, 0, 0)),

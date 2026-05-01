@@ -28,6 +28,9 @@
                     required
                     value="{{ values.title }}"
                 >
+                <div class="form-text">
+                    Public title: <span class="fw-semibold" data-post-title-preview>{{ title_preview or "—" }}</span>
+                </div>
             </div>
 
             <div class="col-12">
@@ -59,14 +62,29 @@
             </div>
 
             <div class="col-md-6">
-                <label for="starts_at" class="form-label">Start Time</label>
+                <label for="starts_at" class="form-label">Event Start</label>
                 <input
                     type="datetime-local"
                     class="form-control"
                     id="starts_at"
                     name="starts_at"
                     value="{{ values.starts_at }}"
+                    data-post-create-defaults="{{ 'true' if not item else 'false' }}"
+                    data-default-date="{{ default_start_date }}"
                 >
+                <div class="form-text">New events start at 20:00 by default. Breakfasts shift to 10:00 and weekend trips to 09:30 unless you set another time.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="publish_at" class="form-label">Publish At</label>
+                <input
+                    type="datetime-local"
+                    class="form-control"
+                    id="publish_at"
+                    name="publish_at"
+                    value="{{ values.publish_at }}"
+                >
+                <div class="form-text">Leave empty to publish immediately. Future dates stay hidden until that time.</div>
             </div>
 
             <div class="col-md-6">
@@ -77,11 +95,12 @@
                     <option value="country_evening" {% if values.event_kind == "country_evening" %}selected{% endif %}>Country Evening</option>
                     <option value="board_games" {% if values.event_kind == "board_games" %}selected{% endif %}>Board Games</option>
                     <option value="cafe_lingua" {% if values.event_kind == "cafe_lingua" %}selected{% endif %}>Café Lingua</option>
-                    <option value="dance" {% if values.event_kind == "dance" %}selected{% endif %}>Dance</option>
-                    <option value="breakfast" {% if values.event_kind == "breakfast" %}selected{% endif %}>Breakfast</option>
-                    <option value="trip" {% if values.event_kind == "trip" %}selected{% endif %}>Trip</option>
+                    <option value="dance" {% if values.event_kind == "dance" %}selected{% endif %}>Dance Workshops</option>
+                    <option value="breakfast" {% if values.event_kind == "breakfast" %}selected{% endif %}>International Breakfast</option>
+                    <option value="trip" {% if values.event_kind == "trip" %}selected{% endif %}>International Weekend</option>
                     <option value="housing" {% if values.event_kind == "housing" %}selected{% endif %}>Housing</option>
                 </select>
+                <div class="form-text">For breakfasts use the country or culture in the title field. For weekend events use city and country only.</div>
             </div>
 
             <div class="col-md-6">
@@ -144,4 +163,120 @@
         <button type="submit" class="btn btn-dark">Save</button>
     </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (() => {
+        const titleInput = document.getElementById("title");
+        const eventKindSelect = document.getElementById("event_kind");
+        const startsAtInput = document.getElementById("starts_at");
+        const preview = document.querySelector("[data-post-title-preview]");
+        if (!titleInput || !eventKindSelect || !startsAtInput || !preview) return;
+
+        const prefixByKind = {
+            country_evening: "Country Evening",
+            breakfast: "International Breakfast",
+            trip: "International Weekend",
+        };
+        const suffixOverrides = {
+            breakfast: {
+                "Turkish Breakfast Table": "Turkey",
+                "Pancakes & Fruit Brunch": "North American culture",
+                "Latin American Breakfast": "Latin American culture",
+                "European Brunch Buffet": "European culture",
+                "Waffle Breakfast": "Belgium",
+                "Breakfast Around the World": "Around the World",
+                "Spring Brunch": "Arab culture",
+            },
+            trip: {
+                "Maastricht Day Out": "Maastricht, Netherlands",
+                "Cologne Museum Saturday": "Cologne, Germany",
+                "Mons Discovery Trip": "Mons, Belgium",
+                "Bonn Riverside Day": "Bonn, Germany",
+                "Liège Food & City Trip": "Liège, Belgium",
+                "Drachenfels Hike Day": "Drachenfels, Germany",
+                "Luxembourg Old Town Trip": "Luxembourg City, Luxembourg",
+            },
+        };
+        const danceAliases = new Set(["dance", "dance school", "dance social", "dance workshop", "dance workshops"]);
+        const boardGamesTuesday = /\s*[·:-]?\s*tuesday\s*$/i;
+        const defaultTimes = {
+            "": "20:00",
+            breakfast: "10:00",
+            trip: "09:30",
+        };
+
+        function stripPrefix(value, prefix) {
+            const rawValue = (value || "").trim();
+            if (!prefix) return rawValue;
+            const normalizedPrefix = `${prefix.toLowerCase()}:`;
+            if (rawValue.toLowerCase().startsWith(normalizedPrefix)) {
+                return rawValue.slice(prefix.length + 1).trim().replace(/^[:-]\s*/, "");
+            }
+            return rawValue;
+        }
+
+        function computePreviewTitle() {
+            const kind = eventKindSelect.value;
+            const rawTitle = titleInput.value.trim();
+
+            if (kind === "cafe_lingua") return "Café Lingua";
+            if (kind === "dance") {
+                return danceAliases.has(rawTitle.toLowerCase()) || !rawTitle ? "Dance Workshops" : rawTitle;
+            }
+            if (kind === "board_games") {
+                return (rawTitle.replace(boardGamesTuesday, "").trim().replace(/[·:-]+$/, "").trim()) || "Board Games";
+            }
+
+            const prefix = prefixByKind[kind];
+            if (!prefix) return rawTitle || "—";
+
+            const suffix = (suffixOverrides[kind] && suffixOverrides[kind][stripPrefix(rawTitle, prefix)]) || stripPrefix(rawTitle, prefix);
+            return suffix ? `${prefix}: ${suffix}` : prefix;
+        }
+
+        function syncPreview() {
+            preview.textContent = computePreviewTitle();
+        }
+
+        let previousKind = eventKindSelect.value || "";
+
+        function syncDefaultStartTime() {
+            if (startsAtInput.dataset.postCreateDefaults !== "true") {
+                previousKind = eventKindSelect.value || "";
+                return;
+            }
+
+            const defaultDate = startsAtInput.dataset.defaultDate || "";
+            const value = startsAtInput.value || "";
+            const selectedKind = eventKindSelect.value || "";
+            if (!selectedKind && !value) {
+                previousKind = selectedKind;
+                return;
+            }
+            const datePart = (value.split("T")[0] || defaultDate);
+            if (!datePart) return;
+
+            const currentTime = value.split("T")[1] || "";
+            const previousDefault = defaultTimes[previousKind] || defaultTimes[""];
+            const nextDefault = defaultTimes[selectedKind] || defaultTimes[""];
+
+            if (!value || currentTime === previousDefault) {
+                startsAtInput.value = `${datePart}T${nextDefault}`;
+            }
+
+            previousKind = selectedKind;
+        }
+
+        titleInput.addEventListener("input", syncPreview);
+        eventKindSelect.addEventListener("change", () => {
+            syncPreview();
+            syncDefaultStartTime();
+        });
+
+        syncPreview();
+        syncDefaultStartTime();
+    })();
+</script>
 {% endblock %}

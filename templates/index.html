@@ -1,14 +1,25 @@
 {% extends "base.html" %}
+{% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 
 {% block title %}INCAS{% endblock %}
 
 {% block content %}
-<div class="p-4 p-md-5 mb-4 bg-body-tertiary rounded-3">
-    <div class="container-fluid py-3">
-        <h1 class="display-6">INCAS</h1>
-        <p class="col-md-8 fs-5">Live and upcoming content first, archived content below.</p>
+<section class="home-hero mb-4">
+    <div class="home-hero-mark">
+        <img
+            src="{{ url_for('static', filename='img/incas-logo.png') }}"
+            alt="INCAS"
+            class="home-hero-logo"
+            width="520"
+            height="236"
+        >
     </div>
-</div>
+    <div class="home-hero-copy">
+        <p class="home-hero-kicker mb-2">Intercultural Centre of Aachen Students</p>
+        <h1 class="display-5 mb-3">INCAS</h1>
+        <p class="fs-5 mb-0">Live and upcoming content first, with past events tucked away below for reference.</p>
+    </div>
+</section>
 
 {% if active_items %}
     <div class="row g-3 mb-5">
@@ -21,10 +32,8 @@
                             {% if item.is_pinned %}
                                 <i class="bi bi-pin-angle-fill small"></i>
                             {% endif %}
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
-                            {% if meta %}
-                                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                            {% endif %}
+                            {{ render_event_marker(item) }}
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ render_event_title_content(item) }}</a>
                         </h2>
 
                         {% if item.starts_at %}
@@ -42,39 +51,47 @@
 
 <hr class="my-5">
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="h4 m-0">Past / Inactive</h2>
-</div>
+<button
+    class="btn btn-link text-body-secondary text-decoration-none ps-0 d-flex align-items-center gap-1 mb-3"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#home-past-events"
+    aria-expanded="false"
+    aria-controls="home-past-events"
+>
+    <i class="bi bi-chevron-right collapsed-icon"></i>
+    <span class="h6 mb-0">Past events{% if archived_items %} ({{ archived_items|length }}){% endif %}</span>
+</button>
 
-{% if archived_items %}
-    <div class="row g-3">
-        {% for item in archived_items %}
-            <div class="col-md-6 col-xl-4">
-                <div class="card shadow-sm h-100 text-body-tertiary border-secondary-subtle">
-                    <div class="card-body d-flex flex-column">
-                        {% set meta = event_kind_meta(item.event_kind) %}
-                        <h2 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
-                            {% if item.is_pinned %}
-                                <i class="bi bi-pin-angle-fill small"></i>
+<div class="collapse mt-3" id="home-past-events">
+    {% if archived_items %}
+        <div class="row g-3">
+            {% for item in archived_items %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="card shadow-sm h-100 text-body-tertiary border-secondary-subtle">
+                        <div class="card-body d-flex flex-column">
+                            {% set meta = event_kind_meta(item.event_kind) %}
+                            <h2 class="h5 mb-2 d-flex align-items-center gap-2 flex-wrap">
+                                {% if item.is_pinned %}
+                                    <i class="bi bi-pin-angle-fill small"></i>
+                                {% endif %}
+                                {{ render_event_marker(item) }}
+                                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ render_event_title_content(item) }}</a>
+                            </h2>
+
+                            {% if item.starts_at %}
+                                <div class="small text-muted mb-2">
+                                    {{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}
+                                </div>
                             {% endif %}
-                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">{{ item.title }}</a>
-                            {% if meta %}
-                                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-                            {% endif %}
-                        </h2>
 
-                        {% if item.starts_at %}
-                            <div class="small text-muted mb-2">
-                                {{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}
-                            </div>
-                        {% endif %}
-
+                        </div>
                     </div>
                 </div>
-            </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <p class="text-muted mb-0">Nothing here yet.</p>
-{% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">Nothing here yet.</p>
+    {% endif %}
+</div>
 {% endblock %}

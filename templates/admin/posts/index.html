@@ -17,6 +17,31 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
         <div>
+            <h2 class="h5 mb-2">Monthly Pinned Overview</h2>
+            <p class="text-muted mb-0">
+                Create or refresh one pinned post for a month. The generated body includes all active events for that month and a refresh timestamp so later event changes can be reflected by running it again.
+            </p>
+        </div>
+
+        <form method="post" action="{{ url_for('main.admin_posts_monthly_overview') }}" class="d-flex gap-2 flex-wrap align-items-end">
+            <div>
+                <label class="form-label small text-muted mb-1" for="overview_month">Month</label>
+                <input
+                    class="form-control form-control-sm"
+                    type="month"
+                    id="overview_month"
+                    name="month"
+                    value="{{ overview_month_default }}"
+                >
+            </div>
+            <button type="submit" class="btn btn-dark btn-sm">Create / Refresh</button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
             <h2 class="h5 mb-2">Instagram</h2>
 
             {% if instagram_connection %}
@@ -60,6 +85,7 @@
                     <tr>
                         <th>Title</th>
                         <th>Start</th>
+                        <th>Publish</th>
                         <th>Type</th>
                         <th>Image</th>
                         <th>Instagram</th>
@@ -74,11 +100,14 @@
                         <tr>
                             <td>
                                 <div class="fw-semibold">
-                                    {{ item.title }}
+                                    {{ item.display_title }}
                                     {% if item.is_pinned %}
                                         <span class="badge text-bg-warning ms-1">Pinned</span>
                                     {% endif %}
                                 </div>
+                                {% if item.display_title != item.title %}
+                                    <div class="small text-muted">Stored as: {{ item.title }}</div>
+                                {% endif %}
                                 <div class="small text-muted">{{ item.slug }}</div>
                             </td>
 
@@ -91,8 +120,19 @@
                             </td>
 
                             <td>
-                                {% if meta %}
+                                {% if item.publish_at %}
+                                    {{ item.publish_at.strftime("%Y-%m-%d %H:%M") }}
+                                {% else %}
+                                    <span class="badge text-bg-success">Immediate</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if meta and should_show_event_label(item) %}
                                     <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
+                                {% elif meta %}
+                                    <span class="calendar-type-dot bg-{{ meta.color }}"></span>
+                                    <span class="visually-hidden">{{ meta.label }}</span>
                                 {% else %}
                                     —
                                 {% endif %}
@@ -126,8 +166,15 @@
                             </td>
 
                             <td>
-                                {% if item.is_live %}
+                                {% if item.publication_state == "live" %}
                                     <span class="badge text-bg-dark">Live</span>
+                                {% elif item.publication_state == "scheduled" %}
+                                    <span class="badge text-bg-info">Scheduled</span>
+                                    {% if item.publish_at %}
+                                        <div class="small text-muted mt-1">Until {{ item.publish_at.strftime("%Y-%m-%d %H:%M") }}</div>
+                                    {% endif %}
+                                {% elif item.publication_state == "inactive" %}
+                                    <span class="badge text-bg-secondary">Inactive</span>
                                 {% else %}
                                     <span class="badge text-bg-secondary">Archived</span>
                                 {% endif %}

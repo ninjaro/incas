@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -6,6 +7,54 @@ from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
+
+EVENT_TITLE_PREFIXES = {
+    "country_evening": "Country Evening",
+    "breakfast": "International Breakfast",
+    "trip": "International Weekend",
+}
+
+EVENT_TITLE_SUFFIX_OVERRIDES = {
+    "breakfast": {
+        "Turkish Breakfast Table": "Turkey",
+        "Pancakes & Fruit Brunch": "North American culture",
+        "Latin American Breakfast": "Latin American culture",
+        "European Brunch Buffet": "European culture",
+        "Waffle Breakfast": "Belgium",
+        "Breakfast Around the World": "Around the World",
+        "Spring Brunch": "Arab culture",
+    },
+    "trip": {
+        "Maastricht Day Out": "Maastricht, Netherlands",
+        "Cologne Museum Saturday": "Cologne, Germany",
+        "Mons Discovery Trip": "Mons, Belgium",
+        "Bonn Riverside Day": "Bonn, Germany",
+        "Liège Food & City Trip": "Liège, Belgium",
+        "Drachenfels Hike Day": "Drachenfels, Germany",
+        "Luxembourg Old Town Trip": "Luxembourg City, Luxembourg",
+    },
+}
+
+DANCE_TITLE_ALIASES = {
+    "dance",
+    "dance school",
+    "dance social",
+    "dance workshop",
+    "dance workshops",
+}
+
+TITLE_HIGHLIGHT_KINDS = {"country_evening", "breakfast"}
+
+CAFE_LINGUA_MONTH_RE = re.compile(
+    r"\s*[·-]\s*(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+    r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?|jan(?:uar)?|feb(?:ruar)?|mär(?:z)?|maerz|"
+    r"apr(?:il)?|mai|jun(?:i)?|jul(?:i)?|aug(?:ust)?|sep(?:t(?:ember)?)?|"
+    r"okt(?:ober)?|nov(?:ember)?|dez(?:ember)?)(?:\s+\d{4})?\s*$",
+    re.IGNORECASE,
+)
+
+BOARD_GAMES_TUESDAY_RE = re.compile(r"\s*[·:-]?\s*tuesday\s*$", re.IGNORECASE)
 
 
 def get_configured_local_now():
@@ -24,6 +73,86 @@ def get_configured_local_now():
     return datetime.now(timezone).replace(tzinfo=None)
 
 
+def _strip_event_prefix(value, prefix):
+    raw_value = (value or "").strip()
+    if not prefix:
+        return raw_value
+
+    normalized_prefix = f"{prefix.lower()}:"
+    if raw_value.lower().startswith(normalized_prefix):
+        return raw_value[len(prefix) + 1:].strip(" :-")
+
+    return raw_value
+
+
+def normalize_event_title_suffix(kind, title):
+    raw_title = (title or "").strip()
+    if not raw_title:
+        return ""
+
+    if kind == "cafe_lingua":
+        cleaned = CAFE_LINGUA_MONTH_RE.sub("", raw_title).strip(" ·-")
+        return cleaned or "Café Lingua"
+
+    prefix = EVENT_TITLE_PREFIXES.get(kind)
+    suffix = _strip_event_prefix(raw_title, prefix)
+    return EVENT_TITLE_SUFFIX_OVERRIDES.get(kind, {}).get(suffix, suffix).strip()
+
+
+def normalize_board_games_title(title):
+    raw_title = (title or "").strip()
+    if not raw_title:
+        return "Board Games"
+
+    trimmed = BOARD_GAMES_TUESDAY_RE.sub("", raw_title).strip(" ·:-")
+    return trimmed or raw_title
+
+
+def split_event_display_title(kind, title):
+    full_title = (title or "").strip()
+    parts = {
+        "full": full_title,
+        "prefix": "",
+        "focus": "",
+    }
+
+    if kind not in TITLE_HIGHLIGHT_KINDS:
+        return parts
+
+    prefix = EVENT_TITLE_PREFIXES.get(kind)
+    suffix = normalize_event_title_suffix(kind, full_title)
+    if not prefix or not suffix:
+        return parts
+
+    parts["prefix"] = f"{prefix}:"
+    parts["focus"] = suffix
+    return parts
+
+
+def compose_event_display_title(kind, title):
+    raw_title = (title or "").strip()
+
+    if kind == "cafe_lingua":
+        return normalize_event_title_suffix(kind, raw_title)
+
+    if kind == "dance":
+        if raw_title.lower() in DANCE_TITLE_ALIASES:
+            return "Dance Workshops"
+        return raw_title or "Dance Workshops"
+
+    if kind == "board_games":
+        return normalize_board_games_title(raw_title)
+
+    prefix = EVENT_TITLE_PREFIXES.get(kind)
+    if not prefix:
+        return raw_title
+
+    suffix = normalize_event_title_suffix(kind, raw_title)
+    if not suffix or suffix.lower() == prefix.lower():
+        return prefix
+    return f"{prefix}: {suffix}"
+
+
 class Post(db.Model):
     __tablename__ = "posts"
 
@@ -33,6 +162,7 @@ class Post(db.Model):
     summary = db.Column(db.String(256), nullable=False, default="")
     body = db.Column(db.Text, nullable=False, default="")
     starts_at = db.Column(db.DateTime, nullable=True, index=True)
+    publish_at = db.Column(db.DateTime, nullable=True, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     is_pinned = db.Column(db.Boolean, nullable=False, default=False, index=True)
     event_kind = db.Column(db.String(64), nullable=True, index=True)
@@ -47,6 +177,14 @@ class Post(db.Model):
         return self.starts_at is not None
 
     @property
+    def display_title(self):
+        return compose_event_display_title(self.event_kind, self.title)
+
+    @property
+    def display_title_parts(self):
+        return split_event_display_title(self.event_kind, self.display_title)
+
+    @property
     def ends_at(self):
         if self.starts_at is None:
             return None
@@ -54,8 +192,28 @@ class Post(db.Model):
         return datetime.combine(next_day, time(6, 0, 0))
 
     @property
-    def is_live(self):
+    def is_published(self):
+        if self.publish_at is None:
+            return True
+        return get_configured_local_now() >= self.publish_at
+
+    @property
+    def is_publicly_accessible(self):
+        return self.is_active and self.is_published
+
+    @property
+    def publication_state(self):
         if not self.is_active:
+            return "inactive"
+        if not self.is_published:
+            return "scheduled"
+        if not self.is_event:
+            return "live"
+        return "live" if get_configured_local_now() < self.ends_at else "archived"
+
+    @property
+    def is_live(self):
+        if not self.is_publicly_accessible:
             return False
         if not self.is_event:
             return True

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app.models import AccessKey
+from app.models import AccessKey, get_configured_local_now
 
 ACCESS_TARGETS = {
     "posts": "main.admin_posts",
@@ -23,7 +23,48 @@ ACCESS_LABELS = {
 }
 
 def get_access_scopes():
+    prune_expired_scopes()
     return session.get("access_scopes", [])
+
+
+def prune_expired_scopes():
+    scopes = list(session.get("access_scopes", []))
+    expires_by_scope = dict(session.get("access_scope_expires", {}))
+
+    if not scopes or not expires_by_scope:
+        return
+
+    now_local = get_configured_local_now()
+    active_scopes = []
+    active_expires = {}
+    changed = False
+
+    for scope in scopes:
+        raw_expires_at = expires_by_scope.get(scope)
+        if not raw_expires_at:
+            active_scopes.append(scope)
+            continue
+
+        try:
+            expires_at = datetime.fromisoformat(raw_expires_at)
+        except ValueError:
+            changed = True
+            continue
+
+        if expires_at <= now_local:
+            changed = True
+            continue
+
+        active_scopes.append(scope)
+        active_expires[scope] = raw_expires_at
+
+    if changed or active_scopes != scopes:
+        session["access_scopes"] = active_scopes
+
+    if active_expires:
+        session["access_scope_expires"] = active_expires
+    else:
+        session.pop("access_scope_expires", None)
 
 
 def has_any_access():
@@ -35,17 +76,26 @@ def has_scope(scope):
 
 
 def grant_scope(scope):
-    scopes = list(get_access_scopes())
-    if scope not in scopes:
-        scopes.append(scope)
-        session["access_scopes"] = scopes
+    grant_scopes([scope])
 
-def grant_scopes(scopes):
+def grant_scopes(scopes, expires_at=None):
     current = list(get_access_scopes())
+    scope_expires = dict(session.get("access_scope_expires", {}))
+    expires_value = expires_at.isoformat(timespec="minutes") if expires_at else None
+
     for scope in scopes:
         if scope not in current:
             current.append(scope)
+        if expires_value:
+            scope_expires[scope] = expires_value
+        else:
+            scope_expires.pop(scope, None)
+
     session["access_scopes"] = current
+    if scope_expires:
+        session["access_scope_expires"] = scope_expires
+    else:
+        session.pop("access_scope_expires", None)
 
 def get_scope_target(scope):
     endpoint = ACCESS_TARGETS.get(scope)
@@ -55,30 +105,37 @@ def get_scope_target(scope):
 
 
 def resolve_scopes_by_phrase(phrase):
+    return resolve_access_grant_by_phrase(phrase)["scopes"]
+
+
+def resolve_access_grant_by_phrase(phrase):
     phrase = (phrase or "").strip()
     if not phrase:
-        return []
+        return {"scopes": [], "expires_at": None}
 
     digest = hashlib.sha256(phrase.encode("utf-8")).hexdigest()
 
     for scope, expected_digest in current_app.config["ACCESS_HASHES"].items():
         if hmac.compare_digest(digest, expected_digest):
-            return [scope]
+            return {"scopes": [scope], "expires_at": None}
 
-    now = datetime.utcnow()
+    now_local = get_configured_local_now()
 
     items = (
         AccessKey.query
-        .filter(AccessKey.expires_at >= now)
+        .filter(AccessKey.expires_at >= now_local)
         .order_by(AccessKey.created_at.desc())
         .all()
     )
 
     for item in items:
         if hmac.compare_digest(phrase, item.key):
-            return [scope for scope in item.scopes_list if scope in ACCESS_LABELS]
+            return {
+                "scopes": [scope for scope in item.scopes_list if scope in ACCESS_LABELS],
+                "expires_at": item.expires_at,
+            }
 
-    return []
+    return {"scopes": [], "expires_at": None}
 
 
 def resolve_scope_by_phrase(phrase):

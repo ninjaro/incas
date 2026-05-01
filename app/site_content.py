@@ -134,6 +134,19 @@ SITE_OFFERS = {
 def get_site_offers(locale):
     return SITE_OFFERS.get(locale) or SITE_OFFERS["en"]
 
+
+def get_footer_offer_links(locale):
+    locale = locale if locale in SITE_PAGES else "en"
+    page_map = SITE_PAGES.get(locale) or SITE_PAGES["en"]
+    footer_keys = ("international_tuesday", "international_breakfast", "language_tandem")
+    return [
+        {
+            "title": page_map[key]["title"],
+            "url": f"/offers/{key.replace('_', '-')}" if key != "language_tandem" else "/offers/language-tandem",
+        }
+        for key in footer_keys
+    ]
+
 def t(locale, key):
     return SITE_UI.get(locale, {}).get(key) or SITE_UI["en"].get(key) or key
 

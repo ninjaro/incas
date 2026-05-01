@@ -1,12 +1,13 @@
 import json
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import flash, redirect, render_template, request, url_for
 
-from app.models import AccessKey, db
+from app.models import AccessKey, db, get_configured_local_now
 from app.routes import bp
 from app.routes.helpers.access import ACCESS_LABELS, require_scope
+from app.routes.helpers.content import format_datetime_local
 
 
 @bp.route("/admin/access-keys", methods=["GET", "POST"])
@@ -14,6 +15,8 @@ def admin_access_keys():
     guard = require_scope("access_keys")
     if guard:
         return guard
+
+    now_local = get_configured_local_now()
 
     available_scopes = [
         {"value": scope, "label": label}
@@ -23,7 +26,7 @@ def admin_access_keys():
 
     values = {
         "scopes": [],
-        "expires_at": "",
+        "expires_at": format_datetime_local(now_local + timedelta(days=1)),
     }
 
     if request.method == "POST":
@@ -33,7 +36,7 @@ def admin_access_keys():
         expires_at = None
         if values["expires_at"]:
             try:
-                expires_at = datetime.fromisoformat(values["expires_at"])
+                expires_at = datetime.strptime(values["expires_at"], "%Y-%m-%dT%H:%M")
             except ValueError:
                 expires_at = None
 
@@ -60,6 +63,7 @@ def admin_access_keys():
         values=values,
         available_scopes=available_scopes,
         ACCESS_LABELS=ACCESS_LABELS,
+        now_local=now_local,
     )
 
 

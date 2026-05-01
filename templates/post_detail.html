@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 
-{% block title %}{{ item.title }} · INCAS{% endblock %}
+{% block title %}{{ item.display_title }} · INCAS{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm">
@@ -15,10 +16,8 @@
 
         {% set meta = event_kind_meta(item.event_kind) %}
         <h1 class="h3 mb-2 d-flex align-items-center gap-2 flex-wrap">
-            <span>{{ item.title }}</span>
-            {% if meta %}
-                <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
-            {% endif %}
+            {{ render_event_marker(item) }}
+            <span>{{ render_event_title_content(item) }}</span>
         </h1>
 
         {% if item.starts_at %}
@@ -27,7 +26,7 @@
 
         {% if item.image_url %}
             <div class="mb-4">
-                <img src="{{ item.image_url }}" alt="{{ item.title }}" class="img-fluid rounded">
+                <img src="{{ item.image_url }}" alt="{{ item.display_title }}" class="img-fluid rounded">
             </div>
         {% endif %}
 

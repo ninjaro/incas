@@ -1,6 +1,14 @@
+.language-lookup-shell {
+    position: relative;
+}
+
 .language-lookup-menu {
     display: none;
-    margin-top: 0.5rem;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    left: 0;
+    z-index: 1080;
     border: 1px solid var(--bs-border-color);
     border-radius: 0.5rem;
     background: var(--bs-body-bg);

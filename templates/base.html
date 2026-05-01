@@ -199,7 +199,7 @@
 <footer class="site-footer border-top">
     <div class="container py-4 py-md-5">
         <div class="row gy-4">
-            <div class="col-md-5">
+            <div class="col-md-6">
                 <a class="footer-brand" href="{{ url_for('main.index') }}">{{ config.APP_NAME }}</a>
                 <p class="footer-copy mt-2 mb-3">
                     Intercultural Centre of Aachen Students.
@@ -241,17 +241,12 @@
                 </ul>
             </div>
 
-            <div class="col-6 col-md-4">
+            <div class="col-6 col-md-3">
                 <h2 class="footer-heading">{{ t("nav.forms") }}</h2>
                 <ul class="footer-links">
-                    <li><a href="{{ url_for('main.international_tuesday') }}">International Tuesday</a></li>
-                    <li><a href="{{ url_for('main.country_evening') }}">Country Evening</a></li>
-                    <li><a href="{{ url_for('main.cafe_lingua') }}">Café Lingua</a></li>
-                    <li><a href="{{ url_for('main.international_breakfast') }}">International Breakfast</a></li>
-                    <li><a href="{{ url_for('main.international_weekend') }}">International Weekend</a></li>
-                    <li><a href="{{ url_for('main.incas_active') }}">INCAS Active</a></li>
-                    <li><a href="{{ url_for('main.offer_language_tandem') }}">{{ t("nav.language_tandem") }}</a></li>
-                    <li><a href="{{ url_for('main.contact_form') }}">{{ t("nav.contact_questions") }}</a></li>
+                    {% for item in footer_offer_links %}
+                        <li><a href="{{ item.url }}">{{ item.title }}</a></li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>

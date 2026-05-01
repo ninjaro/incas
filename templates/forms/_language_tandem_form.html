@@ -147,19 +147,21 @@
                     <div class="col-12">
                         <label class="form-label" for="country_of_origin_lookup">Country of Origin <span class="text-danger">*</span></label>
                         <input type="hidden" id="country_of_origin" name="country_of_origin" value="{{ values.country_of_origin }}">
-                        <input
-                            class="form-control{% if form_errors.get('country_of_origin') %} is-invalid{% endif %}"
-                            id="country_of_origin_lookup"
-                            autocomplete="country-name"
-                            placeholder="Search country"
-                            required
-                            aria-controls="country_of_origin_menu"
-                            {% if form_errors.get('country_of_origin') %}aria-describedby="country_of_origin_error"{% endif %}
-                        >
+                        <div class="language-lookup-shell">
+                            <input
+                                class="form-control{% if form_errors.get('country_of_origin') %} is-invalid{% endif %}"
+                                id="country_of_origin_lookup"
+                                autocomplete="country-name"
+                                placeholder="Search country"
+                                required
+                                aria-controls="country_of_origin_menu"
+                                {% if form_errors.get('country_of_origin') %}aria-describedby="country_of_origin_error"{% endif %}
+                            >
+                            <div id="country_of_origin_menu" class="language-lookup-menu country-lookup-menu" role="listbox" aria-live="polite"></div>
+                        </div>
                         {% if form_errors.get('country_of_origin') %}
                             <div class="invalid-feedback" id="country_of_origin_error">{{ form_errors.country_of_origin }}</div>
                         {% endif %}
-                        <div id="country_of_origin_menu" class="language-lookup-menu country-lookup-menu" role="listbox" aria-live="polite"></div>
                         <script type="application/json" id="country_options_json">
                             [
                                 {% for country in country_options %}
@@ -214,23 +216,25 @@
                                 </div>
                             {% endif %}
 
-                            <input
-                                type="text"
-                                class="form-control{% if form_errors.get('offered_languages') %} is-invalid{% endif %}"
-                                id="offered_language_lookup"
-                                data-target-picker="offered"
-                                placeholder="Filter languages"
-                                autocomplete="off"
-                                role="combobox"
-                                aria-autocomplete="list"
-                                aria-expanded="false"
-                                aria-controls="offered_language_menu"
-                                {% if form_errors.get('offered_languages') %}aria-describedby="offered_languages_error"{% endif %}
-                            >
+                            <div class="language-lookup-shell">
+                                <input
+                                    type="text"
+                                    class="form-control{% if form_errors.get('offered_languages') %} is-invalid{% endif %}"
+                                    id="offered_language_lookup"
+                                    data-target-picker="offered"
+                                    placeholder="Filter languages"
+                                    autocomplete="off"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="offered_language_menu"
+                                    {% if form_errors.get('offered_languages') %}aria-describedby="offered_languages_error"{% endif %}
+                                >
+                                <div id="offered_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
+                            </div>
                             {% if form_errors.get('offered_languages') %}
                                 <div class="invalid-feedback d-block" id="offered_languages_error">{{ form_errors.offered_languages }}</div>
                             {% endif %}
-                            <div id="offered_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
 
                             <div class="form-text mt-2">
                                 Add each language you can offer and set your proficiency level.
@@ -268,23 +272,25 @@
                                 </div>
                             </div>
 
-                            <input
-                                type="text"
-                                class="form-control{% if form_errors.get('requested_languages') %} is-invalid{% endif %}"
-                                id="requested_language_lookup"
-                                data-target-picker="requested"
-                                placeholder="Filter languages"
-                                autocomplete="off"
-                                role="combobox"
-                                aria-autocomplete="list"
-                                aria-expanded="false"
-                                aria-controls="requested_language_menu"
-                                {% if form_errors.get('requested_languages') %}aria-describedby="requested_languages_error"{% endif %}
-                            >
+                            <div class="language-lookup-shell">
+                                <input
+                                    type="text"
+                                    class="form-control{% if form_errors.get('requested_languages') %} is-invalid{% endif %}"
+                                    id="requested_language_lookup"
+                                    data-target-picker="requested"
+                                    placeholder="Filter languages"
+                                    autocomplete="off"
+                                    role="combobox"
+                                    aria-autocomplete="list"
+                                    aria-expanded="false"
+                                    aria-controls="requested_language_menu"
+                                    {% if form_errors.get('requested_languages') %}aria-describedby="requested_languages_error"{% endif %}
+                                >
+                                <div id="requested_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
+                            </div>
                             {% if form_errors.get('requested_languages') %}
                                 <div class="invalid-feedback d-block" id="requested_languages_error">{{ form_errors.requested_languages }}</div>
                             {% endif %}
-                            <div id="requested_language_menu" class="language-lookup-menu" role="listbox" aria-live="polite"></div>
 
                             <div class="form-text mt-2">
                                 Add the languages you want to practice.
