@@ -20,6 +20,7 @@ from app.routes.helpers.event_registrations import (
     resolve_event_registration_occupation,
     should_collect_diet_preference,
 )
+from app.routes.helpers.map_demo import get_event_map_demo_context
 from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
     normalize_country_code,
