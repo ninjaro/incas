@@ -879,6 +879,148 @@ button.calendar-mini-day:focus {
     margin-bottom: 1rem;
 }
 
+.map-demo-hero {
+    background:
+        radial-gradient(circle at top right, rgba(var(--bs-primary-rgb), 0.16), transparent 34%),
+        linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.08), transparent 62%),
+        var(--bs-tertiary-bg);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.16);
+}
+
+.map-demo-event-switcher {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.75rem;
+}
+
+.map-demo-event-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    min-height: 5.5rem;
+    padding: 0.9rem 1rem;
+    text-align: left;
+}
+
+.map-demo-event-chip-title {
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.map-demo-event-chip-note {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+}
+
+.map-demo-summary-card,
+.map-demo-license-table,
+.map-demo-provider-meta,
+.map-demo-fallback-note {
+    color: var(--bs-body-color);
+}
+
+.map-demo-detail-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.map-demo-detail-list div {
+    padding: 0.75rem 0.85rem;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 88%, var(--bs-primary) 12%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 0.9rem;
+}
+
+.map-demo-detail-list dt {
+    margin: 0 0 0.2rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.map-demo-detail-list dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.map-demo-fallback-note,
+.map-demo-fallback-card {
+    padding: 1rem;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 86%, var(--bs-primary) 14%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.16);
+    border-radius: 1rem;
+}
+
+.map-demo-stage {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 23rem;
+    padding: 0.5rem;
+    background:
+        linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.04), transparent 28%),
+        color-mix(in srgb, var(--bs-tertiary-bg) 94%, var(--bs-primary) 6%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 1.2rem;
+    overflow: hidden;
+}
+
+.map-demo-chart-host {
+    width: 100%;
+    min-height: 21.5rem;
+}
+
+.map-demo-react-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 21.5rem;
+}
+
+.map-demo-react-controls {
+    align-self: flex-end;
+}
+
+.map-demo-react-shell svg {
+    flex: 1 1 auto;
+}
+
+.map-demo-chart-host > div,
+.map-demo-stage svg,
+.map-demo-stage canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.map-demo-placeholder {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    align-self: center;
+    color: var(--bs-secondary-color);
+}
+
+.map-demo-provider-meta p:last-child {
+    max-width: 70ch;
+}
+
+.map-demo-license-table th {
+    min-width: 11rem;
+}
+
+@media (max-width: 767.98px) {
+    .map-demo-stage {
+        min-height: 18rem;
+    }
+
+    .map-demo-chart-host {
+        min-height: 16.5rem;
+    }
+}
+
 .incas-form-section {
     padding-top: 1.25rem;
     margin-top: 1.25rem;

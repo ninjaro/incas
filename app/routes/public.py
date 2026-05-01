@@ -8,6 +8,7 @@ from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, P
 from app.routes import bp
 from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
+from app.routes.helpers.map_demo import get_event_map_demo_context
 from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
     normalize_country_code,
@@ -190,6 +191,11 @@ def events():
     )
     items = [item for item in items if item.is_publicly_accessible]
     return render_template("posts.html", items=items, page_title="Events")
+
+
+@bp.route("/demos/event-maps")
+def event_map_demo():
+    return render_template("map_demo.html", **get_event_map_demo_context())
 
 
 @bp.route("/content/<slug>")

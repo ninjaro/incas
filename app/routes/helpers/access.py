@@ -71,6 +71,10 @@ def has_any_access():
     return len(get_access_scopes()) > 0
 
 
+def has_any_access_key():
+    return AccessKey.query.first() is not None
+
+
 def has_scope(scope):
     return scope in get_access_scopes()
 
