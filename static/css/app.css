@@ -892,6 +892,25 @@ button.calendar-mini-day:focus {
     color: var(--bs-secondary-color);
 }
 
+.qr-code-panel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 15rem;
+    min-height: 15rem;
+    padding: 0.75rem;
+    background: #ffffff;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+}
+
+.qr-code-panel img,
+.qr-code-panel canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
 .card-heading-link:hover,
 .card-heading-link:focus {
     text-decoration: underline !important;

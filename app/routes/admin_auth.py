@@ -41,6 +41,24 @@ def admin_login():
     return render_template("admin/login.html")
 
 
+@bp.route("/admin/unlock")
+def admin_unlock():
+    phrase = request.args.get("phrase", "").strip()
+    grant = resolve_access_grant_by_phrase(phrase)
+    scopes = grant["scopes"]
+
+    if scopes:
+        grant_scopes(scopes, expires_at=grant["expires_at"])
+        return redirect(url_for("main.admin_corridor"))
+
+    flash("Invalid or expired access key.")
+
+    if has_any_access():
+        return redirect(url_for("main.admin_corridor"))
+
+    return redirect(url_for("main.admin_login"))
+
+
 @bp.route("/admin/access/<scope>", methods=["GET", "POST"])
 def admin_scope_access(scope):
     if scope not in ACCESS_LABELS:

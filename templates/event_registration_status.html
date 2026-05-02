@@ -50,6 +50,32 @@
             </div>
         </div>
 
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-4">
+                        <div
+                            class="qr-code-panel"
+                            data-qr-code="{{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}"
+                            data-qr-width="220"
+                            data-qr-height="220"
+                        ></div>
+                    </div>
+                    <div class="col-md-8">
+                        <h2 class="h5 mb-2">Quick Access QR Code</h2>
+                        <p class="text-muted mb-2">Scan this code to reopen this application page later on any device.</p>
+                        <div class="small text-muted mb-2">QR target</div>
+                        <a
+                            href="{{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}"
+                            class="small text-break"
+                        >
+                            {{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-body">
                 <h2 class="h5 mb-3">Event Queue Snapshot</h2>
@@ -83,4 +109,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/qr-codes.js') }}"></script>
 {% endblock %}
