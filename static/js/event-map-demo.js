@@ -93,6 +93,23 @@ if (!demoRoot) {
         };
     }
 
+    function computeDashPattern(lineLength) {
+        const safeLength = Math.max(Number(lineLength) || 0, 1);
+        const dashCount = Math.max(3, Math.floor(safeLength / 44));
+        const gapRatio = 0.68;
+        const dashLength = safeLength / (dashCount + Math.max(dashCount - 1, 0) * gapRatio);
+        const gapLength = dashLength * gapRatio;
+        const strokeWidth = dashLength < 12 ? 1.35 : dashLength < 18 ? 1.65 : 1.9;
+
+        return {
+            dashCount,
+            dashLength,
+            gapLength,
+            strokeWidth,
+            dashArray: `${dashLength.toFixed(2)} ${gapLength.toFixed(2)}`,
+        };
+    }
+
     function getActiveEvent() {
         return eventById.get(state.eventId) || events[0];
     }
@@ -446,6 +463,20 @@ if (!demoRoot) {
         );
     }
 
+    function applyHighchartsTripLineStyle(chart) {
+        const tripSeries = chart.series.find((item) => item.type === "mapline");
+        const lineElement = tripSeries?.points?.[0]?.graphic?.element;
+        if (!lineElement || typeof lineElement.getTotalLength !== "function") {
+            return;
+        }
+
+        const pattern = computeDashPattern(lineElement.getTotalLength());
+        lineElement.setAttribute("stroke", ORANGE);
+        lineElement.setAttribute("stroke-width", pattern.strokeWidth.toFixed(2));
+        lineElement.setAttribute("stroke-dasharray", pattern.dashArray);
+        lineElement.setAttribute("stroke-linecap", "round");
+    }
+
     async function renderGoogleProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
         const highlightCodes = Array.from(getHighlightAlpha2Set(target)).map((code) => code.toUpperCase());
@@ -535,8 +566,8 @@ if (!demoRoot) {
 
     async function renderHighchartsProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
-        const highlightSet = getHighlightAlpha2Set(target);
         const tripRoute = getTripRoute(target);
+        const highlightSet = tripRoute ? new Set() : getHighlightAlpha2Set(target);
 
         if (!highlightSet.size && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
@@ -683,8 +714,17 @@ if (!demoRoot) {
             series,
         });
 
+        let removeRenderHandler = null;
+        if (tripRoute) {
+            removeRenderHandler = window.Highcharts.addEvent(chart, "render", () => {
+                applyHighchartsTripLineStyle(chart);
+            });
+            applyHighchartsTripLineStyle(chart);
+        }
+
         providerInstances.set(providerId, {
             dispose() {
+                removeRenderHandler?.();
                 chart.destroy();
             },
         });
@@ -692,8 +732,10 @@ if (!demoRoot) {
 
     async function renderAmChartsProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
-        const highlightCodes = Array.from(getHighlightAlpha2Set(target)).map((code) => code.toUpperCase());
         const tripRoute = getTripRoute(target);
+        const highlightCodes = tripRoute
+            ? []
+            : Array.from(getHighlightAlpha2Set(target)).map((code) => code.toUpperCase());
 
         if (!highlightCodes.length && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
@@ -764,8 +806,6 @@ if (!demoRoot) {
             const lineSeries = chart.series.push(window.am5map.MapLineSeries.new(root, {}));
             lineSeries.mapLines.template.setAll({
                 stroke: window.am5.color(0xff6600),
-                strokeWidth: 2,
-                strokeDasharray: [8, 6],
                 tooltipText: "{name}",
             });
             lineSeries.data.setAll([
@@ -840,6 +880,45 @@ if (!demoRoot) {
                     latitude: tripRoute.destination.coordinates[1],
                 },
             ]);
+
+            const applyAmChartsTripLineStyle = () => {
+                const originPoint = chart.convert({
+                    longitude: tripRoute.origin.coordinates[0],
+                    latitude: tripRoute.origin.coordinates[1],
+                });
+                const destinationPoint = chart.convert({
+                    longitude: tripRoute.destination.coordinates[0],
+                    latitude: tripRoute.destination.coordinates[1],
+                });
+                if (!originPoint || !destinationPoint) {
+                    return;
+                }
+
+                const pattern = computeDashPattern(
+                    Math.hypot(destinationPoint.x - originPoint.x, destinationPoint.y - originPoint.y)
+                );
+                lineSeries.mapLines.template.setAll({
+                    stroke: window.am5.color(0xff6600),
+                    strokeWidth: pattern.strokeWidth,
+                    strokeDasharray: [pattern.dashLength, pattern.gapLength],
+                });
+                if (typeof lineSeries.mapLines?.each === "function") {
+                    lineSeries.mapLines.each((line) => {
+                        line.setAll({
+                            stroke: window.am5.color(0xff6600),
+                            strokeWidth: pattern.strokeWidth,
+                            strokeDasharray: [pattern.dashLength, pattern.gapLength],
+                        });
+                    });
+                }
+            };
+
+            setTimeout(() => {
+                if (typeof root.isDisposed === "function" && root.isDisposed()) {
+                    return;
+                }
+                applyAmChartsTripLineStyle();
+            }, 0);
         }
 
         setTimeout(() => {
@@ -870,8 +949,8 @@ if (!demoRoot) {
 
     async function renderReactProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
-        const highlightNumericSet = getHighlightNumericSet(target);
         const tripRoute = getTripRoute(target);
+        const highlightNumericSet = tripRoute ? new Set() : getHighlightNumericSet(target);
 
         if (!highlightNumericSet.size && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
@@ -926,6 +1005,7 @@ if (!demoRoot) {
                 zoom: getMapZoom(targetConfig),
             };
             const [position, setPosition] = React.useState(initialPosition);
+            const shellRef = React.useRef(null);
 
             React.useEffect(() => {
                 setPosition(initialPosition);
@@ -933,9 +1013,26 @@ if (!demoRoot) {
 
             const currentTripRoute = getTripRoute(targetConfig);
 
+            React.useEffect(() => {
+                if (!currentTripRoute || !shellRef.current) {
+                    return;
+                }
+
+                const path = shellRef.current.querySelector(".map-demo-react-trip-line");
+                if (!path || typeof path.getTotalLength !== "function") {
+                    return;
+                }
+
+                const visibleLength = path.getTotalLength() * position.zoom;
+                const pattern = computeDashPattern(visibleLength);
+                path.setAttribute("stroke-dasharray", `${(pattern.dashLength / position.zoom).toFixed(2)} ${(pattern.gapLength / position.zoom).toFixed(2)}`);
+                path.setAttribute("stroke-width", (pattern.strokeWidth / position.zoom).toFixed(2));
+                path.setAttribute("stroke-linecap", "round");
+            }, [currentTripRoute, position.zoom]);
+
             return h(
                 "div",
-                { className: "map-demo-react-shell" },
+                { className: "map-demo-react-shell", ref: shellRef },
                 h(
                     "div",
                     { className: "map-demo-react-controls btn-group btn-group-sm", role: "group", "aria-label": "Map zoom controls" },
@@ -1015,12 +1112,11 @@ if (!demoRoot) {
                             })
                         ),
                         currentTripRoute && h(Line, {
+                            className: "map-demo-react-trip-line",
                             from: currentTripRoute.origin.coordinates,
                             to: currentTripRoute.destination.coordinates,
                             stroke: ORANGE,
-                            strokeWidth: 2,
-                            strokeLinecap: "round",
-                            strokeDasharray: "8 6",
+                            strokeWidth: 1.9,
                         }),
                         currentTripRoute && h(TripMarker, {
                             point: currentTripRoute.origin,

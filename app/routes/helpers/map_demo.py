@@ -102,9 +102,6 @@ MAP_DEMO_EVENTS = [
         "target": {
             "kind": "trip",
             "label": "Aachen to Luxembourg City",
-            "country_name": "Luxembourg",
-            "country_codes": ["LU"],
-            "react_numeric_codes": ["442"],
             "center": [6.07, 50.24],
             "view": {
                 "zoom": 4.2,
@@ -124,7 +121,7 @@ MAP_DEMO_EVENTS = [
             "mapping_note": (
                 "Trip events should focus on the destination city and show travel context. "
                 "This demo uses Aachen as the starting point, Luxembourg City as the target, "
-                "and a regional viewport that includes both."
+                "and a regional viewport that includes both without highlighting the whole country."
             ),
         },
     },
