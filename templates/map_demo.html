@@ -24,10 +24,10 @@
                 This page compares several ready-made map approaches for event titles like
                 <strong>Country Evening: Poland</strong> or
                 <strong>International Breakfast: Turkish cuisine</strong>.
-                Each provider uses the same orange accent and the same sample events, with the target shown on a world-context map so location matters as much as outline styling.
+                Each provider uses the same orange accent and the same sample events, with a regional default zoom that keeps nearby countries visible instead of tightly cropping to the highlighted shape.
             </p>
             <p class="mb-0 text-body-secondary">
-                Broad culture labels are only shown if they resolve to an explicit editorial country set. Otherwise they should be rejected instead of being mapped loosely.
+                Broad culture labels are only shown if they resolve to an explicit editorial country set. Trip events use Aachen as the starting point and a destination-city marker instead of treating the whole country as the target.
             </p>
         </div>
     </div>
@@ -48,7 +48,9 @@
                     <span class="map-demo-event-chip-title">{{ item.title }}</span>
                     <span class="map-demo-event-chip-note">
                         {% if item.target.kind == "country" %}
-                            {{ item.target.label }}
+                            {{ item.target.label }} · regional context
+                        {% elif item.target.kind == "trip" %}
+                            {{ item.target.origin.name }} → {{ item.target.destination.name }}
                         {% elif item.target.kind == "country_group" %}
                             {{ item.target.label }} · {{ item.target.country_codes|length }} countries
                         {% else %}

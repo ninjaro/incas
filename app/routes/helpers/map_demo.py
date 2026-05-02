@@ -50,52 +50,82 @@ MAP_DEMO_EVENTS = [
     {
         "id": "country-evening-poland",
         "title": "Country Evening: Poland",
-        "summary": "Direct single-country target with a clean ISO mapping and an easy Europe-context zoom.",
+        "summary": "Direct single-country target with a clean ISO mapping and a regional Europe-context viewport.",
         "target": {
             "kind": "country",
             "label": "Poland",
             "country_name": "Poland",
             "country_codes": ["PL"],
             "react_numeric_codes": ["616"],
+            "center": [18.8, 52.1],
+            "view": {
+                "zoom": 2.35,
+            },
             "react_view": {
                 "center": [18.8, 52.1],
-                "zoom": 3.1,
+                "zoom": 2.35,
             },
-            "mapping_note": "Single-country mapping using ISO 3166-1 alpha-2 code PL.",
+            "mapping_note": (
+                "Single-country mapping using ISO 3166-1 alpha-2 code PL, centered on the country "
+                "with a regional zoom so nearby countries remain visible."
+            ),
         },
     },
     {
         "id": "international-breakfast-turkey",
         "title": "International Breakfast: Turkish cuisine",
-        "summary": "Cuisine-focused title, but still cleanly representable as Turkey on a world-context map.",
+        "summary": "Cuisine-focused title, but still cleanly representable as Turkey with surrounding countries kept in view.",
         "target": {
             "kind": "country",
             "label": "Turkey",
             "country_name": "Turkey",
             "country_codes": ["TR"],
             "react_numeric_codes": ["792"],
+            "center": [35.1, 39.0],
+            "view": {
+                "zoom": 2.0,
+            },
             "react_view": {
                 "center": [35.1, 39.0],
-                "zoom": 2.45,
+                "zoom": 2.0,
             },
-            "mapping_note": "Cuisine term resolved to the country Turkey for the demo because the title names a nationally specific cuisine.",
+            "mapping_note": (
+                "Cuisine term resolved to the country Turkey for the demo because the title names a nationally "
+                "specific cuisine, using a regional zoom instead of a tight country fit."
+            ),
         },
     },
     {
         "id": "international-weekend-luxembourg",
-        "title": "International Weekend: Luxembourg",
-        "summary": "A small-country stress test that shows how clearly each provider can locate Luxembourg within western Europe.",
+        "title": "International Weekend: Luxembourg City",
+        "summary": "City-trip example with Aachen as the origin, Luxembourg City as the target, and a visual line between both points.",
         "target": {
-            "kind": "country",
-            "label": "Luxembourg",
+            "kind": "trip",
+            "label": "Aachen to Luxembourg City",
             "country_name": "Luxembourg",
             "country_codes": ["LU"],
             "react_numeric_codes": ["442"],
-            "react_view": {
-                "center": [6.13, 49.82],
-                "zoom": 5.1,
+            "center": [6.07, 50.24],
+            "view": {
+                "zoom": 4.2,
             },
-            "mapping_note": "Single-country mapping using ISO 3166-1 alpha-2 code LU.",
+            "react_view": {
+                "center": [6.07, 50.24],
+                "zoom": 4.2,
+            },
+            "origin": {
+                "name": "Aachen",
+                "coordinates": [6.0839, 50.7753],
+            },
+            "destination": {
+                "name": "Luxembourg City",
+                "coordinates": [6.1319, 49.6116],
+            },
+            "mapping_note": (
+                "Trip events should focus on the destination city and show travel context. "
+                "This demo uses Aachen as the starting point, Luxembourg City as the target, "
+                "and a regional viewport that includes both."
+            ),
         },
     },
     {
@@ -107,6 +137,10 @@ MAP_DEMO_EVENTS = [
             "label": "Arabic-speaking countries",
             "country_codes": ARABIC_SPEAKING_COUNTRY_CODES,
             "react_numeric_codes": ARABIC_SPEAKING_NUMERIC_CODES,
+            "center": [21.0, 25.0],
+            "view": {
+                "zoom": 1.55,
+            },
             "react_view": {
                 "center": [21.0, 25.0],
                 "zoom": 1.55,
@@ -125,7 +159,7 @@ MAP_DEMO_PROVIDERS = [
         "id": "google-geochart",
         "name": "Google GeoChart",
         "runtime": "Google loader + SVG",
-        "description": "Lightweight region coloring on a world map. Useful for a quick comparison, but not a strong fit when zooming and map navigation matter.",
+        "description": "Lightweight region coloring on a world map. Useful for a quick comparison, but not a strong fit when zooming, panning, or city-to-city overlays matter.",
         "docs_url": "https://developers.google.com/chart/interactive/docs/gallery/geochart",
         "license_url": "https://developers.google.com/chart/terms",
         "usage_note": "Google Charts is free, but usage is governed by Google Charts and Google APIs terms. GeoChart can color countries, provinces, or states, but the official docs note that the chart is not scrollable or draggable.",
@@ -134,7 +168,7 @@ MAP_DEMO_PROVIDERS = [
         "id": "highcharts-maps",
         "name": "Highcharts Maps",
         "runtime": "Highcharts + TopoJSON",
-        "description": "World-context choropleth with built-in zoom/navigation controls and a maintained map collection.",
+        "description": "World-context map with built-in zoom/navigation controls plus point and line overlays for trip-style demos.",
         "docs_url": "https://www.highcharts.com/docs/maps/getting-started",
         "license_url": "https://www.highcharts.com/products/maps/",
         "usage_note": "Highcharts Maps is a commercial product. The official product and installation pages frame it as licensed software with trial/evaluation use before production deployment.",
@@ -143,7 +177,7 @@ MAP_DEMO_PROVIDERS = [
         "id": "amcharts-maps",
         "name": "amCharts Maps",
         "runtime": "amCharts 5 + geodata",
-        "description": "World map with smooth zooming, bundled geodata, and a generous free-with-branding path for prototypes.",
+        "description": "World map with smooth zooming, bundled geodata, and support for point and line series in the same scene.",
         "docs_url": "https://www.amcharts.com/docs/v5/charts/map-chart/",
         "license_url": "https://www.amcharts.com/",
         "usage_note": "amCharts allows free use, including commercial use, with a small backlink. Removing branding requires a paid license.",
@@ -152,7 +186,7 @@ MAP_DEMO_PROVIDERS = [
         "id": "react-simple-maps",
         "name": "react-simple-maps",
         "runtime": "React + SVG + TopoJSON",
-        "description": "Lean React world-map rendering with direct control over the SVG layer and wheel/pan zoom behavior.",
+        "description": "Lean React world-map rendering with direct control over SVG markers, dashed connector lines, and wheel/pan zoom behavior.",
         "docs_url": "https://www.react-simple-maps.io/docs/getting-started/",
         "license_url": "https://github.com/zcreativelabs/react-simple-maps",
         "usage_note": "react-simple-maps is MIT licensed, but it expects a React runtime plus separately sourced TopoJSON or GeoJSON files.",

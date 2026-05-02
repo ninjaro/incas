@@ -4,6 +4,8 @@ const ORANGE_HOVER = "#ff8533";
 const NEUTRAL_BG = "#fffdfb";
 const NEUTRAL_FILL = "#f4e7dc";
 const NEUTRAL_STROKE = "#111827";
+const DEFAULT_CENTER = [15, 30];
+const DEFAULT_ZOOM = 1.45;
 
 const demoRoot = document.querySelector("[data-event-map-demo]");
 
@@ -63,6 +65,34 @@ if (!demoRoot) {
         return new Set((target.react_numeric_codes || []).map(normalizeNumericCode).filter(Boolean));
     }
 
+    function getMapCenter(target) {
+        const center = target?.view?.center || target?.center || target?.react_view?.center;
+        return Array.isArray(center) && center.length === 2 ? center : DEFAULT_CENTER;
+    }
+
+    function getMapZoom(target) {
+        return target?.view?.zoom || target?.react_view?.zoom || DEFAULT_ZOOM;
+    }
+
+    function hasTripRoute(target) {
+        return Boolean(
+            target?.kind === "trip" &&
+            Array.isArray(target.origin?.coordinates) &&
+            Array.isArray(target.destination?.coordinates)
+        );
+    }
+
+    function getTripRoute(target) {
+        if (!hasTripRoute(target)) {
+            return null;
+        }
+
+        return {
+            origin: target.origin,
+            destination: target.destination,
+        };
+    }
+
     function getActiveEvent() {
         return eventById.get(state.eventId) || events[0];
     }
@@ -80,6 +110,32 @@ if (!demoRoot) {
         const title = escapeHtml(eventItem.title);
         const summary = escapeHtml(eventItem.summary || "");
         const mappingNote = escapeHtml(target.mapping_note || "");
+
+        if (target.kind === "trip") {
+            summaryElement.innerHTML = `
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <span class="badge text-bg-dark">City trip target</span>
+                    <span class="badge text-bg-light">${escapeHtml(target.destination?.name || target.label || "Destination")}</span>
+                </div>
+                <h2 class="h4 mb-2">${title}</h2>
+                <p class="mb-3">${summary}</p>
+                <dl class="map-demo-detail-list mb-0">
+                    <div>
+                        <dt>Origin</dt>
+                        <dd>${escapeHtml(target.origin?.name || "Unknown")}</dd>
+                    </div>
+                    <div>
+                        <dt>Destination</dt>
+                        <dd>${escapeHtml(target.destination?.name || "Unknown")}</dd>
+                    </div>
+                    <div>
+                        <dt>Mapping policy</dt>
+                        <dd>${mappingNote}</dd>
+                    </div>
+                </dl>
+            `;
+            return;
+        }
 
         if (target.kind === "country") {
             summaryElement.innerHTML = `
@@ -229,6 +285,18 @@ if (!demoRoot) {
         host.className = "map-demo-chart-host";
         canvas.append(host);
         return host;
+    }
+
+    function appendProviderNote(providerId, message) {
+        const canvas = providerCanvases.get(providerId);
+        if (!canvas || !message) {
+            return;
+        }
+
+        const note = document.createElement("div");
+        note.className = "map-demo-provider-note";
+        note.textContent = message;
+        canvas.append(note);
     }
 
     const scriptPromises = new Map();
@@ -381,7 +449,9 @@ if (!demoRoot) {
     async function renderGoogleProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
         const highlightCodes = Array.from(getHighlightAlpha2Set(target)).map((code) => code.toUpperCase());
-        if (!highlightCodes.length) {
+        const tripRoute = getTripRoute(target);
+
+        if (!highlightCodes.length && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
             return;
         }
@@ -397,20 +467,43 @@ if (!demoRoot) {
             return;
         }
 
-        const rows = [["Country", "Focus"], ...highlightCodes.map((code) => [code, 1])];
-        const data = window.google.visualization.arrayToDataTable(rows);
-        const options = {
-            region: "world",
-            resolution: "countries",
-            displayMode: "regions",
-            legend: "none",
-            backgroundColor: "transparent",
-            datalessRegionColor: NEUTRAL_FILL,
-            defaultColor: NEUTRAL_FILL,
-            colorAxis: { minValue: 1, maxValue: 1, colors: [ORANGE, ORANGE] },
-            tooltip: { textStyle: { color: NEUTRAL_STROKE } },
-            keepAspectRatio: true,
-        };
+        let data;
+        let options;
+
+        if (tripRoute) {
+            const [originLon, originLat] = tripRoute.origin.coordinates;
+            const [destinationLon, destinationLat] = tripRoute.destination.coordinates;
+            data = window.google.visualization.arrayToDataTable([
+                ["Latitude", "Longitude", "Role", "Weight"],
+                [originLat, originLon, tripRoute.origin.name, 0],
+                [destinationLat, destinationLon, tripRoute.destination.name, 1],
+            ]);
+            options = {
+                region: "150",
+                displayMode: "markers",
+                legend: "none",
+                backgroundColor: "transparent",
+                datalessRegionColor: NEUTRAL_FILL,
+                colorAxis: { minValue: 0, maxValue: 1, colors: [NEUTRAL_STROKE, ORANGE] },
+                sizeAxis: { minValue: 0, maxValue: 1, minSize: 8, maxSize: 10 },
+                keepAspectRatio: true,
+            };
+        } else {
+            const rows = [["Country", "Focus"], ...highlightCodes.map((code) => [code, 1])];
+            data = window.google.visualization.arrayToDataTable(rows);
+            options = {
+                region: "world",
+                resolution: "countries",
+                displayMode: "regions",
+                legend: "none",
+                backgroundColor: "transparent",
+                datalessRegionColor: NEUTRAL_FILL,
+                defaultColor: NEUTRAL_FILL,
+                colorAxis: { minValue: 1, maxValue: 1, colors: [ORANGE, ORANGE] },
+                tooltip: { textStyle: { color: NEUTRAL_STROKE } },
+                keepAspectRatio: true,
+            };
+        }
 
         const chart = new window.google.visualization.GeoChart(host);
         const resizeObserver = typeof ResizeObserver === "function"
@@ -419,6 +512,18 @@ if (!demoRoot) {
 
         chart.draw(data, options);
         resizeObserver?.observe(host);
+
+        if (tripRoute) {
+            appendProviderNote(
+                providerId,
+                "GeoChart can show the two trip markers, but it does not support free pan/zoom or a dashed connector overlay in the same map scene."
+            );
+        } else {
+            appendProviderNote(
+                providerId,
+                "GeoChart keeps the comparison lightweight, but it remains a static map with no manual pan/zoom."
+            );
+        }
 
         providerInstances.set(providerId, {
             dispose() {
@@ -431,7 +536,9 @@ if (!demoRoot) {
     async function renderHighchartsProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
         const highlightSet = getHighlightAlpha2Set(target);
-        if (!highlightSet.size) {
+        const tripRoute = getTripRoute(target);
+
+        if (!highlightSet.size && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
             return;
         }
@@ -453,7 +560,7 @@ if (!demoRoot) {
         }
 
         const areas = window.Highcharts.geojson(mapData);
-        const data = areas
+        const choroplethData = areas
             .map((area) => {
                 const key = getHighchartsAreaKey(area);
                 const hcKey = area?.properties?.["hc-key"];
@@ -466,6 +573,83 @@ if (!demoRoot) {
                 };
             })
             .filter(Boolean);
+
+        const series = [
+            {
+                mapData,
+                data: choroplethData,
+                joinBy: "hc-key",
+                borderColor: NEUTRAL_STROKE,
+                borderWidth: 0.55,
+                nullColor: NEUTRAL_FILL,
+                states: {
+                    hover: {
+                        color: ORANGE_HOVER,
+                    },
+                },
+                dataLabels: {
+                    enabled: false,
+                },
+            },
+        ];
+
+        if (tripRoute) {
+            series.push(
+                {
+                    type: "mapline",
+                    name: "Trip context",
+                    data: [
+                        {
+                            name: `${tripRoute.origin.name} to ${tripRoute.destination.name}`,
+                            geometry: {
+                                type: "LineString",
+                                coordinates: [
+                                    tripRoute.origin.coordinates,
+                                    tripRoute.destination.coordinates,
+                                ],
+                            },
+                        },
+                    ],
+                    color: ORANGE,
+                    lineWidth: 2,
+                    dashStyle: "Dash",
+                    enableMouseTracking: false,
+                },
+                {
+                    type: "mappoint",
+                    name: "Trip markers",
+                    dataLabels: {
+                        enabled: true,
+                        format: "{point.name}",
+                        style: {
+                            color: NEUTRAL_STROKE,
+                            fontSize: "11px",
+                            textOutline: "none",
+                        },
+                        y: -10,
+                    },
+                    marker: {
+                        radius: 5,
+                        lineColor: NEUTRAL_STROKE,
+                        lineWidth: 1,
+                    },
+                    data: [
+                        {
+                            name: tripRoute.origin.name,
+                            lon: tripRoute.origin.coordinates[0],
+                            lat: tripRoute.origin.coordinates[1],
+                            color: NEUTRAL_STROKE,
+                        },
+                        {
+                            name: tripRoute.destination.name,
+                            lon: tripRoute.destination.coordinates[0],
+                            lat: tripRoute.destination.coordinates[1],
+                            color: ORANGE,
+                        },
+                    ],
+                }
+            );
+        }
 
         const chart = window.Highcharts.mapChart(host, {
             chart: {
@@ -482,6 +666,10 @@ if (!demoRoot) {
                     verticalAlign: "bottom",
                 },
             },
+            mapView: {
+                center: getMapCenter(target),
+                zoom: getMapZoom(target),
+            },
             colorAxis: {
                 min: 0,
                 minColor: ORANGE_SOFT,
@@ -489,27 +677,10 @@ if (!demoRoot) {
             },
             tooltip: {
                 pointFormatter() {
-                    return this.value ? "Highlighted target" : "Context country";
+                    return this.value ? "Highlighted target" : this.name || "Context";
                 },
             },
-            series: [
-                {
-                    mapData,
-                    data,
-                    joinBy: "hc-key",
-                    borderColor: NEUTRAL_STROKE,
-                    borderWidth: 0.55,
-                    nullColor: NEUTRAL_FILL,
-                    states: {
-                        hover: {
-                            color: ORANGE_HOVER,
-                        },
-                    },
-                    dataLabels: {
-                        enabled: false,
-                    },
-                },
-            ],
+            series,
         });
 
         providerInstances.set(providerId, {
@@ -522,7 +693,9 @@ if (!demoRoot) {
     async function renderAmChartsProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
         const highlightCodes = Array.from(getHighlightAlpha2Set(target)).map((code) => code.toUpperCase());
-        if (!highlightCodes.length) {
+        const tripRoute = getTripRoute(target);
+
+        if (!highlightCodes.length && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
             return;
         }
@@ -547,6 +720,11 @@ if (!demoRoot) {
                 wheelX: "zoom",
                 wheelY: "zoom",
                 projection: window.am5map.geoMercator(),
+                homeGeoPoint: {
+                    longitude: getMapCenter(target)[0],
+                    latitude: getMapCenter(target)[1],
+                },
+                homeZoomLevel: getMapZoom(target),
             })
         );
 
@@ -566,19 +744,122 @@ if (!demoRoot) {
             tooltipText: "{name}",
         });
 
-        const focusSeries = chart.series.push(
-            window.am5map.MapPolygonSeries.new(root, {
-                geoJSON: window.am5geodata_worldLow,
-                include: highlightCodes,
-            })
-        );
+        if (highlightCodes.length) {
+            const focusSeries = chart.series.push(
+                window.am5map.MapPolygonSeries.new(root, {
+                    geoJSON: window.am5geodata_worldLow,
+                    include: highlightCodes,
+                })
+            );
 
-        focusSeries.mapPolygons.template.setAll({
-            fill: window.am5.color(0xff6600),
-            stroke: window.am5.color(0x111827),
-            strokeWidth: 0.9,
-            tooltipText: "{name}",
-        });
+            focusSeries.mapPolygons.template.setAll({
+                fill: window.am5.color(0xff6600),
+                stroke: window.am5.color(0x111827),
+                strokeWidth: 0.9,
+                tooltipText: "{name}",
+            });
+        }
+
+        if (tripRoute) {
+            const lineSeries = chart.series.push(window.am5map.MapLineSeries.new(root, {}));
+            lineSeries.mapLines.template.setAll({
+                stroke: window.am5.color(0xff6600),
+                strokeWidth: 2,
+                strokeDasharray: [8, 6],
+                tooltipText: "{name}",
+            });
+            lineSeries.data.setAll([
+                {
+                    name: `${tripRoute.origin.name} to ${tripRoute.destination.name}`,
+                    geometry: {
+                        type: "LineString",
+                        coordinates: [
+                            tripRoute.origin.coordinates,
+                            tripRoute.destination.coordinates,
+                        ],
+                    },
+                },
+            ]);
+
+            const pointSeries = chart.series.push(window.am5map.MapPointSeries.new(root, {}));
+            pointSeries.bullets.push((bulletRoot, _series, dataItem) => {
+                const context = dataItem.dataContext || {};
+                const isDestination = context.role === "destination";
+                const color = isDestination ? 0xff6600 : 0x111827;
+                const container = window.am5.Container.new(bulletRoot, {});
+
+                container.children.push(
+                    window.am5.Circle.new(bulletRoot, {
+                        radius: isDestination ? 6 : 5,
+                        fill: window.am5.color(color),
+                        stroke: window.am5.color(0x111827),
+                        strokeWidth: 1,
+                    })
+                );
+
+                container.children.push(
+                    window.am5.Label.new(bulletRoot, {
+                        text: context.name || "",
+                        centerX: window.am5.percent(50),
+                        x: 0,
+                        dy: isDestination ? -18 : 14,
+                        fill: window.am5.color(0x111827),
+                        fontSize: 12,
+                        background: window.am5.RoundedRectangle.new(bulletRoot, {
+                            fill: window.am5.color(0xfffdfb),
+                            fillOpacity: 0.92,
+                            stroke: window.am5.color(0xff6600),
+                            strokeOpacity: isDestination ? 0.4 : 0.2,
+                            cornerRadiusBL: 8,
+                            cornerRadiusBR: 8,
+                            cornerRadiusTL: 8,
+                            cornerRadiusTR: 8,
+                        }),
+                        paddingLeft: 6,
+                        paddingRight: 6,
+                        paddingTop: 2,
+                        paddingBottom: 2,
+                    })
+                );
+
+                return window.am5.Bullet.new(bulletRoot, {
+                    sprite: container,
+                });
+            });
+            pointSeries.data.setAll([
+                {
+                    name: tripRoute.origin.name,
+                    role: "origin",
+                    longitude: tripRoute.origin.coordinates[0],
+                    latitude: tripRoute.origin.coordinates[1],
+                },
+                {
+                    name: tripRoute.destination.name,
+                    role: "destination",
+                    longitude: tripRoute.destination.coordinates[0],
+                    latitude: tripRoute.destination.coordinates[1],
+                },
+            ]);
+        }
+
+        setTimeout(() => {
+            if (typeof root.isDisposed === "function" && root.isDisposed()) {
+                return;
+            }
+
+            if (typeof chart.zoomToGeoPoint === "function") {
+                chart.zoomToGeoPoint(
+                    {
+                        longitude: getMapCenter(target)[0],
+                        latitude: getMapCenter(target)[1],
+                    },
+                    getMapZoom(target),
+                    true
+                );
+            } else if (typeof chart.goHome === "function") {
+                chart.goHome();
+            }
+        }, 0);
 
         providerInstances.set(providerId, {
             dispose() {
@@ -590,7 +871,9 @@ if (!demoRoot) {
     async function renderReactProvider(eventItem, providerId, token) {
         const target = eventItem.target || {};
         const highlightNumericSet = getHighlightNumericSet(target);
-        if (!highlightNumericSet.size) {
+        const tripRoute = getTripRoute(target);
+
+        if (!highlightNumericSet.size && !tripRoute) {
             renderFallback(providerId, "Rejected mapping", target.mapping_note || "No explicit country list is available.");
             return;
         }
@@ -611,21 +894,44 @@ if (!demoRoot) {
             ComposableMap,
             Geographies,
             Geography,
+            Line,
+            Marker,
             Sphere,
             ZoomableGroup,
         } = ReactSimpleMaps;
         const h = React.createElement;
 
+        function TripMarker({ point, isDestination }) {
+            return h(
+                Marker,
+                { coordinates: point.coordinates },
+                h("circle", {
+                    r: isDestination ? 6 : 5,
+                    fill: isDestination ? ORANGE : NEUTRAL_STROKE,
+                    stroke: NEUTRAL_STROKE,
+                    strokeWidth: 1,
+                }),
+                h("text", {
+                    y: isDestination ? -12 : 18,
+                    textAnchor: "middle",
+                    fontSize: 12,
+                    fill: NEUTRAL_STROKE,
+                }, point.name)
+            );
+        }
+
         function MapDemoReactChart({ targetConfig }) {
             const initialPosition = {
-                coordinates: targetConfig.react_view?.center || [15, 30],
-                zoom: targetConfig.react_view?.zoom || 1.2,
+                coordinates: getMapCenter(targetConfig),
+                zoom: getMapZoom(targetConfig),
             };
             const [position, setPosition] = React.useState(initialPosition);
 
             React.useEffect(() => {
                 setPosition(initialPosition);
-            }, [targetConfig, initialPosition.coordinates[0], initialPosition.coordinates[1], initialPosition.zoom]);
+            }, [targetConfig]);
+
+            const currentTripRoute = getTripRoute(targetConfig);
 
             return h(
                 "div",
@@ -640,7 +946,7 @@ if (!demoRoot) {
                             className: "btn btn-outline-secondary",
                             onClick: () => setPosition((current) => ({
                                 ...current,
-                                zoom: Math.min(current.zoom * 1.25, 12),
+                                zoom: Math.min(current.zoom * 1.25, 8),
                             })),
                         },
                         "+"
@@ -681,6 +987,8 @@ if (!demoRoot) {
                         {
                             center: position.coordinates,
                             zoom: position.zoom,
+                            minZoom: 1,
+                            maxZoom: 8,
                             onMoveEnd: ({ coordinates, zoom }) => {
                                 setPosition({ coordinates, zoom });
                             },
@@ -705,7 +1013,23 @@ if (!demoRoot) {
                                     },
                                 });
                             })
-                        )
+                        ),
+                        currentTripRoute && h(Line, {
+                            from: currentTripRoute.origin.coordinates,
+                            to: currentTripRoute.destination.coordinates,
+                            stroke: ORANGE,
+                            strokeWidth: 2,
+                            strokeLinecap: "round",
+                            strokeDasharray: "8 6",
+                        }),
+                        currentTripRoute && h(TripMarker, {
+                            point: currentTripRoute.origin,
+                            isDestination: false,
+                        }),
+                        currentTripRoute && h(TripMarker, {
+                            point: currentTripRoute.destination,
+                            isDestination: true,
+                        })
                     )
                 )
             );
