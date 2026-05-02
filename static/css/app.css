@@ -860,6 +860,38 @@ button.calendar-mini-day:focus {
     overflow: hidden;
 }
 
+.event-payment-notice {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.6rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.event-payment-required {
+    color: var(--incas-neutral-dark) !important;
+    background-color: rgba(var(--bs-primary-rgb), 0.18) !important;
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.24);
+}
+
+.event-payment-copy {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem;
+}
+
+.event-payment-copy strong {
+    color: var(--bs-body-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.event-payment-capacity {
+    color: var(--bs-secondary-color);
+}
+
 .card-heading-link:hover,
 .card-heading-link:focus {
     text-decoration: underline !important;

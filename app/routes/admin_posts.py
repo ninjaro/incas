@@ -17,6 +17,11 @@ from app.routes.helpers.content import (
     parse_starts_at,
     unique_slug,
 )
+from app.routes.helpers.event_registrations import (
+    format_price_cents,
+    parse_price_cents,
+    promote_waiting_list_for_post,
+)
 
 
 def build_post_form_values(item=None):
@@ -32,6 +37,10 @@ def build_post_form_values(item=None):
             "event_kind": item.event_kind or "",
             "instagram_media_id": item.instagram_media_id,
             "instagram_permalink": item.instagram_permalink,
+            "registration_limit_enabled": bool(item.registration_limit_enabled),
+            "registration_limit": str(item.registration_limit or "") if item.registration_limit is not None else "",
+            "registration_price": format_price_cents(item.registration_price_cents),
+            "registration_is_deposit": bool(item.registration_is_deposit),
         }
 
     return {
@@ -45,6 +54,10 @@ def build_post_form_values(item=None):
         "event_kind": "",
         "instagram_media_id": "",
         "instagram_permalink": "",
+        "registration_limit_enabled": False,
+        "registration_limit": "",
+        "registration_price": "",
+        "registration_is_deposit": False,
     }
 
 
@@ -155,6 +168,10 @@ def admin_post_create():
         values["event_kind"] = request.form.get("event_kind", "").strip()
         values["instagram_media_id"] = request.form.get("instagram_media_id", "").strip()
         values["instagram_permalink"] = request.form.get("instagram_permalink", "").strip()
+        values["registration_limit_enabled"] = request.form.get("registration_limit_enabled") == "on"
+        values["registration_limit"] = request.form.get("registration_limit", "").strip()
+        values["registration_price"] = request.form.get("registration_price", "").strip()
+        values["registration_is_deposit"] = request.form.get("registration_is_deposit") == "on"
 
         if not values["title"]:
             flash("Title is required.")
@@ -166,6 +183,28 @@ def admin_post_create():
         except ValueError:
             flash("Enter valid date and time values.")
             return render_post_form(values=values, item=None)
+
+        registration_limit = None
+        registration_price_cents = None
+        if values["registration_limit_enabled"]:
+            if starts_at is None:
+                flash("Participant limits only work for events with a start date.")
+                return render_post_form(values=values, item=None)
+
+            try:
+                registration_limit = int(values["registration_limit"])
+            except (TypeError, ValueError):
+                registration_limit = None
+
+            registration_price_cents = parse_price_cents(values["registration_price"])
+
+            if registration_limit is None or registration_limit < 1:
+                flash("Enter a valid number of available places.")
+                return render_post_form(values=values, item=None)
+
+            if registration_price_cents is None:
+                flash("Enter a valid price.")
+                return render_post_form(values=values, item=None)
 
         item = Post(
             slug=unique_slug(values["title"]),
@@ -179,6 +218,10 @@ def admin_post_create():
             event_kind=values["event_kind"] or None,
             instagram_media_id=values["instagram_media_id"],
             instagram_permalink=values["instagram_permalink"],
+            registration_limit_enabled=values["registration_limit_enabled"],
+            registration_limit=registration_limit,
+            registration_price_cents=registration_price_cents,
+            registration_is_deposit=values["registration_is_deposit"],
         )
         db.session.add(item)
         db.session.commit()
@@ -207,6 +250,10 @@ def admin_post_edit(post_id):
         values["event_kind"] = request.form.get("event_kind", "").strip()
         values["instagram_media_id"] = request.form.get("instagram_media_id", "").strip()
         values["instagram_permalink"] = request.form.get("instagram_permalink", "").strip()
+        values["registration_limit_enabled"] = request.form.get("registration_limit_enabled") == "on"
+        values["registration_limit"] = request.form.get("registration_limit", "").strip()
+        values["registration_price"] = request.form.get("registration_price", "").strip()
+        values["registration_is_deposit"] = request.form.get("registration_is_deposit") == "on"
 
         if not values["title"]:
             flash("Title is required.")
@@ -219,6 +266,28 @@ def admin_post_edit(post_id):
             flash("Enter valid date and time values.")
             return render_post_form(values=values, item=item)
 
+        registration_limit = None
+        registration_price_cents = None
+        if values["registration_limit_enabled"]:
+            if starts_at is None:
+                flash("Participant limits only work for events with a start date.")
+                return render_post_form(values=values, item=item)
+
+            try:
+                registration_limit = int(values["registration_limit"])
+            except (TypeError, ValueError):
+                registration_limit = None
+
+            registration_price_cents = parse_price_cents(values["registration_price"])
+
+            if registration_limit is None or registration_limit < 1:
+                flash("Enter a valid number of available places.")
+                return render_post_form(values=values, item=item)
+
+            if registration_price_cents is None:
+                flash("Enter a valid price.")
+                return render_post_form(values=values, item=item)
+
         item.title = values["title"]
         item.slug = unique_slug(values["title"], current_id=item.id)
         item.image_url = values["image_url"]
@@ -230,6 +299,13 @@ def admin_post_edit(post_id):
         item.event_kind = values["event_kind"] or None
         item.instagram_media_id = values["instagram_media_id"]
         item.instagram_permalink = values["instagram_permalink"]
+        item.registration_limit_enabled = values["registration_limit_enabled"]
+        item.registration_limit = registration_limit
+        item.registration_price_cents = registration_price_cents
+        item.registration_is_deposit = values["registration_is_deposit"]
+
+        if item.has_registration_queue:
+            promote_waiting_list_for_post(item)
 
         db.session.commit()
         return redirect(url_for("main.admin_posts"))

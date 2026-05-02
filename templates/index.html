@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
+{% from "_event_registration_macros.html" import render_event_payment_notice with context %}
 
 {% block title %}INCAS{% endblock %}
 
@@ -41,6 +42,8 @@
                                 {{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}
                             </div>
                         {% endif %}
+
+                        {{ render_event_payment_notice(item, "mb-2") }}
 
                     </div>
                 </div>
@@ -84,6 +87,8 @@
                                     {{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}
                                 </div>
                             {% endif %}
+
+                            {{ render_event_payment_notice(item, "mb-2") }}
 
                         </div>
                     </div>

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% set form_errors = errors|default({}) %}
+{% set error_targets = {
+    "first_name": "first_name",
+    "last_name": "last_name",
+    "email": "email",
+    "occupation": "occupation",
+    "occupation_other": "occupation_other",
+    "diet_preference": "diet_preference"
+} %}
+
+{% block title %}Register · {{ post.display_title }} · INCAS{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{{ url_for('main.post_detail', slug=post.slug) }}" class="btn btn-sm btn-outline-secondary">Back to Event</a>
+                </div>
+
+                <h1 class="h4 mb-3">{{ post.display_title }}</h1>
+                <div class="small text-muted mb-3">Event ID: <code>{{ post.event_public_id }}</code></div>
+
+                {% if post.starts_at %}
+                    <div class="mb-3">
+                        <div class="text-muted small">Starts</div>
+                        <div>{{ post.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
+                    </div>
+                {% endif %}
+
+                {% if registration_summary %}
+                    <div class="mb-3">
+                        <div class="text-muted small">Applications</div>
+                        <div>{{ registration_summary.non_cancelled_count }} non-cancelled</div>
+                        <div class="small text-muted">{{ registration_summary.reserved_count }} reserved, {{ registration_summary.waiting_list_count }} waiting, {{ registration_summary.places_remaining }} places left</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="text-muted small">{{ registration_summary.price_label }}</div>
+                        <div>EUR {{ "%.2f"|format(post.registration_price_amount or 0) }}</div>
+                        <div class="small text-muted">{{ registration_summary.price_note }}</div>
+                    </div>
+                {% endif %}
+
+                <p class="small text-muted mb-0">After submitting you will receive an application ID and a status page that refreshes automatically to reflect your current queue state.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <form method="post" class="card shadow-sm incas-form">
+            <div class="card-body">
+                {% include "forms/_error_summary.html" %}
+
+                <h2 class="h5 mb-3">Registration</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('first_name') %} is-invalid{% endif %}" id="first_name" name="first_name" autocomplete="given-name" required value="{{ values.first_name }}">
+                        {% if form_errors.get('first_name') %}
+                            <div class="invalid-feedback">{{ form_errors.first_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('last_name') %} is-invalid{% endif %}" id="last_name" name="last_name" autocomplete="family-name" required value="{{ values.last_name }}">
+                        {% if form_errors.get('last_name') %}
+                            <div class="invalid-feedback">{{ form_errors.last_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                        <input class="form-control{% if form_errors.get('email') %} is-invalid{% endif %}" id="email" name="email" type="email" autocomplete="email" inputmode="email" required value="{{ values.email }}">
+                        {% if form_errors.get('email') %}
+                            <div class="invalid-feedback">{{ form_errors.email }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="occupation">Occupation <span class="text-danger">*</span></label>
+                        <select class="form-select{% if form_errors.get('occupation') %} is-invalid{% endif %}" id="occupation" name="occupation" required>
+                            <option value="">Select</option>
+                            {% for choice in occupation_choices %}
+                                <option value="{{ choice }}" {% if values.occupation == choice %}selected{% endif %}>{{ choice }}</option>
+                            {% endfor %}
+                            <option value="other" {% if values.occupation == "other" %}selected{% endif %}>Other</option>
+                        </select>
+                        {% if form_errors.get('occupation') %}
+                            <div class="invalid-feedback">{{ form_errors.occupation }}</div>
+                        {% endif %}
+
+                        <div id="occupation_other_wrapper" class="mt-2" {% if values.occupation != "other" %}style="display: none;"{% endif %}>
+                            <label class="form-label mb-1" for="occupation_other">Please specify <span class="text-danger">*</span></label>
+                            <input
+                                class="form-control{% if form_errors.get('occupation_other') %} is-invalid{% endif %}"
+                                id="occupation_other"
+                                name="occupation_other"
+                                autocomplete="organization-title"
+                                placeholder="e.g. Researcher, Staff, Alumni"
+                                value="{{ values.occupation_other }}"
+                                {% if values.occupation == "other" %}required{% endif %}
+                            >
+                            {% if form_errors.get('occupation_other') %}
+                                <div class="invalid-feedback">{{ form_errors.occupation_other }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if post.event_kind == "breakfast" %}
+                        <div class="col-md-6">
+                            <label class="form-label" for="diet_preference">Meal Preference <span class="text-danger">*</span></label>
+                            <select class="form-select{% if form_errors.get('diet_preference') %} is-invalid{% endif %}" id="diet_preference" name="diet_preference" required>
+                                <option value="">Select</option>
+                                {% for choice in diet_choices %}
+                                    <option value="{{ choice.value }}" {% if values.diet_preference == choice.value %}selected{% endif %}>{{ choice.label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form_errors.get('diet_preference') %}
+                                <div class="invalid-feedback">{{ form_errors.diet_preference }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <div class="col-12">
+                        <label class="form-label" for="comment">Comment</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="4">{{ values.comment }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end">
+                <button type="submit" class="btn btn-dark">Submit Registration</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (() => {
+        const occupationSelect = document.getElementById("occupation");
+        const occupationOtherWrapper = document.getElementById("occupation_other_wrapper");
+        const occupationOtherInput = document.getElementById("occupation_other");
+        if (!occupationSelect || !occupationOtherWrapper || !occupationOtherInput) return;
+
+        const syncOccupationOther = () => {
+            const isOther = occupationSelect.value === "other";
+            occupationOtherWrapper.style.display = isOther ? "" : "none";
+            occupationOtherInput.required = isOther;
+            if (!isOther) occupationOtherInput.value = "";
+        };
+
+        occupationSelect.addEventListener("change", syncOccupationOther);
+        syncOccupationOther();
+    })();
+</script>
+{% endblock %}

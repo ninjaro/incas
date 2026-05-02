@@ -1,0 +1,16 @@
+{% macro render_event_payment_notice(item, extra_classes="") -%}
+    {% if item.has_registration_queue and item.registration_price_display %}
+        <div class="event-payment-notice {{ extra_classes }}">
+            <span class="badge text-bg-warning event-payment-required">Payment Required</span>
+            <span class="event-payment-copy">
+                {% if item.registration_is_deposit %}
+                    Refundable {{ item.registration_payment_kind_label|lower }}
+                {% else %}
+                    {{ item.registration_payment_kind_label }}
+                {% endif %}
+                <strong>&euro;{{ item.registration_price_display }}</strong>
+            </span>
+            <span class="event-payment-capacity">{{ item.registration_limit }} place{% if item.registration_limit != 1 %}s{% endif %}</span>
+        </div>
+    {% endif %}
+{%- endmacro %}

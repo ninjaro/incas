@@ -5,7 +5,14 @@ from sqlalchemy import text
 from app.site_content import get_footer_offer_links, t
 
 from app.demo_seed import seed_demo_data
-from app.models import db
+from app.models import (
+    EVENT_REGISTRATION_STATUS_APPROVED,
+    EVENT_REGISTRATION_STATUS_CANCELLED,
+    EVENT_REGISTRATION_STATUS_WAITING_LIST,
+    EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+    EVENT_REGISTRATION_STATUS_WAITING_REFUND,
+    db,
+)
 from config import Config
 
 
@@ -47,6 +54,17 @@ def should_show_event_label(item):
     return True
 
 
+def event_registration_status_badge(status):
+    mapping = {
+        EVENT_REGISTRATION_STATUS_APPROVED: "text-bg-success",
+        EVENT_REGISTRATION_STATUS_CANCELLED: "text-bg-dark",
+        EVENT_REGISTRATION_STATUS_WAITING_PAYMENT: "text-bg-warning",
+        EVENT_REGISTRATION_STATUS_WAITING_LIST: "text-bg-secondary",
+        EVENT_REGISTRATION_STATUS_WAITING_REFUND: "text-bg-info",
+    }
+    return mapping.get(status, "text-bg-secondary")
+
+
 def create_app():
     app = Flask(
         __name__,
@@ -61,6 +79,7 @@ def create_app():
     def inject_common_helpers():
         return {
             "event_kind_meta": event_kind_meta,
+            "event_registration_status_badge": event_registration_status_badge,
             "should_show_event_label": should_show_event_label,
             "t": lambda key: t(getattr(g, "locale", "en"), key),
             "footer_offer_links": get_footer_offer_links(getattr(g, "locale", "en")),
@@ -85,6 +104,22 @@ def create_app():
                 (
                     "ALTER TABLE posts "
                     "ADD COLUMN publish_at DATETIME"
+                ),
+                (
+                    "ALTER TABLE posts "
+                    "ADD COLUMN registration_limit_enabled BOOLEAN NOT NULL DEFAULT 0"
+                ),
+                (
+                    "ALTER TABLE posts "
+                    "ADD COLUMN registration_limit INTEGER"
+                ),
+                (
+                    "ALTER TABLE posts "
+                    "ADD COLUMN registration_price_cents INTEGER"
+                ),
+                (
+                    "ALTER TABLE posts "
+                    "ADD COLUMN registration_is_deposit BOOLEAN NOT NULL DEFAULT 0"
                 ),
             )
 

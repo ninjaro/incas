@@ -94,6 +94,12 @@ def admin_corridor():
             "url": url_for("main.admin_posts") if has_scope("posts") else None,
         },
         {
+            "label": "Event Registrations",
+            "scope": "event_registrations",
+            "is_open": has_scope("event_registrations"),
+            "url": url_for("main.admin_event_registrations") if has_scope("event_registrations") else None,
+        },
+        {
             "label": "Language Tandem",
             "scope": "language_tandem",
             "is_open": has_scope("language_tandem"),

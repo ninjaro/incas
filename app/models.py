@@ -44,6 +44,30 @@ DANCE_TITLE_ALIASES = {
 }
 
 TITLE_HIGHLIGHT_KINDS = {"country_evening", "breakfast"}
+EVENT_REGISTRATION_STATUS_APPROVED = "approved"
+EVENT_REGISTRATION_STATUS_CANCELLED = "cancelled"
+EVENT_REGISTRATION_STATUS_WAITING_PAYMENT = "waiting_payment"
+EVENT_REGISTRATION_STATUS_WAITING_LIST = "waiting_list"
+EVENT_REGISTRATION_STATUS_WAITING_REFUND = "waiting_refund"
+
+EVENT_REGISTRATION_STATUS_LABELS = {
+    EVENT_REGISTRATION_STATUS_APPROVED: "Approved / Confirmed",
+    EVENT_REGISTRATION_STATUS_CANCELLED: "Cancelled",
+    EVENT_REGISTRATION_STATUS_WAITING_PAYMENT: "Waiting for Payment",
+    EVENT_REGISTRATION_STATUS_WAITING_LIST: "On Waiting List",
+    EVENT_REGISTRATION_STATUS_WAITING_REFUND: "Waiting for Refund",
+}
+
+EVENT_REGISTRATION_NON_CANCELLED_STATUSES = {
+    EVENT_REGISTRATION_STATUS_APPROVED,
+    EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+    EVENT_REGISTRATION_STATUS_WAITING_LIST,
+}
+
+EVENT_REGISTRATION_CAPACITY_STATUSES = {
+    EVENT_REGISTRATION_STATUS_APPROVED,
+    EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+}
 
 CAFE_LINGUA_MONTH_RE = re.compile(
     r"\s*[·-]\s*(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
@@ -166,6 +190,10 @@ class Post(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     is_pinned = db.Column(db.Boolean, nullable=False, default=False, index=True)
     event_kind = db.Column(db.String(64), nullable=True, index=True)
+    registration_limit_enabled = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    registration_limit = db.Column(db.Integer, nullable=True)
+    registration_price_cents = db.Column(db.Integer, nullable=True)
+    registration_is_deposit = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     image_url = db.Column(db.String(500), nullable=False, default="")
@@ -218,6 +246,87 @@ class Post(db.Model):
         if not self.is_event:
             return True
         return get_configured_local_now() < self.ends_at
+
+    @property
+    def event_public_id(self):
+        return f"EVT-{self.id:05d}" if self.id is not None else ""
+
+    @property
+    def has_registration_queue(self):
+        return (
+            self.is_event
+            and bool(self.registration_limit_enabled)
+            and (self.registration_limit or 0) > 0
+        )
+
+    @property
+    def registration_price_amount(self):
+        if self.registration_price_cents is None:
+            return None
+        return self.registration_price_cents / 100
+
+    @property
+    def registration_price_display(self):
+        if self.registration_price_cents is None:
+            return ""
+
+        amount = f"{self.registration_price_cents / 100:.2f}"
+        if amount.endswith("00"):
+            return amount[:-3]
+        if amount.endswith("0"):
+            return amount[:-1]
+        return amount
+
+    @property
+    def registration_payment_kind_label(self):
+        if not self.has_registration_queue:
+            return ""
+        return "Deposit" if self.registration_is_deposit else "Ticket"
+
+    @property
+    def registration_non_cancelled_count(self):
+        if self.id is None:
+            return 0
+        return (
+            EventRegistration.query
+            .filter(EventRegistration.post_id == self.id)
+            .filter(EventRegistration.status.in_(EVENT_REGISTRATION_NON_CANCELLED_STATUSES))
+            .count()
+        )
+
+    @property
+    def registration_reserved_count(self):
+        if self.id is None:
+            return 0
+        return (
+            EventRegistration.query
+            .filter(EventRegistration.post_id == self.id)
+            .filter(EventRegistration.status.in_(EVENT_REGISTRATION_CAPACITY_STATUSES))
+            .count()
+        )
+
+    @property
+    def registration_places_remaining(self):
+        if not self.has_registration_queue:
+            return 0
+        return max((self.registration_limit or 0) - self.registration_reserved_count, 0)
+
+    @property
+    def registration_waiting_list_count(self):
+        if self.id is None:
+            return 0
+        return (
+            EventRegistration.query
+            .filter(EventRegistration.post_id == self.id)
+            .filter(EventRegistration.status == EVENT_REGISTRATION_STATUS_WAITING_LIST)
+            .count()
+        )
+
+    @property
+    def has_registration_space(self):
+        if not self.has_registration_queue:
+            return False
+        return self.registration_reserved_count < (self.registration_limit or 0)
 
 
 class InstagramConnection(db.Model):
@@ -311,6 +420,41 @@ class LanguageTandemRequest(db.Model):
     @property
     def requested_languages_list(self):
         return json.loads(self.requested_languages or "[]")
+
+
+class EventRegistration(db.Model):
+    __tablename__ = "event_registrations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(24), nullable=False, unique=True, index=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
+    first_name = db.Column(db.String(120), nullable=False)
+    last_name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(255), nullable=False, index=True)
+    occupation = db.Column(db.String(120), nullable=False)
+    diet_preference = db.Column(db.String(32), nullable=False, default="")
+    comment = db.Column(db.Text, nullable=False, default="")
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default=EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+        index=True,
+    )
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def status_label(self):
+        return EVENT_REGISTRATION_STATUS_LABELS.get(self.status, self.status.replace("_", " ").title())
 
 
 class TandemMatchReviewState(db.Model):

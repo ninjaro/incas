@@ -50,7 +50,12 @@
         <div class="collapse navbar-collapse" id="admin-navbar">
             <div class="navbar-nav me-lg-auto py-3 py-lg-0">
                 <a class="nav-link" href="{{ url_for('main.admin_corridor') }}">Corridor</a>
-                <a class="nav-link" href="{{ url_for('main.admin_posts') }}">Posts</a>
+                {% if 'posts' in session.get('access_scopes', []) %}
+                    <a class="nav-link" href="{{ url_for('main.admin_posts') }}">Posts</a>
+                {% endif %}
+                {% if 'event_registrations' in session.get('access_scopes', []) %}
+                    <a class="nav-link" href="{{ url_for('main.admin_event_registrations') }}">Event Registrations</a>
+                {% endif %}
                 <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
             </div>
 

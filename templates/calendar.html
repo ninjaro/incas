@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
+{% from "_event_registration_macros.html" import render_event_payment_notice with context %}
 
 {% block title %}Calendar · INCAS{% endblock %}
 
@@ -303,6 +304,7 @@
                         {% if item.summary %}
                             <p class="calendar-event-card-summary">{{ item.summary }}</p>
                         {% endif %}
+                        {{ render_event_payment_notice(item, "mt-auto") }}
                     </div>
                 </article>
             {% endfor %}
@@ -538,6 +540,7 @@
                             </div>
 
                             <p class="mb-3 event-card-summary">{{ item.summary }}</p>
+                            {{ render_event_payment_notice(item, "mt-auto") }}
                         </div>
                     </div>
                 </div>
@@ -577,6 +580,7 @@
                                     <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%d %b · %H:%M") }}</time>
                                 </div>
                                 <p class="mb-3 event-card-summary">{{ item.summary }}</p>
+                                {{ render_event_payment_notice(item, "mt-auto") }}
                             </div>
                         </div>
                     </div>
