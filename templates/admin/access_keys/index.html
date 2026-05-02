@@ -96,9 +96,22 @@
                                 <td>{{ item.expires_at.strftime("%Y-%m-%d %H:%M") }}</td>
                                 <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
                                 <td class="text-end">
-                                    <form method="post" action="{{ url_for('main.admin_access_key_delete', key_id=item.id) }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                    <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#access-key-qr-modal"
+                                            data-key="{{ item.key }}"
+                                            data-key-state="{% if item.expires_at > now_local %}Active{% else %}Expired{% endif %}"
+                                            data-qr-link="{{ url_for('main.admin_unlock', phrase=item.key, _external=True) }}"
+                                        >
+                                            Show QR
+                                        </button>
+                                        <form method="post" action="{{ url_for('main.admin_access_key_delete', key_id=item.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -110,4 +123,30 @@
         {% endif %}
     </div>
 </div>
+
+<div class="modal fade" id="access-key-qr-modal" tabindex="-1" aria-labelledby="access-key-qr-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="access-key-qr-title">Access Key QR Code</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-code-panel mx-auto mb-3" data-access-key-qr-target></div>
+                <div class="small text-muted">Key</div>
+                <div class="mb-2"><code data-access-key-qr-key></code></div>
+                <div class="small text-muted">State</div>
+                <div class="mb-2" data-access-key-qr-state></div>
+                <div class="small text-muted">Unlock link</div>
+                <a href="#" class="small text-break" data-access-key-qr-link></a>
+                <p class="small text-muted mt-3 mb-0">Scanning this QR code opens the unlock link and adds the key to the current browser session automatically.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/qr-codes.js') }}"></script>
 {% endblock %}
