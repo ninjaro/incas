@@ -8,6 +8,7 @@ from app.models import AccessKey, get_configured_local_now
 
 ACCESS_TARGETS = {
     "posts": "main.admin_posts",
+    "event_registrations": "main.admin_event_registrations",
     "language_tandem": "main.admin_language_tandem",
     "language_tandem_corrections": "main.admin_language_tandem",
     "forms": "main.admin_forms",
@@ -16,6 +17,7 @@ ACCESS_TARGETS = {
 
 ACCESS_LABELS = {
     "posts": "Posts and Events",
+    "event_registrations": "Event Registrations",
     "language_tandem": "Language Tandem",
     "language_tandem_corrections": "Tandem Corrections",
     "forms": "Forms",

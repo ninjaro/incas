@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.public_id }} · {{ post.display_title }} · INCAS{% endblock %}
+
+{% block head %}
+    <meta http-equiv="refresh" content="60">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                        <h1 class="h3 mb-1">Registration Status</h1>
+                        <div class="text-muted">{{ post.display_title }}</div>
+                    </div>
+                    <a href="{{ url_for('main.post_detail', slug=post.slug) }}" class="btn btn-sm btn-outline-secondary">Back to Event</a>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="small text-muted">Application ID</div>
+                        <div><code>{{ item.public_id }}</code></div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Name</div>
+                        <div>{{ item.full_name }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Current Status</div>
+                        <div>
+                            <span class="badge {{ event_registration_status_badge(item.status) }}">
+                                {{ status_context.status_label }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if status_context.waiting_list_position %}
+                    <div class="alert alert-secondary mt-4 mb-0">
+                        Waiting-list position: <strong>{{ status_context.waiting_list_position }}</strong>
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted mt-3">
+                    This page refreshes automatically every 60 seconds so queue updates from the admin panel show up here.
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-4">
+                        <div
+                            class="qr-code-panel"
+                            data-qr-code="{{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}"
+                            data-qr-width="220"
+                            data-qr-height="220"
+                        ></div>
+                    </div>
+                    <div class="col-md-8">
+                        <h2 class="h5 mb-2">Quick Access QR Code</h2>
+                        <p class="text-muted mb-2">Scan this code to reopen this application page later on any device.</p>
+                        <div class="small text-muted mb-2">QR target</div>
+                        <a
+                            href="{{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}"
+                            class="small text-break"
+                        >
+                            {{ url_for('main.event_registration_status', public_id=item.public_id, _external=True) }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Event Queue Snapshot</h2>
+
+                {% if registration_summary %}
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="small text-muted">Event ID</div>
+                            <div><code>{{ post.event_public_id }}</code></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Applications</div>
+                            <div>{{ registration_summary.non_cancelled_count }} non-cancelled</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Available Places</div>
+                            <div>{{ registration_summary.places_total }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">{{ registration_summary.price_label }}</div>
+                            <div>EUR {{ "%.2f"|format(post.registration_price_amount or 0) }}</div>
+                            <div class="small text-muted">{{ registration_summary.price_note }}</div>
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mt-3">
+                        {{ registration_summary.reserved_count }} reserved, {{ registration_summary.waiting_list_count }} on the waiting list, {{ registration_summary.places_remaining }} place{% if registration_summary.places_remaining != 1 %}s{% endif %} currently open.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="{{ url_for('static', filename='js/qr-codes.js') }}"></script>
+{% endblock %}

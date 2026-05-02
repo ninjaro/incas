@@ -4,11 +4,21 @@ from datetime import datetime
 
 from flask import abort, flash, g, make_response, redirect, render_template, request, url_for
 
-from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, Post, db, get_configured_local_now
+from app.models import ContactRequest, EventRegistration, EventSuggestion, LanguageTandemRequest, Post, db, get_configured_local_now
 from app.routes import bp
 from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
 from app.routes.helpers.map_demo import get_event_map_demo_context
+from app.routes.helpers.event_registrations import (
+    build_event_registration_form_values,
+    build_event_registration_public_id,
+    build_event_registration_status_context,
+    build_post_registration_summary,
+    determine_initial_registration_status,
+    get_event_registration_template_context,
+    resolve_event_registration_occupation,
+    should_collect_diet_preference,
+)
 from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
     normalize_country_code,
@@ -40,6 +50,13 @@ def get_local_now():
 
 def get_public_posts_query():
     return Post.query.filter(Post.is_active.is_(True))
+
+
+def get_visible_post_or_404(slug):
+    item = Post.query.filter_by(slug=slug).first_or_404()
+    if not has_scope("posts") and not item.is_publicly_accessible:
+        abort(404)
+    return item
 
 
 @bp.route("/")
@@ -200,10 +217,97 @@ def event_map_demo():
 
 @bp.route("/content/<slug>")
 def post_detail(slug):
-    item = Post.query.filter_by(slug=slug).first_or_404()
-    if not has_scope("posts") and not item.is_publicly_accessible:
+    item = get_visible_post_or_404(slug)
+    return render_template(
+        "post_detail.html",
+        item=item,
+        registration_summary=build_post_registration_summary(item),
+    )
+
+
+@bp.route("/content/<slug>/register", methods=["GET", "POST"])
+def event_registration_form(slug):
+    item = get_visible_post_or_404(slug)
+
+    if not item.has_registration_queue:
         abort(404)
-    return render_template("post_detail.html", item=item)
+
+    if not item.is_live and not has_scope("posts"):
+        flash("Registrations are closed for this event.")
+        return redirect(url_for("main.post_detail", slug=item.slug))
+
+    values = build_event_registration_form_values(item)
+    errors = {}
+
+    if request.method == "POST":
+        values["first_name"] = request.form.get("first_name", "").strip()
+        values["last_name"] = request.form.get("last_name", "").strip()
+        values["email"] = request.form.get("email", "").strip()
+        values["occupation"] = request.form.get("occupation", "").strip()
+        values["occupation_other"] = request.form.get("occupation_other", "").strip()
+        values["diet_preference"] = request.form.get("diet_preference", "").strip()
+        values["comment"] = request.form.get("comment", "").strip()
+
+        if not values["first_name"]:
+            errors["first_name"] = "First name is required."
+        if not values["last_name"]:
+            errors["last_name"] = "Last name is required."
+        if not values["email"]:
+            errors["email"] = "Email is required."
+        if not values["occupation"]:
+            errors["occupation"] = "Occupation is required."
+        if values["occupation"] == "other" and not values["occupation_other"]:
+            errors["occupation_other"] = "Enter occupation."
+
+        if should_collect_diet_preference(item):
+            if values["diet_preference"] not in {"vegan", "vegetarian", "omnivore"}:
+                errors["diet_preference"] = "Select a meal preference."
+        else:
+            values["diet_preference"] = ""
+
+        if errors:
+            return render_template(
+                "forms/event_registration.html",
+                registration_summary=build_post_registration_summary(item),
+                **get_event_registration_template_context(item, values, errors),
+            )
+
+        registration = EventRegistration(
+            public_id=build_event_registration_public_id(),
+            post_id=item.id,
+            first_name=values["first_name"],
+            last_name=values["last_name"],
+            email=values["email"],
+            occupation=resolve_event_registration_occupation(values),
+            diet_preference=values["diet_preference"],
+            comment=values["comment"],
+            status=determine_initial_registration_status(item),
+        )
+
+        db.session.add(registration)
+        db.session.commit()
+
+        flash("Your registration has been submitted.")
+        return redirect(url_for("main.event_registration_status", public_id=registration.public_id))
+
+    return render_template(
+        "forms/event_registration.html",
+        registration_summary=build_post_registration_summary(item),
+        **get_event_registration_template_context(item, values, errors),
+    )
+
+
+@bp.route("/event-registrations/<public_id>")
+def event_registration_status(public_id):
+    item = EventRegistration.query.filter_by(public_id=public_id).first_or_404()
+    post = Post.query.get_or_404(item.post_id)
+    return render_template(
+        "event_registration_status.html",
+        item=item,
+        post=post,
+        registration_summary=build_post_registration_summary(post),
+        status_context=build_event_registration_status_context(item),
+    )
 
 def render_site_content_page(page_key):
     page = get_site_page(page_key, g.locale)

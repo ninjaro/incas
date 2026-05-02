@@ -156,6 +156,80 @@
                     </label>
                 </div>
             </div>
+
+            <div class="col-12">
+                <div class="form-check">
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="registration_limit_enabled"
+                        name="registration_limit_enabled"
+                        {% if values.registration_limit_enabled %}checked{% endif %}
+                    >
+                    <label class="form-check-label" for="registration_limit_enabled">
+                        Limit participants and open a registration queue
+                    </label>
+                    <div class="form-text">Usually needed for weekend events or any event that should collect applications and payment status.</div>
+                </div>
+            </div>
+
+            <div class="col-12" id="registration_limit_panel" {% if not values.registration_limit_enabled %}hidden{% endif %}>
+                <div class="border rounded p-3">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="registration_limit" class="form-label">Available Places</label>
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="registration_limit"
+                                name="registration_limit"
+                                min="1"
+                                step="1"
+                                value="{{ values.registration_limit }}"
+                            >
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="registration_price" class="form-label">Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">EUR</span>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="registration_price"
+                                    name="registration_price"
+                                    inputmode="decimal"
+                                    placeholder="e.g. 12.50"
+                                    value="{{ values.registration_price }}"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="registration_is_deposit"
+                                    name="registration_is_deposit"
+                                    {% if values.registration_is_deposit %}checked{% endif %}
+                                >
+                                <label class="form-check-label" for="registration_is_deposit">
+                                    Money will be returned later
+                                </label>
+                            </div>
+                        </div>
+
+                        {% if item and item.has_registration_queue %}
+                            <div class="col-12">
+                                <a href="{{ url_for('main.admin_event_registration_queue', post_id=item.id) }}" class="btn btn-sm btn-outline-secondary">
+                                    Open Registration Queue
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -172,6 +246,10 @@
         const eventKindSelect = document.getElementById("event_kind");
         const startsAtInput = document.getElementById("starts_at");
         const preview = document.querySelector("[data-post-title-preview]");
+        const registrationToggle = document.getElementById("registration_limit_enabled");
+        const registrationPanel = document.getElementById("registration_limit_panel");
+        const registrationLimitInput = document.getElementById("registration_limit");
+        const registrationPriceInput = document.getElementById("registration_price");
         if (!titleInput || !eventKindSelect || !startsAtInput || !preview) return;
 
         const prefixByKind = {
@@ -240,6 +318,14 @@
             preview.textContent = computePreviewTitle();
         }
 
+        function syncRegistrationPanel() {
+            if (!registrationToggle || !registrationPanel) return;
+            const isEnabled = registrationToggle.checked;
+            registrationPanel.hidden = !isEnabled;
+            if (registrationLimitInput) registrationLimitInput.required = isEnabled;
+            if (registrationPriceInput) registrationPriceInput.required = isEnabled;
+        }
+
         let previousKind = eventKindSelect.value || "";
 
         function syncDefaultStartTime() {
@@ -274,9 +360,11 @@
             syncPreview();
             syncDefaultStartTime();
         });
+        registrationToggle?.addEventListener("change", syncRegistrationPanel);
 
         syncPreview();
         syncDefaultStartTime();
+        syncRegistrationPanel();
     })();
 </script>
 {% endblock %}

@@ -600,6 +600,10 @@ def create_demo_post(
     is_pinned=False,
     event_kind=None,
     image_url="",
+    registration_limit_enabled=False,
+    registration_limit=None,
+    registration_price_cents=None,
+    registration_is_deposit=False,
 ):
     return Post(
         slug=slug,
@@ -611,6 +615,10 @@ def create_demo_post(
         is_pinned=is_pinned,
         event_kind=event_kind,
         image_url=image_url,
+        registration_limit_enabled=registration_limit_enabled,
+        registration_limit=registration_limit,
+        registration_price_cents=registration_price_cents,
+        registration_is_deposit=registration_is_deposit,
     )
 
 def create_dated_demo_event(template, event_date, starts_at_time):
@@ -655,9 +663,14 @@ def create_breakfast_event(event_date, theme_title, description):
         starts_at=datetime.combine(event_date, time(10, 0, 0)),
         event_kind="breakfast",
         image_url="/static/img/site/international-breakfast.webp",
+        registration_limit_enabled=True,
+        registration_limit=40,
+        registration_price_cents=200,
+        registration_is_deposit=True,
     )
 
 def create_trip_event(event_date, trip_title, description):
+    rng = random.Random(f"trip:{event_date.isoformat()}:{trip_title}")
     return create_demo_post(
         slug=f"international-weekend-{event_date.isoformat()}",
         title=f"International Weekend: {trip_title}",
@@ -666,6 +679,10 @@ def create_trip_event(event_date, trip_title, description):
         starts_at=datetime.combine(event_date, time(9, 30, 0)),
         event_kind="trip",
         image_url="/static/img/site/international-weekend.webp",
+        registration_limit_enabled=True,
+        registration_limit=rng.randint(60, 120),
+        registration_price_cents=rng.randint(15, 40) * 100,
+        registration_is_deposit=False,
     )
 
 def seed_posts_demo_data():
