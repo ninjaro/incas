@@ -1,10 +1,12 @@
 from flask import Flask
 
-from flask import g
+from flask import g, url_for
 from sqlalchemy import text
 from app.site_content import get_footer_offer_links, t
 
 from app.demo_seed import seed_demo_data
+
+from app.routes.helpers.access import has_any_access, has_any_access_key
 from app.models import (
     EVENT_REGISTRATION_STATUS_APPROVED,
     EVENT_REGISTRATION_STATUS_CANCELLED,
@@ -77,12 +79,28 @@ def create_app():
 
     @app.context_processor
     def inject_common_helpers():
+        debug_nav_links = []
+        if app.debug or app.config.get("DEBUG"):
+            debug_nav_links.append(
+                {
+                    "label": "Event Maps Demo",
+                    "url": url_for("main.event_map_demo"),
+                }
+            )
+
+        show_admin_nav = has_any_access_key()
+
         return {
             "event_kind_meta": event_kind_meta,
             "event_registration_status_badge": event_registration_status_badge,
             "should_show_event_label": should_show_event_label,
             "t": lambda key: t(getattr(g, "locale", "en"), key),
             "footer_offer_links": get_footer_offer_links(getattr(g, "locale", "en")),
+            "debug_nav_links": debug_nav_links,
+            "show_admin_nav": show_admin_nav,
+            "admin_nav_url": (
+                url_for("main.admin_corridor") if has_any_access() else url_for("main.admin_login")
+            ) if show_admin_nav else None,
         }
 
     with app.app_context():

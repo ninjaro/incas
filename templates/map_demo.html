@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Event Map Demo · INCAS{% endblock %}
+
+{% block head %}
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.3.1",
+                "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
+                "react-simple-maps": "https://esm.sh/react-simple-maps@3.0.0?external=react"
+            }
+        }
+    </script>
+{% endblock %}
+
+{% block content %}
+<section class="map-demo-shell" data-event-map-demo>
+    <div class="card shadow-sm map-demo-hero mb-4">
+        <div class="card-body">
+            <p class="text-uppercase small fw-semibold text-primary mb-2">Comparison Demo</p>
+            <h1 class="h2 mb-3">Food and country/culture event maps</h1>
+            <p class="mb-3">
+                This page compares several ready-made map approaches for event titles like
+                <strong>Country Evening: Poland</strong> or
+                <strong>International Breakfast: Turkish cuisine</strong>.
+                Each provider uses the same orange accent and the same sample events, with a regional default zoom that keeps nearby countries visible instead of tightly cropping to the highlighted shape.
+            </p>
+            <p class="mb-0 text-body-secondary">
+                Broad culture labels are only shown if they resolve to an explicit editorial country set. Trip events use Aachen as the starting point and a destination-city marker instead of treating the whole country as the target.
+            </p>
+        </div>
+    </div>
+
+    <section class="mb-4" aria-labelledby="map-demo-events-heading">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h2 class="h5 mb-0" id="map-demo-events-heading">Example events</h2>
+            <span class="badge text-bg-light">Checked against official docs on {{ demo_checked_on }}</span>
+        </div>
+        <div class="map-demo-event-switcher" role="tablist" aria-label="Example events">
+            {% for item in demo_events %}
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary map-demo-event-chip{% if loop.first %} active{% endif %}"
+                    data-map-demo-event="{{ item.id }}"
+                    aria-pressed="{{ 'true' if loop.first else 'false' }}"
+                >
+                    <span class="map-demo-event-chip-title">{{ item.title }}</span>
+                    <span class="map-demo-event-chip-note">
+                        {% if item.target.kind == "country" %}
+                            {{ item.target.label }} · regional context
+                        {% elif item.target.kind == "trip" %}
+                            {{ item.target.origin.name }} → {{ item.target.destination.name }}
+                        {% elif item.target.kind == "country_group" %}
+                            {{ item.target.label }} · {{ item.target.country_codes|length }} countries
+                        {% else %}
+                            Rejected mapping
+                        {% endif %}
+                    </span>
+                </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-4">
+            <article class="card shadow-sm map-demo-summary-card">
+                <div class="card-body" id="map-demo-event-summary"></div>
+            </article>
+        </div>
+
+        <div class="col-lg-8">
+            <article class="card shadow-sm">
+                <div class="card-header border-0 pb-0">
+                    <ul class="nav nav-tabs card-header-tabs flex-wrap gap-1" id="map-demo-provider-tabs" role="tablist">
+                        {% for provider in demo_providers %}
+                            <li class="nav-item" role="presentation">
+                                <button
+                                    class="nav-link{% if loop.first %} active{% endif %}"
+                                    id="map-provider-tab-{{ provider.id }}"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#map-provider-pane-{{ provider.id }}"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="map-provider-pane-{{ provider.id }}"
+                                    aria-selected="{{ 'true' if loop.first else 'false' }}"
+                                    data-map-demo-provider="{{ provider.id }}"
+                                >
+                                    {{ provider.name }}
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="card-body pt-3">
+                    <div class="tab-content" id="map-demo-provider-content">
+                        {% for provider in demo_providers %}
+                            <section
+                                class="tab-pane fade{% if loop.first %} show active{% endif %}"
+                                id="map-provider-pane-{{ provider.id }}"
+                                role="tabpanel"
+                                aria-labelledby="map-provider-tab-{{ provider.id }}"
+                                tabindex="0"
+                            >
+                                <div class="map-demo-provider-meta mb-3">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <span class="badge text-bg-light">{{ provider.runtime }}</span>
+                                        <a class="link-primary" href="{{ provider.docs_url }}" target="_blank" rel="noopener">Docs</a>
+                                        <a class="link-primary" href="{{ provider.license_url }}" target="_blank" rel="noopener">Licensing</a>
+                                    </div>
+                                    <p class="mb-1">{{ provider.description }}</p>
+                                    <p class="small text-body-secondary mb-0">{{ provider.usage_note }}</p>
+                                </div>
+                                <div
+                                    class="map-demo-stage"
+                                    id="map-demo-canvas-{{ provider.id }}"
+                                    data-map-demo-canvas="{{ provider.id }}"
+                                >
+                                    <div class="map-demo-placeholder">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                        <span>Waiting for the first render.</span>
+                                    </div>
+                                </div>
+                            </section>
+                        {% endfor %}
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <section class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Licensing and usage notes</h2>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 map-demo-license-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Provider</th>
+                            <th scope="col">Technical fit</th>
+                            <th scope="col">Usage constraint</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for provider in demo_providers %}
+                            <tr>
+                                <th scope="row">{{ provider.name }}</th>
+                                <td>{{ provider.description }}</td>
+                                <td>{{ provider.usage_note }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script type="application/json" id="map_demo_events_json">{{ demo_events|tojson }}</script>
+    <script type="application/json" id="map_demo_providers_json">{{ demo_providers|tojson }}</script>
+</section>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{{ url_for('static', filename='js/event-map-demo.js') }}"></script>
+{% endblock %}

@@ -70,6 +70,34 @@
             </div>
         {% endif %}
 
+        {% if event_post_map %}
+            <div class="card border-0 bg-body-tertiary mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                        <div>
+                            <div class="small text-muted">Event Map</div>
+                            <h2 class="h5 mb-1">{{ event_post_map.title }}</h2>
+                            <div class="small text-muted">{{ event_post_map.provider_name }}</div>
+                        </div>
+                    </div>
+
+                    <p class="mb-2">{{ event_post_map.description }}</p>
+                    <p class="small text-muted mb-3">{{ event_post_map.note }}</p>
+
+                    <div
+                        class="event-post-map-stage"
+                        data-event-post-map
+                        data-event-post-map-provider="{{ event_post_map.provider_id }}"
+                    >
+                        <div class="map-demo-placeholder">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <span>Loading map…</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         <div style="white-space: pre-line;">{{ item.body }}</div>
 
         {% if item.instagram_permalink %}
@@ -81,4 +109,11 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+    {% if event_post_map %}
+        <script type="application/json" id="event_post_map_json">{{ event_post_map|tojson }}</script>
+        <script type="module" src="{{ url_for('static', filename='js/event-post-map.js') }}"></script>
+    {% endif %}
 {% endblock %}
