@@ -911,6 +911,32 @@ button.calendar-mini-day:focus {
     height: auto;
 }
 
+.event-post-map-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 24rem;
+    padding: 0.5rem;
+    background:
+        linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.04), transparent 28%),
+        color-mix(in srgb, var(--bs-tertiary-bg) 94%, var(--bs-primary) 6%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 1.1rem;
+    overflow: hidden;
+}
+
+.event-post-map-stage.map-demo-openlayers-host {
+    padding: 0;
+}
+
+.event-post-map-stage .ol-viewport {
+    width: 100%;
+    height: 100%;
+    min-height: 23rem;
+    background: var(--bs-tertiary-bg);
+}
+
 .card-heading-link:hover,
 .card-heading-link:focus {
     text-decoration: underline !important;
