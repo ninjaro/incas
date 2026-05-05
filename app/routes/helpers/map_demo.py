@@ -188,6 +188,33 @@ MAP_DEMO_PROVIDERS = [
         "license_url": "https://github.com/zcreativelabs/react-simple-maps",
         "usage_note": "react-simple-maps is MIT licensed, but it expects a React runtime plus separately sourced TopoJSON or GeoJSON files.",
     },
+    {
+        "id": "leaflet-osm",
+        "name": "Leaflet + OSM",
+        "runtime": "Leaflet + OSM tiles + GeoJSON",
+        "description": "Tile-based map context with familiar slippy-map behavior, custom vector overlays, and a strong fit for city markers and short trip lines.",
+        "docs_url": "https://leafletjs.com/examples/quick-start/",
+        "license_url": "https://github.com/Leaflet/Leaflet/blob/main/LICENSE",
+        "usage_note": "Leaflet itself is open source. The common OSM tile setup is easy for demos, but production use still needs attribution and should review the OpenStreetMap tile usage guidance mentioned in the official quick-start docs.",
+    },
+    {
+        "id": "openlayers",
+        "name": "OpenLayers",
+        "runtime": "OpenLayers + OSM + TopoJSON",
+        "description": "Full map-engine option with OSM tiles, native vector overlays, and broad format support including TopoJSON for country highlighting.",
+        "docs_url": "https://openlayers.org/doc/quickstart.html",
+        "license_url": "https://openlayers.org/doc/",
+        "usage_note": "OpenLayers is BSD-2-Clause licensed per the official documentation. It is feature-rich and flexible, but heavier than Leaflet and more engine-like than a simple embed.",
+    },
+    {
+        "id": "d3-geo",
+        "name": "D3 Geo",
+        "runtime": "D3 + SVG + TopoJSON",
+        "description": "Low-level SVG rendering with custom zoom, projection control, and very direct styling of markers, paths, and highlighted regions.",
+        "docs_url": "https://d3js.org/d3-geo",
+        "license_url": "https://github.com/d3/d3/blob/main/LICENSE",
+        "usage_note": "D3 is ISC licensed. It is not a ready-made map widget, but it gives the most direct control over projections, path styling, and custom interaction behavior.",
+    },
 ]
 
 
