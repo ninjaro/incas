@@ -9,6 +9,7 @@
         <div class="small text-muted">{{ post.event_public_id }}</div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('main.admin_qr_scanner') }}" class="btn btn-outline-secondary btn-sm">Scan QR</a>
         <a href="{{ url_for('main.admin_event_registrations') }}" class="btn btn-outline-secondary btn-sm">All Queues</a>
         <a href="{{ url_for('main.post_detail', slug=post.slug) }}" class="btn btn-outline-secondary btn-sm">Public Post</a>
         <a href="{{ url_for('main.admin_post_edit', post_id=post.id) }}" class="btn btn-dark btn-sm">Edit Event</a>

@@ -588,9 +588,12 @@ main {
 }
 
 button.calendar-mini-day:hover,
-button.calendar-mini-day:focus {
+button.calendar-mini-day:focus,
+a.calendar-mini-day:hover,
+a.calendar-mini-day:focus {
     border-color: rgba(var(--bs-primary-rgb), 0.7);
     box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.14);
+    text-decoration: none;
 }
 
 .calendar-mini-day.is-muted {
@@ -744,6 +747,102 @@ button.calendar-mini-day:focus {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.calendar-bulletin-shell {
+    display: grid;
+    grid-template-columns: minmax(17rem, 20rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.calendar-bulletin-sidebar {
+    display: grid;
+    gap: 1rem;
+    position: sticky;
+    top: 1rem;
+}
+
+.calendar-bulletin-panel {
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+}
+
+.calendar-bulletin-sidebar-list {
+    display: grid;
+    gap: 0.55rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.92rem;
+}
+
+.calendar-bulletin-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.calendar-bulletin-entry {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    padding: 1rem;
+    background:
+        linear-gradient(90deg, rgba(var(--bs-primary-rgb), 0.05), transparent 16%),
+        var(--bs-body-bg);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 1rem;
+    box-shadow: 0 0.65rem 1.4rem rgba(17, 24, 39, 0.06);
+}
+
+.calendar-bulletin-entry:hover,
+.calendar-bulletin-entry:focus-within {
+    border-color: rgba(var(--bs-primary-rgb), 0.22);
+    box-shadow: 0 0.85rem 1.7rem rgba(17, 24, 39, 0.09);
+}
+
+.calendar-bulletin-datebox {
+    display: grid;
+    gap: 0.15rem;
+    justify-items: center;
+    padding: 0.7rem 0.45rem;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 84%, var(--bs-primary) 16%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+    border-radius: 0.95rem;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+}
+
+.calendar-bulletin-datebox strong {
+    font-size: 1.65rem;
+    line-height: 1;
+    color: var(--incas-neutral-dark);
+}
+
+.calendar-bulletin-content {
+    min-width: 0;
+}
+
+.calendar-bulletin-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.45rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.82rem;
+}
+
+.calendar-bulletin-title {
+    margin: 0 0 0.4rem;
+    font-size: 1.1rem;
+    line-height: 1.3;
+}
+
+.calendar-bulletin-summary {
+    margin: 0;
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
 }
 
 .calendar-card-grid {
@@ -1123,6 +1222,75 @@ button.calendar-mini-day:focus {
     border-radius: 0.9rem;
 }
 
+.demo-hub-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.demo-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+}
+
+.qr-scanner-card {
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+}
+
+.qr-scanner-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.qr-scanner-stage {
+    position: relative;
+    min-height: 18rem;
+    padding: 0.5rem;
+    background:
+        radial-gradient(circle at top left, rgba(var(--bs-primary-rgb), 0.08), transparent 48%),
+        color-mix(in srgb, var(--bs-tertiary-bg) 92%, var(--bs-primary) 8%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.qr-scanner-video {
+    width: 100%;
+    min-height: 17rem;
+    object-fit: cover;
+    border-radius: 0.8rem;
+    background: #111827;
+}
+
+.qr-scanner-placeholder {
+    display: grid;
+    place-items: center;
+    gap: 0.55rem;
+    min-height: 17rem;
+    color: var(--bs-secondary-color);
+    text-align: center;
+}
+
+.qr-scanner-placeholder i {
+    font-size: 2rem;
+    color: var(--bs-primary);
+}
+
+.qr-scanner-controls {
+    display: grid;
+    gap: 0.75rem;
+    align-content: start;
+}
+
+.qr-scan-result {
+    padding: 1rem;
+    background: color-mix(in srgb, var(--bs-tertiary-bg) 90%, var(--bs-primary) 10%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.12);
+    border-radius: 0.9rem;
+}
+
 .map-demo-license-table th {
     min-width: 11rem;
 }
@@ -1427,6 +1595,26 @@ button.calendar-mini-day:focus {
         gap: 0.5rem;
     }
 
+    .calendar-bulletin-shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .calendar-bulletin-sidebar {
+        position: static;
+    }
+
+    .calendar-bulletin-entry {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .calendar-bulletin-datebox {
+        grid-auto-flow: column;
+        justify-content: start;
+        align-items: baseline;
+        justify-items: start;
+        gap: 0.45rem;
+    }
+
     .calendar-timeline-date time {
         display: flex;
         align-items: baseline;
@@ -1445,6 +1633,14 @@ button.calendar-mini-day:focus {
 
     .calendar-event-row {
         grid-template-columns: 3.75rem minmax(0, 1fr);
+    }
+
+    .qr-scanner-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .qr-scanner-stage {
+        min-height: 15rem;
     }
 
     .site-page-actions .btn {

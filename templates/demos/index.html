@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Demos · INCAS{% endblock %}
+
+{% block content %}
+<section class="demo-hub-shell">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <p class="text-uppercase small fw-semibold text-primary mb-2">Experimental Area</p>
+            <h1 class="h2 mb-3">Demos and prototypes</h1>
+            <p class="mb-0 text-body-secondary">
+                This section groups features that are still exploratory but close enough to real workflows to test against the project design and data model.
+            </p>
+        </div>
+    </div>
+
+    <div class="demo-hub-grid">
+        {% for item in demo_links[1:] %}
+            <article class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <h2 class="h5 mb-2">{{ item.label }}</h2>
+                    <p class="text-body-secondary mb-3">{{ item.summary }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ item.url }}" class="btn btn-outline-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

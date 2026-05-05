@@ -5,12 +5,16 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 m-0">Access Keys</h1>
-    <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.admin_qr_scanner') }}" class="btn btn-outline-secondary btn-sm">Scan QR</a>
+        <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+    </div>
 </div>
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <h2 class="h5 mb-3">Create Key</h2>
+        <p class="small text-muted mb-3">Use this page to create the regular admin scopes. The root <code>access_keys</code> phrase remains the only hardcoded bootstrap access.</p>
 
         <form method="post">
             <div class="row g-3">

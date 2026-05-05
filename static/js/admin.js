@@ -71,6 +71,32 @@ document.addEventListener("DOMContentLoaded", () => {
             return Array.from(document.querySelectorAll("[data-request-card]"));
         }
 
+        const requestPayloadCache = new WeakMap();
+
+        function getRequestPayload(card) {
+            if (!card) {
+                return null;
+            }
+
+            if (requestPayloadCache.has(card)) {
+                return requestPayloadCache.get(card);
+            }
+
+            const payloadElement = card.querySelector("[data-request-payload]");
+            let payload = null;
+
+            if (payloadElement) {
+                try {
+                    payload = JSON.parse(payloadElement.textContent || "{}");
+                } catch (_error) {
+                    payload = null;
+                }
+            }
+
+            requestPayloadCache.set(card, payload);
+            return payload;
+        }
+
         function getRequestTable(container) {
             return container?.nextElementSibling?.querySelector("[data-sortable-table]") || null;
         }
@@ -127,33 +153,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        function createRequestFlagsCell(card) {
+        function createRequestFlagsCell(payload) {
             const cell = document.createElement("td");
             const flags = document.createElement("div");
             flags.className = "d-flex flex-wrap gap-1";
 
-            if (card.dataset.requestRequestedNativeOnly === "true") {
+            if (payload?.requested_native_only) {
                 const badge = document.createElement("span");
                 badge.className = "badge text-bg-warning";
                 badge.textContent = "Native";
                 flags.appendChild(badge);
             }
 
-            if (card.dataset.requestSameGenderOnly === "true") {
+            if (payload?.same_gender_only) {
                 const badge = document.createElement("span");
                 badge.className = "badge text-bg-warning";
                 badge.textContent = "Same gender";
                 flags.appendChild(badge);
             }
 
-            if (card.dataset.requestHasSameEmailGroup === "true") {
+            if (payload?.has_same_email_group) {
                 const badge = document.createElement("span");
                 badge.className = "badge text-bg-light border";
                 badge.textContent = "Same email";
                 flags.appendChild(badge);
             }
 
-            if (card.dataset.requestHasLikelyDuplicate === "true") {
+            if (payload?.has_likely_duplicate) {
                 const badge = document.createElement("span");
                 badge.className = "badge text-bg-light border";
                 badge.textContent = "Likely duplicate";
@@ -164,19 +190,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return cell;
         }
 
-        function createRequestActionsCell(card) {
+        function createRequestActionsCell(payload) {
             const cell = document.createElement("td");
             cell.className = "text-end";
+            const actions = payload?.actions || {};
 
             const group = document.createElement("div");
             group.className = "btn-group btn-group-sm";
             group.setAttribute("role", "group");
             group.setAttribute("aria-label", "Request actions");
 
-            if (card.dataset.requestMatchUrl) {
+            if (actions.match_url) {
                 group.appendChild(
                     createRequestActionLink(
-                        card.dataset.requestMatchUrl,
+                        actions.match_url,
                         "btn btn-dark",
                         "Match",
                         "bi-arrow-left-right",
@@ -185,10 +212,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            if (card.dataset.requestEditUrl) {
+            if (actions.edit_url) {
                 group.appendChild(
                     createRequestActionLink(
-                        card.dataset.requestEditUrl,
+                        actions.edit_url,
                         "btn btn-outline-secondary",
                         "Edit",
                         "bi-pencil",
@@ -197,10 +224,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            if (card.dataset.requestDuplicatesUrl) {
+            if (actions.duplicates_url) {
                 group.appendChild(
                     createRequestActionLink(
-                        card.dataset.requestDuplicatesUrl,
+                        actions.duplicates_url,
                         "btn btn-outline-secondary",
                         "Duplicates",
                         "bi-files",
@@ -211,11 +238,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             group.appendChild(
                 createRequestActionForm(
-                    card.dataset.requestToggleViewedUrl || "",
-                    card.dataset.requestReturnTo || "",
-                    card.dataset.requestToggleViewedLabel || "Toggle viewed",
-                    card.dataset.requestIsViewed === "true" ? "bi-eye-slash" : "bi-eye",
-                    card.dataset.requestToggleViewedLabel || "Toggle viewed",
+                    actions.toggle_viewed_url || "",
+                    actions.return_to || "",
+                    actions.toggle_viewed_label || "Toggle viewed",
+                    payload?.is_viewed ? "bi-eye-slash" : "bi-eye",
+                    actions.toggle_viewed_label || "Toggle viewed",
                 ),
             );
 
@@ -224,60 +251,62 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         function createRequestTableRow(card) {
+            const payload = getRequestPayload(card) || {};
             const row = document.createElement("tr");
+            const matchCounts = payload.match_counts || {};
 
-            row.setAttribute("data-sort-id", card.dataset.requestId || "");
-            row.setAttribute("data-sort-created", card.dataset.requestCreated || "");
-            row.setAttribute("data-sort-name", card.dataset.requestSortName || "");
-            row.setAttribute("data-sort-email", card.dataset.requestEmail || "");
-            row.setAttribute("data-sort-country", card.dataset.requestCountry || "");
-            row.setAttribute("data-sort-occupation", card.dataset.requestOccupation || "");
-            row.setAttribute("data-sort-gender", card.dataset.requestGender || "");
-            row.setAttribute("data-sort-birth", card.dataset.requestBirth || "");
-            row.setAttribute("data-sort-departure", card.dataset.requestDeparture || "");
-            row.setAttribute("data-sort-offered", card.dataset.requestOffered || "");
-            row.setAttribute("data-sort-requested", card.dataset.requestRequested || "");
-            row.setAttribute("data-sort-full", card.dataset.requestFull || "0");
-            row.setAttribute("data-sort-partial", card.dataset.requestPartial || "0");
-            row.setAttribute("data-sort-weak", card.dataset.requestWeak || "0");
-            row.setAttribute("data-sort-total", card.dataset.requestTotal || "0");
+            row.setAttribute("data-sort-id", payload.id || "");
+            row.setAttribute("data-sort-created", payload.created_at || "");
+            row.setAttribute("data-sort-name", payload.sort_name || "");
+            row.setAttribute("data-sort-email", payload.email || "");
+            row.setAttribute("data-sort-country", payload.country || "");
+            row.setAttribute("data-sort-occupation", payload.occupation || "");
+            row.setAttribute("data-sort-gender", payload.gender || "");
+            row.setAttribute("data-sort-birth", payload.birth_year || "");
+            row.setAttribute("data-sort-departure", payload.departure_date || "");
+            row.setAttribute("data-sort-offered", payload.offered || "");
+            row.setAttribute("data-sort-requested", payload.requested || "");
+            row.setAttribute("data-sort-full", matchCounts.full || "0");
+            row.setAttribute("data-sort-partial", matchCounts.partial || "0");
+            row.setAttribute("data-sort-weak", matchCounts.weak || "0");
+            row.setAttribute("data-sort-total", matchCounts.total || "0");
 
             const nameCell = document.createElement("td");
             nameCell.className = "text-nowrap";
             const nameLine = document.createElement("div");
             nameLine.className = "fw-semibold";
-            nameLine.textContent = card.dataset.requestName || "";
+            nameLine.textContent = payload.name || "";
             nameCell.appendChild(nameLine);
             row.appendChild(nameCell);
 
-            appendTruncatedCell(row, card.dataset.requestEmail || "");
-            appendTruncatedCell(row, card.dataset.requestCountry || "");
-            appendTruncatedCell(row, card.dataset.requestOccupation || "");
+            appendTruncatedCell(row, payload.email || "");
+            appendTruncatedCell(row, payload.country || "");
+            appendTruncatedCell(row, payload.occupation || "");
 
             // Born + gender in one compact cell
             const bornCell = document.createElement("td");
             bornCell.className = "text-nowrap";
             const bornLine = document.createElement("div");
-            bornLine.textContent = card.dataset.requestBirth || "—";
+            bornLine.textContent = payload.birth_year || "—";
             const genderLine = document.createElement("div");
             genderLine.className = "small text-muted";
-            genderLine.textContent = card.dataset.requestGender || "";
+            genderLine.textContent = payload.gender || "";
             bornCell.appendChild(bornLine);
-            if (card.dataset.requestGender) bornCell.appendChild(genderLine);
+            if (payload.gender) bornCell.appendChild(genderLine);
             row.appendChild(bornCell);
 
-            appendRequestCell(row, (card.dataset.requestCreatedLabel || "").slice(0, 10) || "—", "text-nowrap");
-            appendRequestCell(row, card.dataset.requestDepartureLabel || "—", "text-nowrap");
-            appendRequestCell(row, card.dataset.requestOffered || "—");
-            appendRequestCell(row, card.dataset.requestRequested || "—");
+            appendRequestCell(row, (payload.created_label || "").slice(0, 10) || "—", "text-nowrap");
+            appendRequestCell(row, payload.departure_label || "—", "text-nowrap");
+            appendRequestCell(row, payload.offered || "—");
+            appendRequestCell(row, payload.requested || "—");
 
             // Matches: three labeled badges with per-badge tooltips
             const matchCell = document.createElement("td");
             matchCell.className = "text-nowrap";
             [
-                [card.dataset.requestFull || "0", "text-bg-dark", "full"],
-                [card.dataset.requestPartial || "0", "text-bg-secondary", "partial"],
-                [card.dataset.requestWeak || "0", "text-bg-warning", "weak"],
+                [String(matchCounts.full || 0), "text-bg-dark", "full"],
+                [String(matchCounts.partial || 0), "text-bg-secondary", "partial"],
+                [String(matchCounts.weak || 0), "text-bg-warning", "weak"],
             ].forEach(([value, cls, label], index) => {
                 if (index > 0) matchCell.appendChild(document.createTextNode(" "));
                 const badge = document.createElement("span");
@@ -288,8 +317,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             row.appendChild(matchCell);
 
-            row.appendChild(createRequestFlagsCell(card));
-            row.appendChild(createRequestActionsCell(card));
+            row.appendChild(createRequestFlagsCell(payload));
+            row.appendChild(createRequestActionsCell(payload));
 
             return row;
         }

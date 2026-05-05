@@ -8,6 +8,7 @@ from app.models import ContactRequest, EventRegistration, EventSuggestion, Langu
 from app.routes import bp
 from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
+from app.routes.helpers.demos import get_demo_links
 from app.routes.helpers.event_post_maps import build_event_post_map_context
 from app.routes.helpers.event_registrations import (
     build_event_registration_form_values,
@@ -42,7 +43,7 @@ EVENT_KIND_ORDER = [
     "karaoke",
     "housing",
 ]
-CALENDAR_MODES = {"default", "mini", "agenda", "timeline", "cards", "hardcore"}
+CALENDAR_MODES = {"default", "mini", "agenda", "timeline", "cards", "hardcore", "bulletin"}
 
 
 def get_local_now():
@@ -211,9 +212,19 @@ def events():
     return render_template("posts.html", items=items, page_title="Events")
 
 
+@bp.route("/demos")
+def demos_index():
+    return render_template("demos/index.html", demo_links=get_demo_links())
+
+
 @bp.route("/demos/event-maps")
 def event_map_demo():
     return render_template("map_demo.html", **get_event_map_demo_context())
+
+
+@bp.route("/demos/qr-scanner")
+def qr_scanner_demo():
+    return render_template("qr_scanner_demo.html")
 
 
 @bp.route("/content/<slug>")
@@ -477,6 +488,14 @@ def render_calendar_page(mode="default"):
         key = item.starts_at.date()
         events_by_day.setdefault(key, []).append(item)
 
+    day_nav_meta = {
+        day: {
+            "count": len(day_items),
+            "has_upcoming": any(now_local < item.ends_at for item in day_items),
+        }
+        for day, day_items in events_by_day.items()
+    }
+
     agenda_days = [
         {"date": day, "items": events_by_day.get(day, [])}
         for week in month_matrix
@@ -519,6 +538,7 @@ def render_calendar_page(mode="default"):
         event_kind_total_count=len(unfiltered_month_items),
         agenda_days=agenda_days,
         day_modal_groups=day_modal_groups,
+        day_nav_meta=day_nav_meta,
         month_items=month_items,
         upcoming_items=upcoming_items,
         archived_items=archived_items,

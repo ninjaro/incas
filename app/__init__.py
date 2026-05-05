@@ -15,6 +15,7 @@ from app.models import (
     db,
 )
 from app.routes.helpers.access import has_any_access, has_any_access_key
+from app.routes.helpers.demos import get_debug_nav_links
 from config import Config
 
 
@@ -79,14 +80,7 @@ def create_app():
 
     @app.context_processor
     def inject_common_helpers():
-        debug_nav_links = []
-        if app.debug or app.config.get("DEBUG"):
-            debug_nav_links.append(
-                {
-                    "label": "Event Maps Demo",
-                    "url": url_for("main.event_map_demo"),
-                }
-            )
+        debug_nav_links = get_debug_nav_links() if (app.debug or app.config.get("DEBUG")) else []
 
         show_admin_nav = has_any_access_key()
 

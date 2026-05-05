@@ -56,6 +56,9 @@
                 {% if 'event_registrations' in session.get('access_scopes', []) %}
                     <a class="nav-link" href="{{ url_for('main.admin_event_registrations') }}">Event Registrations</a>
                 {% endif %}
+                {% if session.get('access_scopes') %}
+                    <a class="nav-link" href="{{ url_for('main.admin_qr_scanner') }}">Scan QR</a>
+                {% endif %}
                 <a class="nav-link" href="{{ url_for('main.index') }}">Public site</a>
             </div>
 

@@ -101,6 +101,8 @@ def admin_language_tandem():
     if guard:
         return guard
 
+    can_open_matching = has_tandem_matching_access()
+    can_edit_requests = has_tandem_correction_access()
     allow_duplicate_filters = has_tandem_correction_access()
     filters = get_tandem_admin_filters(
         request.args,
@@ -120,13 +122,68 @@ def admin_language_tandem():
     def build_overview_page_url(page_key, page_value):
         return build_overview_url(**{page_key: page_value})
 
+    overview_return_to = request.full_path if request.query_string else request.path
+
+    def build_request_overview_payload(item):
+        return {
+            "id": item.id,
+            "created_at": item.created_at.isoformat(),
+            "created_label": item.created_at.strftime("%Y-%m-%d %H:%M"),
+            "name": f"{item.first_name} {item.last_name}".strip(),
+            "sort_name": f"{item.last_name} {item.first_name}".strip().lower(),
+            "email": item.email,
+            "country": item.country_of_origin_display,
+            "occupation": item.occupation,
+            "gender": item.gender,
+            "birth_year": item.birth_year,
+            "departure_date": item.departure_date.isoformat(),
+            "departure_label": item.departure_date.strftime("%Y-%m-%d"),
+            "offered": ", ".join(
+                [
+                    f"{lang['name']}"
+                    + (f" · {lang['level_label']}" if lang["level_label"] else "")
+                    for lang in item.offered_languages_with_levels
+                ]
+            ),
+            "requested": ", ".join(item.requested_languages_display),
+            "match_counts": dict(item.match_counts),
+            "comment": item.comment or "",
+            "requested_native_only": bool(item.requested_native_only),
+            "same_gender_only": bool(item.same_gender_only),
+            "has_same_email_group": bool(can_edit_requests and item.has_same_email_group),
+            "has_likely_duplicate": bool(can_edit_requests and item.has_likely_duplicate),
+            "is_viewed": bool(item.is_viewed),
+            "actions": {
+                "match_url": (
+                    url_for("main.admin_language_tandem_detail", request_id=item.id, return_to=overview_return_to)
+                    if can_open_matching else ""
+                ),
+                "edit_url": (
+                    url_for("main.admin_language_tandem_edit", request_id=item.id, return_to=overview_return_to)
+                    if can_edit_requests else ""
+                ),
+                "duplicates_url": (
+                    url_for("main.admin_language_tandem_duplicates", request_id=item.id, return_to=overview_return_to)
+                    if can_edit_requests else ""
+                ),
+                "toggle_viewed_url": url_for("main.admin_language_tandem_toggle_viewed", request_id=item.id),
+                "toggle_viewed_label": "Mark unviewed" if item.is_viewed else "Mark viewed",
+                "return_to": overview_return_to,
+            },
+        }
+
+    for section in context["overview_sections"]:
+        for group in section["groups"]:
+            for item in group["requests"]:
+                item.overview_payload = build_request_overview_payload(item)
+
     return render_template(
         "admin/language_tandem/index.html",
         **context,
         build_overview_url=build_overview_url,
         build_overview_page_url=build_overview_page_url,
-        can_open_matching=has_tandem_matching_access(),
-        can_edit_requests=has_tandem_correction_access(),
+        can_open_matching=can_open_matching,
+        can_edit_requests=can_edit_requests,
     )
 
 @bp.route("/admin/language-tandem/<int:request_id>/edit", methods=["GET", "POST"])

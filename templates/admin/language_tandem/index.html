@@ -383,37 +383,8 @@
                                     class="border rounded p-3 h-100 d-flex flex-column tandem-request-card"
                                     data-request-card
                                     data-details-open="false"
-                                    data-request-id="{{ item.id }}"
-                                    data-request-created="{{ item.created_at.isoformat() }}"
-                                    data-request-created-label="{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}"
-                                    data-request-name="{{ item.first_name }} {{ item.last_name }}"
-                                    data-request-sort-name="{{ (item.last_name ~ ' ' ~ item.first_name)|lower }}"
-                                    data-request-email="{{ item.email }}"
-                                    data-request-country="{{ item.country_of_origin_display }}"
-                                    data-request-occupation="{{ item.occupation }}"
-                                    data-request-gender="{{ item.gender }}"
-                                    data-request-birth="{{ item.birth_year }}"
-                                    data-request-departure="{{ item.departure_date.isoformat() }}"
-                                    data-request-departure-label="{{ item.departure_date.strftime('%Y-%m-%d') }}"
-                                    data-request-offered="{% for lang in item.offered_languages_with_levels %}{{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}"
-                                    data-request-requested="{{ ', '.join(item.requested_languages_display) }}"
-                                    data-request-full="{{ item.match_counts.full }}"
-                                    data-request-partial="{{ item.match_counts.partial }}"
-                                    data-request-weak="{{ item.match_counts.weak }}"
-                                    data-request-total="{{ item.match_counts.total }}"
-                                    data-request-comment="{{ item.comment or '' }}"
-                                    data-request-is-viewed="{{ 'true' if item.is_viewed else 'false' }}"
-                                    data-request-requested-native-only="{{ 'true' if item.requested_native_only else 'false' }}"
-                                    data-request-same-gender-only="{{ 'true' if item.same_gender_only else 'false' }}"
-                                    data-request-has-same-email-group="{{ 'true' if can_edit_requests and item.has_same_email_group else 'false' }}"
-                                    data-request-has-likely-duplicate="{{ 'true' if can_edit_requests and item.has_likely_duplicate else 'false' }}"
-                                    data-request-match-url="{% if can_open_matching %}{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-edit-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-duplicates-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-toggle-viewed-url="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}"
-                                    data-request-toggle-viewed-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
-                                    data-request-return-to="{{ overview_return_to }}"
                                 >
+                                    <script type="application/json" data-request-payload>{{ item.overview_payload|tojson }}</script>
                                     <div class="tandem-card-header mb-2">
                                         <div class="tandem-card-identity min-w-0">
                                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
