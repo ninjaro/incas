@@ -10,6 +10,16 @@ from flask import render_template
 
 from app.models import LanguageTandemRequest, get_configured_local_now
 
+OCCUPATION_CHOICES = [
+    "Student at RWTH Aachen",
+    "Student at FH Aachen",
+]
+KNOWN_OCCUPATIONS = set(OCCUPATION_CHOICES)
+
+
+def get_occupation_choices():
+    return list(OCCUPATION_CHOICES)
+
 
 def normalize_country_code(value):
     code = (value or "").strip().upper()
@@ -232,11 +242,6 @@ def format_language_codes(codes):
 
 
 def build_tandem_form_values(item=None):
-    known_occupations = {
-        "Student at RWTH Aachen",
-        "Student at FH Aachen",
-    }
-
     if item is None:
         return {
             "first_name": "",
@@ -258,7 +263,7 @@ def build_tandem_form_values(item=None):
         }
 
     raw_occupation = item.occupation or ""
-    is_known_occupation = raw_occupation in known_occupations
+    is_known_occupation = raw_occupation in KNOWN_OCCUPATIONS
 
     return {
         "first_name": item.first_name,

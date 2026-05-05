@@ -1,0 +1,166 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Event Registrations · INCAS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 m-0">Event Registrations</h1>
+    <a href="{{ url_for('main.admin_corridor') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Search Applications</h2>
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-8 col-lg-6">
+                <label class="form-label" for="q">Name or Application ID</label>
+                <input
+                    class="form-control"
+                    id="q"
+                    name="q"
+                    value="{{ query_text }}"
+                    placeholder="e.g. APP-1A2B3C4D or Anna"
+                >
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-dark">Search</button>
+            </div>
+            {% if query_text %}
+                <div class="col-auto">
+                    <a href="{{ url_for('main.admin_event_registrations') }}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if query_text %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                <h2 class="h5 m-0">Search Results</h2>
+                <div class="small text-muted">{{ search_items|length }} match{% if search_items|length != 1 %}es{% endif %}</div>
+            </div>
+
+            {% if search_items %}
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Application</th>
+                                <th>Name</th>
+                                <th>Event</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in search_items %}
+                                {% set post = search_post_lookup.get(item.post_id) %}
+                                <tr>
+                                    <td><code>{{ item.public_id }}</code></td>
+                                    <td>
+                                        <div class="fw-semibold">{{ item.full_name }}</div>
+                                        <div class="small text-muted">{{ item.email }}</div>
+                                    </td>
+                                    <td>
+                                        {% if post %}
+                                            <div class="fw-semibold">{{ post.display_title }}</div>
+                                            <div class="small text-muted">{{ post.event_public_id }}</div>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ event_registration_status_badge(item.status) }}">
+                                            {{ item.status_label }}
+                                        </span>
+                                    </td>
+                                    <td>{{ item.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                    <td class="text-end">
+                                        {% if post %}
+                                            <a href="{{ url_for('main.admin_event_registration_queue', post_id=post.id, q=item.public_id) }}" class="btn btn-sm btn-outline-secondary">
+                                                Open Queue
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No applications matched that search.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+
+<div class="row g-3">
+    {% for item in queue_posts %}
+        {% set summary = queue_summaries.get(item.id) %}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">{{ item.display_title }}</h2>
+                            <div class="small text-muted">{{ item.event_public_id }}</div>
+                            {% if item.starts_at %}
+                                <div class="small text-muted">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
+                            {% endif %}
+                        </div>
+                        <span class="badge text-bg-dark">{{ summary.places_total if summary else 0 }} places</span>
+                    </div>
+
+                    {% if summary %}
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="admin-kpi h-100">
+                                    <div class="admin-kpi-label">Applications</div>
+                                    <div class="admin-kpi-value">{{ summary.non_cancelled_count }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="admin-kpi h-100">
+                                    <div class="admin-kpi-label">Reserved</div>
+                                    <div class="admin-kpi-value">{{ summary.reserved_count }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="admin-kpi h-100">
+                                    <div class="admin-kpi-label">Waiting List</div>
+                                    <div class="admin-kpi-value">{{ summary.waiting_list_count }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="admin-kpi h-100">
+                                    <div class="admin-kpi-label">Places Left</div>
+                                    <div class="admin-kpi-value">{{ summary.places_remaining }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('main.admin_event_registration_queue', post_id=item.id) }}" class="btn btn-dark btn-sm">
+                            Open Queue
+                        </a>
+                        <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-outline-secondary btn-sm">
+                            Public Post
+                        </a>
+                        <a href="{{ url_for('main.admin_post_edit', post_id=item.id) }}" class="btn btn-outline-secondary btn-sm">
+                            Edit Event
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if not queue_posts %}
+    <p class="text-muted mt-4 mb-0">No event queues yet.</p>
+{% endif %}
+{% endblock %}

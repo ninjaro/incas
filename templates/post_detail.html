@@ -24,6 +24,46 @@
             <div class="text-muted mb-3">{{ item.starts_at.strftime("%Y-%m-%d %H:%M") }}</div>
         {% endif %}
 
+        {% if registration_summary %}
+            <div class="card border-0 bg-body-tertiary mb-4">
+                <div class="card-body">
+                    <div class="row g-3 align-items-start">
+                        <div class="col-md-3">
+                            <div class="small text-muted">Event ID</div>
+                            <div><code>{{ item.event_public_id }}</code></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Applications</div>
+                            <div>{{ registration_summary.non_cancelled_count }} non-cancelled</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">Available Places</div>
+                            <div>{{ registration_summary.places_total }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="small text-muted">{{ registration_summary.price_label }}</div>
+                            <div>EUR {{ "%.2f"|format(item.registration_price_amount or 0) }}</div>
+                            <div class="small text-muted">{{ registration_summary.price_note }}</div>
+                        </div>
+                    </div>
+
+                    <div class="small text-muted mt-3">
+                        {{ registration_summary.reserved_count }} reserved, {{ registration_summary.waiting_list_count }} on the waiting list, {{ registration_summary.places_remaining }} place{% if registration_summary.places_remaining != 1 %}s{% endif %} still open.
+                    </div>
+
+                    <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
+                        {% if item.is_live or 'posts' in session.get('access_scopes', []) %}
+                            <a href="{{ url_for('main.event_registration_form', slug=item.slug) }}" class="btn btn-dark">
+                                Open Registration Form
+                            </a>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Registrations closed</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
         {% if item.image_url %}
             <div class="mb-4">
                 <img src="{{ item.image_url }}" alt="{{ item.display_title }}" class="img-fluid rounded">
