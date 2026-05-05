@@ -8,7 +8,6 @@ from app.models import ContactRequest, EventRegistration, EventSuggestion, Langu
 from app.routes import bp
 from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
-from app.routes.helpers.map_demo import get_event_map_demo_context
 from app.routes.helpers.event_post_maps import build_event_post_map_context
 from app.routes.helpers.event_registrations import (
     build_event_registration_form_values,
