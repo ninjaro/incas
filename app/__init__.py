@@ -15,7 +15,6 @@ from app.models import (
     db,
 )
 from app.routes.helpers.access import has_any_access, has_any_access_key
-from app.routes.helpers.demos import get_debug_nav_links
 from config import Config
 
 
@@ -80,8 +79,6 @@ def create_app():
 
     @app.context_processor
     def inject_common_helpers():
-        debug_nav_links = get_debug_nav_links() if (app.debug or app.config.get("DEBUG")) else []
-
         show_admin_nav = has_any_access_key()
 
         return {
@@ -90,7 +87,6 @@ def create_app():
             "should_show_event_label": should_show_event_label,
             "t": lambda key: t(getattr(g, "locale", "en"), key),
             "footer_offer_links": get_footer_offer_links(getattr(g, "locale", "en")),
-            "debug_nav_links": debug_nav_links,
             "show_admin_nav": show_admin_nav,
             "admin_nav_url": (
                 url_for("main.admin_corridor") if has_any_access() else url_for("main.admin_login")

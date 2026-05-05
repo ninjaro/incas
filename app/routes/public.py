@@ -8,7 +8,6 @@ from app.models import ContactRequest, EventRegistration, EventSuggestion, Langu
 from app.routes import bp
 from app.routes.helpers.access import has_scope
 from app.routes.helpers.content import parse_calendar_month
-from app.routes.helpers.demos import get_demo_links
 from app.routes.helpers.event_post_maps import build_event_post_map_context
 from app.routes.helpers.event_registrations import (
     build_event_registration_form_values,
@@ -20,7 +19,6 @@ from app.routes.helpers.event_registrations import (
     resolve_event_registration_occupation,
     should_collect_diet_preference,
 )
-from app.routes.helpers.map_demo import get_event_map_demo_context
 from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
     normalize_country_code,
@@ -43,7 +41,7 @@ EVENT_KIND_ORDER = [
     "karaoke",
     "housing",
 ]
-CALENDAR_MODES = {"default", "mini", "agenda", "timeline", "cards", "hardcore", "bulletin"}
+CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin"}
 
 
 def get_local_now():
@@ -210,21 +208,6 @@ def events():
     )
     items = [item for item in items if item.is_publicly_accessible]
     return render_template("posts.html", items=items, page_title="Events")
-
-
-@bp.route("/demos")
-def demos_index():
-    return render_template("demos/index.html", demo_links=get_demo_links())
-
-
-@bp.route("/demos/event-maps")
-def event_map_demo():
-    return render_template("map_demo.html", **get_event_map_demo_context())
-
-
-@bp.route("/demos/qr-scanner")
-def qr_scanner_demo():
-    return render_template("qr_scanner_demo.html")
 
 
 @bp.route("/content/<slug>")
@@ -411,8 +394,8 @@ def international_tuesday():
 def offer_language_tandem():
     return render_site_content_page("language_tandem")
 
-def render_calendar_page(mode="default"):
-    calendar_mode = mode if mode in CALENDAR_MODES else "default"
+def render_calendar_page(mode="classic"):
+    calendar_mode = mode if mode in CALENDAR_MODES else "classic"
     now_local = get_local_now()
     today = now_local.date()
 
@@ -548,7 +531,7 @@ def render_calendar_page(mode="default"):
 
 @bp.route("/calendar")
 def calendar_view():
-    return render_calendar_page(request.args.get("view", "default"))
+    return render_calendar_page(request.args.get("view", "classic"))
 
 @bp.route("/calendar-<mode>")
 def calendar_mode(mode):

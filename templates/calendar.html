@@ -73,13 +73,14 @@
 </div>
 
 {% set calendar_mode_options = [
-    ("default", "Default"),
+    ("classic", "Classic"),
+    ("default", "Grid"),
     ("mini", "Mini"),
     ("agenda", "Agenda"),
     ("bulletin", "Bulletin"),
     ("timeline", "Timeline"),
     ("cards", "Cards"),
-    ("hardcore", "Hardcore"),
+    ("hardcore", "Table"),
 ] %}
 <div class="calendar-mode-tabs btn-group btn-group-sm mb-3" role="group" aria-label="Calendar interface">
     {% for option_mode, option_label in calendar_mode_options %}
@@ -119,7 +120,7 @@
     </nav>
 {% endif %}
 
-{% if upcoming_items %}
+{% if upcoming_items and calendar_mode != "classic" %}
     <div class="calendar-next-strip mb-3" aria-label="Next events">
         {% for item in upcoming_items[:3] %}
             <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-next-item">
@@ -256,6 +257,185 @@
                 </div>
             </div>
         {% endif %}
+    </div>
+{% elif calendar_mode == "classic" %}
+    <section class="calendar-classic-shell mb-4">
+        <div class="calendar-classic-intro">
+            <p class="calendar-classic-copy mb-0">
+                A public month view first, with highlighted event days and a simpler list of the next events below.
+            </p>
+            <div class="calendar-classic-meta">
+                <span>{{ month_items|length }} event{% if month_items|length != 1 %}s{% endif %}</span>
+                {% if event_kind_filter %}
+                    {% set filter_meta = event_kind_meta(event_kind_filter) %}
+                    <span>Filtered to {{ filter_meta.label if filter_meta else event_kind_filter }}</span>
+                {% else %}
+                    <span>All public event types</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="calendar-classic-grid">
+            <table class="calendar-classic-table">
+                <thead>
+                    <tr>
+                        {% for day_name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+                            <th{% if loop.index0 >= 5 %} class="is-weekend"{% endif %}>{{ day_name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for week in month_matrix %}
+                        <tr>
+                            {% for day in week %}
+                                {% set day_items = events_by_day.get(day, []) %}
+                                {% set nav_meta = day_nav_meta.get(day, {}) %}
+                                {% set has_upcoming = nav_meta.get("has_upcoming") %}
+                                {% set is_other_month = day.month != current_month %}
+                                {% set is_today = day == today %}
+                                {% set is_weekend = day.weekday() >= 5 %}
+                                <td class="calendar-classic-cell{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}{% if is_weekend %} is-weekend{% endif %}{% if day_items %} has-events{% endif %}{% if day_items and has_upcoming %} has-upcoming{% elif day_items %} has-archived{% endif %}">
+                                    <div class="calendar-classic-cell-inner">
+                                        {% if day_items %}
+                                            <button
+                                                type="button"
+                                                class="calendar-classic-daybutton"
+                                                data-calendar-popover-trigger
+                                                data-calendar-popover-id="calendar-classic-popover-{{ day.isoformat() }}"
+                                                data-calendar-popover-title="{{ day.strftime('%A, %d %B') }}"
+                                                aria-label="Show events for {{ day.strftime('%A, %d %B') }}"
+                                            >
+                                                <time class="calendar-classic-daynumber" datetime="{{ day.isoformat() }}">{{ day.day }}</time>
+                                            </button>
+                                        {% else %}
+                                            <div class="calendar-classic-daybutton is-static" aria-hidden="true">
+                                                <time class="calendar-classic-daynumber" datetime="{{ day.isoformat() }}">{{ day.day }}</time>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="visually-hidden" aria-hidden="true">
+            {% for group in day_modal_groups if group["items"] %}
+                <template id="calendar-classic-popover-{{ group['date'].isoformat() }}">
+                    <div class="calendar-classic-popover-list">
+                        {% for item in group["items"] %}
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-classic-popover-item">
+                                <time class="calendar-classic-popover-time" datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                                <span class="calendar-classic-popover-body">
+                                    <span class="calendar-classic-popover-title">
+                                        {{ render_event_marker(item) }}
+                                        <span>{{ render_event_title_content(item) }}</span>
+                                    </span>
+                                    {% if item.summary %}
+                                        <span class="calendar-classic-popover-summary">{{ item.summary }}</span>
+                                    {% endif %}
+                                    <span class="calendar-classic-popover-link">Open details</span>
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </template>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="calendar-classic-list-shell mb-4" aria-labelledby="calendar-classic-upcoming-title">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h2 class="h4 mb-0" id="calendar-classic-upcoming-title">Upcoming Events</h2>
+            <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-plus-lg"></i> Suggest an event
+            </a>
+        </div>
+
+        {% if upcoming_items %}
+            <div class="calendar-classic-list">
+                {% for item in upcoming_items %}
+                    <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-classic-list-item">
+                        <div class="calendar-classic-list-date">
+                            <span>{{ item.starts_at.strftime("%a") }}</span>
+                            <strong>{{ item.starts_at.strftime("%d") }}</strong>
+                            <span>{{ item.starts_at.strftime("%b") }}</span>
+                            <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                        </div>
+                        <div class="calendar-classic-list-body">
+                            <div class="calendar-classic-list-title">
+                                {{ render_event_marker(item) }}
+                                <span>{{ render_event_title_content(item) }}</span>
+                            </div>
+                            {% if item.summary %}
+                                <p class="calendar-classic-list-summary">{{ item.summary }}</p>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="calendar-empty-state">
+                <p class="mb-3 text-muted">Nothing upcoming for this month yet.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-lg"></i> Suggest an event
+                    </a>
+                    <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                        Next month
+                    </a>
+                    {% if event_kind_filter %}
+                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                            Clear filter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </section>
+
+    <div class="mt-4">
+        <button
+            class="btn btn-link text-body-secondary text-decoration-none ps-0 d-flex align-items-center gap-1"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#classic-past-events"
+            aria-expanded="false"
+            aria-controls="classic-past-events"
+        >
+            <i class="bi bi-chevron-right collapsed-icon"></i>
+            <span class="h6 mb-0">Earlier this month{% if archived_items %} ({{ archived_items|length }}){% endif %}</span>
+        </button>
+
+        <div class="collapse mt-3" id="classic-past-events">
+            {% if archived_items %}
+                <div class="calendar-classic-list">
+                    {% for item in archived_items %}
+                        <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-classic-list-item is-muted">
+                            <div class="calendar-classic-list-date">
+                                <span>{{ item.starts_at.strftime("%a") }}</span>
+                                <strong>{{ item.starts_at.strftime("%d") }}</strong>
+                                <span>{{ item.starts_at.strftime("%b") }}</span>
+                                <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                            </div>
+                            <div class="calendar-classic-list-body">
+                                <div class="calendar-classic-list-title">
+                                    {{ render_event_marker(item) }}
+                                    <span>{{ render_event_title_content(item) }}</span>
+                                </div>
+                                {% if item.summary %}
+                                    <p class="calendar-classic-list-summary">{{ item.summary }}</p>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Nothing here yet.</p>
+            {% endif %}
+        </div>
     </div>
 {% elif calendar_mode == "bulletin" %}
     <div class="calendar-bulletin-shell mb-4">
@@ -793,4 +973,10 @@
         </div>
     </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+    {% if calendar_mode == "classic" %}
+        <script src="{{ url_for('static', filename='js/calendar-classic.js') }}"></script>
+    {% endif %}
 {% endblock %}

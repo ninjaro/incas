@@ -93,7 +93,7 @@ if (!root || !dataElement) {
 
     function renderError(message) {
         root.innerHTML = `
-            <div class="map-demo-fallback-card">
+            <div class="event-post-map-fallback">
                 <span class="badge text-bg-danger mb-2">Render issue</span>
                 <h3 class="h6 mb-2">Map unavailable</h3>
                 <p class="mb-0 text-body-secondary">${message}</p>
@@ -180,7 +180,7 @@ if (!root || !dataElement) {
         const ol = window.ol;
 
         root.innerHTML = "";
-        root.classList.add("map-demo-openlayers-host");
+        root.classList.add("event-post-map-openlayers-host");
 
         const center = ol.proj.fromLonLat(target.center || [6.07, 50.24]);
         const zoom = target.zoom || 4.2;
