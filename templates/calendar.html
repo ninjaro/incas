@@ -4,6 +4,33 @@
 
 {% block title %}Calendar · INCAS{% endblock %}
 
+{% macro render_bulletin_entry(item, anchor_id=None, status_label="Upcoming", status_badge="text-bg-success") -%}
+    {% set meta = event_kind_meta(item.event_kind) %}
+    <article class="calendar-bulletin-entry"{% if anchor_id %} id="{{ anchor_id }}"{% endif %}>
+        <div class="calendar-bulletin-datebox">
+            <span>{{ item.starts_at.strftime("%a") }}</span>
+            <strong>{{ item.starts_at.strftime("%d") }}</strong>
+            <span>{{ item.starts_at.strftime("%b") }}</span>
+        </div>
+        <div class="calendar-bulletin-content">
+            <div class="calendar-bulletin-meta">
+                <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                {{ render_event_marker(item) }}
+                <span class="badge {{ status_badge }}">{{ status_label }}</span>
+            </div>
+            <h2 class="calendar-bulletin-title">
+                <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="text-body text-decoration-none card-heading-link">
+                    {{ render_event_title_content(item) }}
+                </a>
+            </h2>
+            {% if item.summary %}
+                <p class="calendar-bulletin-summary">{{ item.summary }}</p>
+            {% endif %}
+            {{ render_event_payment_notice(item, "mt-2") }}
+        </div>
+    </article>
+{%- endmacro %}
+
 {% block content %}
 <div class="calendar-toolbar d-flex justify-content-between align-items-center flex-wrap mb-4">
     <a
@@ -49,6 +76,7 @@
     ("default", "Default"),
     ("mini", "Mini"),
     ("agenda", "Agenda"),
+    ("bulletin", "Bulletin"),
     ("timeline", "Timeline"),
     ("cards", "Cards"),
     ("hardcore", "Hardcore"),
@@ -228,6 +256,141 @@
                 </div>
             </div>
         {% endif %}
+    </div>
+{% elif calendar_mode == "bulletin" %}
+    <div class="calendar-bulletin-shell mb-4">
+        <aside class="calendar-bulletin-sidebar">
+            <div class="card shadow-sm calendar-bulletin-panel">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="h6 mb-0">Month Overview</h2>
+                        <span class="badge text-bg-light">{{ month_items|length }} event{% if month_items|length != 1 %}s{% endif %}</span>
+                    </div>
+                    <div class="calendar-mini-shell mb-0">
+                        <div class="calendar-mini-weekdays" aria-hidden="true">
+                            {% for day_name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+                                <span>{{ day_name }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="calendar-mini-grid">
+                            {% for week in month_matrix %}
+                                {% for day in week %}
+                                    {% set day_items = events_by_day.get(day, []) %}
+                                    {% set nav_meta = day_nav_meta.get(day, {}) %}
+                                    {% set has_items = day_items|length > 0 %}
+                                    {% set is_other_month = day.month != current_month %}
+                                    {% set is_today = day == today %}
+                                    {% if has_items %}
+                                        <a
+                                            href="#{{ 'bulletin-day-' ~ day.isoformat() if nav_meta.get('has_upcoming') else 'bulletin-archive' }}"
+                                            class="calendar-mini-day{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}"
+                                        >
+                                            <span class="calendar-mini-date">{{ day.day }}</span>
+                                            <span class="calendar-mini-count">{{ nav_meta.get("count", day_items|length) }}</span>
+                                            <span class="calendar-mini-title">{{ day_items[0].display_title }}</span>
+                                        </a>
+                                    {% else %}
+                                        <div class="calendar-mini-day{% if is_other_month %} is-muted{% endif %}{% if is_today %} is-today{% endif %}">
+                                            <span class="calendar-mini-date">{{ day.day }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm calendar-bulletin-panel">
+                <div class="card-body">
+                    <h2 class="h6 mb-2">This Month</h2>
+                    <div class="calendar-bulletin-sidebar-list">
+                        <div><strong>{{ upcoming_items|length }}</strong> upcoming event{% if upcoming_items|length != 1 %}s{% endif %}</div>
+                        <div><strong>{{ archived_items|length }}</strong> earlier this month</div>
+                        {% if event_kind_filter %}
+                            {% set filter_meta = event_kind_meta(event_kind_filter) %}
+                            <div>Filtered to <strong>{{ filter_meta.label if filter_meta else event_kind_filter }}</strong></div>
+                        {% else %}
+                            <div>Showing all public event types for the month.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="calendar-bulletin-main">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 class="h4 mb-0">Upcoming Events</h2>
+                <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Suggest an event
+                </a>
+            </div>
+
+            {% if upcoming_items %}
+                {% set upcoming_anchor = namespace(last_date="") %}
+                <div class="calendar-bulletin-list">
+                    {% for item in upcoming_items %}
+                        {% set anchor_id = none %}
+                        {% set item_date = item.starts_at.date().isoformat() %}
+                        {% if upcoming_anchor.last_date != item_date %}
+                            {% set anchor_id = 'bulletin-day-' ~ item_date %}
+                            {% set upcoming_anchor.last_date = item_date %}
+                        {% endif %}
+                        {{ render_bulletin_entry(item, anchor_id=anchor_id, status_label="Upcoming", status_badge="text-bg-success") }}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="calendar-empty-state">
+                    <p class="mb-3 text-muted">Nothing upcoming for this month yet.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('main.suggest_event_form') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus-lg"></i> Suggest an event
+                        </a>
+                        <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                            Next month
+                        </a>
+                        {% if event_kind_filter %}
+                            <a href="{{ url_for('main.calendar_mode', mode=calendar_mode, month=current_month_value) }}" class="btn btn-sm btn-outline-secondary">
+                                Clear filter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mt-4" id="bulletin-archive">
+                <button
+                    class="btn btn-link text-body-secondary text-decoration-none ps-0 d-flex align-items-center gap-1"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#bulletin-archive-panel"
+                    aria-expanded="false"
+                    aria-controls="bulletin-archive-panel"
+                >
+                    <i class="bi bi-chevron-right collapsed-icon"></i>
+                    <span class="h6 mb-0">Earlier this month{% if archived_items %} ({{ archived_items|length }}){% endif %}</span>
+                </button>
+
+                <div class="collapse mt-3" id="bulletin-archive-panel">
+                    {% if archived_items %}
+                        {% set archive_anchor = namespace(last_date="") %}
+                        <div class="calendar-bulletin-list">
+                            {% for item in archived_items %}
+                                {% set anchor_id = none %}
+                                {% set item_date = item.starts_at.date().isoformat() %}
+                                {% if archive_anchor.last_date != item_date %}
+                                    {% set anchor_id = 'bulletin-day-' ~ item_date %}
+                                    {% set archive_anchor.last_date = item_date %}
+                                {% endif %}
+                                {{ render_bulletin_entry(item, anchor_id=anchor_id, status_label="Past", status_badge="text-bg-secondary") }}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Nothing to archive yet for this month.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 {% elif calendar_mode == "timeline" %}
     <div class="calendar-timeline mb-4">

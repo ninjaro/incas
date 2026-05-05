@@ -6,7 +6,6 @@ from app.site_content import get_footer_offer_links, t
 
 from app.demo_seed import seed_demo_data
 
-from app.routes.helpers.access import has_any_access, has_any_access_key
 from app.models import (
     EVENT_REGISTRATION_STATUS_APPROVED,
     EVENT_REGISTRATION_STATUS_CANCELLED,
@@ -15,6 +14,8 @@ from app.models import (
     EVENT_REGISTRATION_STATUS_WAITING_REFUND,
     db,
 )
+from app.routes.helpers.access import has_any_access, has_any_access_key
+from app.routes.helpers.demos import get_debug_nav_links
 from config import Config
 
 
@@ -79,14 +80,7 @@ def create_app():
 
     @app.context_processor
     def inject_common_helpers():
-        debug_nav_links = []
-        if app.debug or app.config.get("DEBUG"):
-            debug_nav_links.append(
-                {
-                    "label": "Event Maps Demo",
-                    "url": url_for("main.event_map_demo"),
-                }
-            )
+        debug_nav_links = get_debug_nav_links() if (app.debug or app.config.get("DEBUG")) else []
 
         show_admin_nav = has_any_access_key()
 

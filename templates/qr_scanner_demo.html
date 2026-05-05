@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}QR Scanner Demo · INCAS{% endblock %}
+
+{% block content %}
+<section class="demo-hub-shell">
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <p class="text-uppercase small fw-semibold text-primary mb-2">Prototype</p>
+            <h1 class="h2 mb-3">QR scanner demo</h1>
+            <p class="mb-0 text-body-secondary">
+                This page tests the browser-side scanner flow with camera input and uploaded images, without redirecting anywhere automatically.
+            </p>
+        </div>
+    </div>
+
+    <div
+        class="card shadow-sm qr-scanner-card"
+        data-qr-scanner-root
+        data-qr-scanner-mode="demo"
+    >
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Decode a QR code</h2>
+                    <p class="text-body-secondary mb-0">Use a live camera on mobile or upload a photo/screenshot that contains a QR code.</p>
+                </div>
+                <span class="badge text-bg-light" data-qr-support-badge>Checking support…</span>
+            </div>
+
+            <div class="qr-scanner-layout">
+                <div class="qr-scanner-stage">
+                    <video class="qr-scanner-video d-none" data-qr-video playsinline muted></video>
+                    <div class="qr-scanner-placeholder" data-qr-placeholder>
+                        <i class="bi bi-qr-code-scan"></i>
+                        <span>Camera preview appears here.</span>
+                    </div>
+                </div>
+
+                <div class="qr-scanner-controls">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" data-qr-start-camera>Use Camera</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-none" data-qr-stop-camera>Stop Camera</button>
+                        <label class="btn btn-outline-secondary btn-sm mb-0">
+                            Upload Image
+                            <input type="file" class="d-none" accept="image/*" data-qr-file-input>
+                        </label>
+                    </div>
+                    <div class="small text-body-secondary" data-qr-status>Waiting for a scan.</div>
+                </div>
+            </div>
+
+            <div class="qr-scan-result mt-4" data-qr-result hidden>
+                <div class="small text-muted mb-1">Decoded text</div>
+                <code class="d-block mb-2" data-qr-result-text></code>
+                <div class="small text-muted mb-1">Interpretation</div>
+                <div data-qr-result-message></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/qr-scanner.js') }}"></script>
+{% endblock %}

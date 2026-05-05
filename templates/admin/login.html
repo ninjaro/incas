@@ -13,6 +13,56 @@
             </div>
             <button type="submit" class="btn btn-dark">Add Access</button>
         </form>
+
+        <div
+            class="card shadow-sm mt-3 qr-scanner-card"
+            data-qr-scanner-root
+            data-qr-scanner-mode="login"
+            data-qr-login-input="phrase"
+        >
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">Scan Access QR Code</h2>
+                        <p class="text-body-secondary mb-0">Use the device camera or upload a screenshot to decode an access-key QR code.</p>
+                    </div>
+                    <span class="badge text-bg-light" data-qr-support-badge>Checking support…</span>
+                </div>
+
+                <div class="qr-scanner-layout">
+                    <div class="qr-scanner-stage">
+                        <video class="qr-scanner-video d-none" data-qr-video playsinline muted></video>
+                        <div class="qr-scanner-placeholder" data-qr-placeholder>
+                            <i class="bi bi-qr-code-scan"></i>
+                            <span>Camera preview appears here.</span>
+                        </div>
+                    </div>
+
+                    <div class="qr-scanner-controls">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-primary btn-sm" data-qr-start-camera>Use Camera</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-none" data-qr-stop-camera>Stop Camera</button>
+                            <label class="btn btn-outline-secondary btn-sm mb-0">
+                                Upload Image
+                                <input type="file" class="d-none" accept="image/*" capture="environment" data-qr-file-input>
+                            </label>
+                        </div>
+                        <div class="small text-body-secondary" data-qr-status>Waiting for a scan.</div>
+                    </div>
+                </div>
+
+                <div class="qr-scan-result mt-4" data-qr-result hidden>
+                    <div class="small text-muted mb-1">Decoded text</div>
+                    <code class="d-block mb-2" data-qr-result-text></code>
+                    <div class="small text-muted mb-1">Interpretation</div>
+                    <div data-qr-result-message></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/qr-scanner.js') }}"></script>
 {% endblock %}

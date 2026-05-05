@@ -55,7 +55,7 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-4 overflow-hidden">
     <div class="card-body">
         <form method="get" class="row g-3">
             <input type="hidden" name="sort_by" value="{{ filters.sort_by }}">
@@ -300,29 +300,40 @@
 
 <div class="card shadow-sm mb-4">
     <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-                <div class="fw-semibold">Match Count Legend</div>
-                <div class="small text-muted">{{ match_count_legend.summary }}</div>
-            </div>
-            <div class="tandem-match-legend" aria-label="Match count legend">
-                {% for item in match_count_legend.entries %}
-                    <div class="tandem-match-legend-item">
-                        <span class="badge {{ item.badge_class }}">{{ item.label }}</span>
-                        <span class="small text-muted">{{ item.rule }}</span>
-                    </div>
-                {% endfor %}
-            </div>
+        <div class="fw-semibold mb-1">Match Count Legend</div>
+        <div class="small text-muted mb-2">{{ match_count_legend.summary }}</div>
+        <div class="tandem-match-legend" aria-label="Match count legend">
+            {% for item in match_count_legend.entries %}
+                <div class="tandem-match-legend-item">
+                    <span class="badge {{ item.badge_class }}">{{ item.label }}</span>
+                    <span class="small text-muted">{{ item.rule }}</span>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
 {% for section in overview_sections %}
+    {% set is_viewed = section.key == "viewed" %}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 {% if is_viewed %}mb-0{% else %}mb-3{% endif %}">
                 <div>
-                    <h2 class="h5 m-0">{{ section.title }}</h2>
+                    {% if is_viewed %}
+                        <button
+                            class="btn btn-link p-0 text-decoration-none text-body d-flex align-items-center gap-1"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#viewed-requests-body"
+                            aria-expanded="false"
+                            aria-controls="viewed-requests-body"
+                        >
+                            <i class="bi bi-chevron-right collapsed-icon"></i>
+                            <span class="h5 mb-0">{{ section.title }}</span>
+                        </button>
+                    {% else %}
+                        <h2 class="h5 m-0">{{ section.title }}</h2>
+                    {% endif %}
                     {% if section.pagination.total_items %}
                         <div class="small text-muted mt-1">
                             Showing {{ section.pagination.start_index }}-{{ section.pagination.end_index }} of {{ section.pagination.total_items }}
@@ -362,6 +373,7 @@
                 </div>
             </div>
 
+            {% if is_viewed %}<div class="collapse mt-3" id="viewed-requests-body">{% endif %}
             {% if section.groups %}
                 <div class="tandem-request-results" data-request-results data-view-mode="list">
                     {% for group in section.groups %}
@@ -371,46 +383,12 @@
                                     class="border rounded p-3 h-100 d-flex flex-column tandem-request-card"
                                     data-request-card
                                     data-details-open="false"
-                                    data-request-id="{{ item.id }}"
-                                    data-request-created="{{ item.created_at.isoformat() }}"
-                                    data-request-created-label="{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}"
-                                    data-request-name="{{ item.first_name }} {{ item.last_name }}"
-                                    data-request-sort-name="{{ (item.last_name ~ ' ' ~ item.first_name)|lower }}"
-                                    data-request-email="{{ item.email }}"
-                                    data-request-country="{{ item.country_of_origin_display }}"
-                                    data-request-occupation="{{ item.occupation }}"
-                                    data-request-gender="{{ item.gender }}"
-                                    data-request-birth="{{ item.birth_year }}"
-                                    data-request-departure="{{ item.departure_date.isoformat() }}"
-                                    data-request-departure-label="{{ item.departure_date.strftime('%Y-%m-%d') }}"
-                                    data-request-offered="{% for lang in item.offered_languages_with_levels %}{{ lang.name }}{% if lang.level_label %} · {{ lang.level_label }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}"
-                                    data-request-requested="{{ ', '.join(item.requested_languages_display) }}"
-                                    data-request-full="{{ item.match_counts.full }}"
-                                    data-request-partial="{{ item.match_counts.partial }}"
-                                    data-request-weak="{{ item.match_counts.weak }}"
-                                    data-request-total="{{ item.match_counts.total }}"
-                                    data-request-comment="{{ item.comment or '' }}"
-                                    data-request-is-viewed="{{ 'true' if item.is_viewed else 'false' }}"
-                                    data-request-requested-native-only="{{ 'true' if item.requested_native_only else 'false' }}"
-                                    data-request-same-gender-only="{{ 'true' if item.same_gender_only else 'false' }}"
-                                    data-request-has-same-email-group="{{ 'true' if can_edit_requests and item.has_same_email_group else 'false' }}"
-                                    data-request-has-likely-duplicate="{{ 'true' if can_edit_requests and item.has_likely_duplicate else 'false' }}"
-                                    data-request-match-url="{% if can_open_matching %}{{ url_for('main.admin_language_tandem_detail', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-edit-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_edit', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-duplicates-url="{% if can_edit_requests %}{{ url_for('main.admin_language_tandem_duplicates', request_id=item.id, return_to=overview_return_to) }}{% endif %}"
-                                    data-request-toggle-viewed-url="{{ url_for('main.admin_language_tandem_toggle_viewed', request_id=item.id) }}"
-                                    data-request-toggle-viewed-label="{% if item.is_viewed %}Mark unviewed{% else %}Mark viewed{% endif %}"
-                                    data-request-return-to="{{ overview_return_to }}"
                                 >
+                                    <script type="application/json" data-request-payload>{{ item.overview_payload|tojson }}</script>
                                     <div class="tandem-card-header mb-2">
                                         <div class="tandem-card-identity min-w-0">
                                             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                                 <span class="fw-semibold">{{ item.first_name }} {{ item.last_name }}</span>
-                                                {% if item.is_viewed %}
-                                                    <span class="badge text-bg-secondary">Viewed</span>
-                                                {% else %}
-                                                    <span class="badge text-bg-dark">Unviewed</span>
-                                                {% endif %}
                                                 {% if can_edit_requests and item.has_same_email_group %}
                                                     <span class="badge text-bg-warning">Dup email</span>
                                                 {% endif %}
@@ -528,12 +506,6 @@
                             <thead>
                                 <tr>
                                     <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("id", "ID", "number") }}
-                                    </th>
-                                    <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("created", "Submitted", "date") }}
-                                    </th>
-                                    <th scope="col" aria-sort="none">
                                         {{ request_sort_button("name", "Name") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
@@ -546,10 +518,10 @@
                                         {{ request_sort_button("occupation", "Occupation") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("gender", "Gender") }}
+                                        {{ request_sort_button("birth", "Born", "number") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("birth", "Birth", "number") }}
+                                        {{ request_sort_button("created", "Submitted", "date") }}
                                     </th>
                                     <th scope="col" aria-sort="none">
                                         {{ request_sort_button("departure", "Departure", "date") }}
@@ -560,17 +532,8 @@
                                     <th scope="col" aria-sort="none">
                                         {{ request_sort_button("requested", "Requested") }}
                                     </th>
-                                    <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("full", "Full", "number") }}
-                                    </th>
-                                    <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("partial", "Partial", "number") }}
-                                    </th>
-                                    <th scope="col" aria-sort="none">
-                                        {{ request_sort_button("weak", "Weak", "number") }}
-                                    </th>
+                                    <th scope="col">Matches</th>
                                     <th scope="col">Flags</th>
-                                    <th scope="col">Comment</th>
                                     <th scope="col"><span class="visually-hidden">Actions</span></th>
                                 </tr>
                             </thead>
@@ -581,6 +544,7 @@
             {% else %}
                 <p class="mb-0 text-muted">No requests in this section.</p>
             {% endif %}
+            {% if is_viewed %}</div>{% endif %}
         </div>
     </div>
 {% endfor %}

@@ -86,12 +86,12 @@
                         <th>Title</th>
                         <th>Start</th>
                         <th>Publish</th>
-                        <th>Type</th>
+                        <th class="text-center">Type</th>
                         <th>Image</th>
                         <th>Instagram</th>
                         <th>State</th>
                         <th>Updated</th>
-                        <th class="text-end">Actions</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,7 +127,7 @@
                                 {% endif %}
                             </td>
 
-                            <td>
+                            <td class="text-center">
                                 {% if meta and should_show_event_label(item) %}
                                     <span class="badge {{ meta.badge }}">{{ meta.label }}</span>
                                 {% elif meta %}
@@ -182,7 +182,7 @@
 
                             <td>{{ item.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
 
-                            <td class="text-end">
+                            <td class="text-center">
                                 <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="btn btn-sm btn-outline-secondary">Open</a>
                                 <a href="{{ url_for('main.admin_post_edit', post_id=item.id) }}" class="btn btn-sm btn-dark">Edit</a>
                             </td>
