@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
         function createRequestActionLink(href, className, title, iconClass, label) {
             const link = document.createElement("a");
             link.href = href;
-            link.className = className;
+            link.className = `${className} tandem-action-btn`;
             link.title = title;
             link.innerHTML = `<i class="bi ${iconClass}"></i><span class="visually-hidden">${label}</span>`;
             return link;
@@ -88,6 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const form = document.createElement("form");
             form.method = "post";
             form.action = action;
+            form.style.display = "contents";
 
             const returnInput = document.createElement("input");
             returnInput.type = "hidden";
@@ -96,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const button = document.createElement("button");
             button.type = "submit";
-            button.className = "btn btn-outline-secondary";
+            button.className = "btn btn-outline-secondary tandem-action-btn";
             button.title = title;
             button.innerHTML = `<i class="bi ${iconClass}"></i><span class="visually-hidden">${label}</span>`;
 
@@ -112,6 +113,19 @@ document.addEventListener("DOMContentLoaded", () => {
             row.appendChild(cell);
             return cell;
         }
+
+        function appendTruncatedCell(row, text, className = "") {
+            const cell = document.createElement("td");
+            if (className) cell.className = className;
+            const inner = document.createElement("div");
+            inner.className = "tandem-table-truncate";
+            inner.textContent = text || "—";
+            inner.title = text || "";
+            cell.appendChild(inner);
+            row.appendChild(cell);
+            return cell;
+        }
+
 
         function createRequestFlagsCell(card) {
             const cell = document.createElement("td");
@@ -228,34 +242,53 @@ document.addEventListener("DOMContentLoaded", () => {
             row.setAttribute("data-sort-weak", card.dataset.requestWeak || "0");
             row.setAttribute("data-sort-total", card.dataset.requestTotal || "0");
 
-            appendRequestCell(row, `#${card.dataset.requestId || ""}`, "text-nowrap");
-            appendRequestCell(row, card.dataset.requestCreatedLabel || "", "text-nowrap");
-
             const nameCell = document.createElement("td");
             nameCell.className = "text-nowrap";
-            const name = document.createElement("span");
-            name.className = "fw-semibold";
-            name.textContent = card.dataset.requestName || "";
-            const status = document.createElement("span");
-            status.className = "d-block small text-muted";
-            status.textContent = card.dataset.requestIsViewed === "true" ? "Viewed" : "Unviewed";
-            nameCell.appendChild(name);
-            nameCell.appendChild(status);
+            const nameLine = document.createElement("div");
+            nameLine.className = "fw-semibold";
+            nameLine.textContent = card.dataset.requestName || "";
+            nameCell.appendChild(nameLine);
             row.appendChild(nameCell);
 
-            appendRequestCell(row, card.dataset.requestEmail || "");
-            appendRequestCell(row, card.dataset.requestCountry || "");
-            appendRequestCell(row, card.dataset.requestOccupation || "");
-            appendRequestCell(row, card.dataset.requestGender || "");
-            appendRequestCell(row, card.dataset.requestBirth || "");
-            appendRequestCell(row, card.dataset.requestDepartureLabel || "", "text-nowrap");
-            appendRequestCell(row, card.dataset.requestOffered || "", "tandem-table-languages");
-            appendRequestCell(row, card.dataset.requestRequested || "", "tandem-table-languages");
-            appendRequestCell(row, card.dataset.requestFull || "0", "text-end fw-semibold");
-            appendRequestCell(row, card.dataset.requestPartial || "0", "text-end fw-semibold");
-            appendRequestCell(row, card.dataset.requestWeak || "0", "text-end fw-semibold");
+            appendTruncatedCell(row, card.dataset.requestEmail || "");
+            appendTruncatedCell(row, card.dataset.requestCountry || "");
+            appendTruncatedCell(row, card.dataset.requestOccupation || "");
+
+            // Born + gender in one compact cell
+            const bornCell = document.createElement("td");
+            bornCell.className = "text-nowrap";
+            const bornLine = document.createElement("div");
+            bornLine.textContent = card.dataset.requestBirth || "—";
+            const genderLine = document.createElement("div");
+            genderLine.className = "small text-muted";
+            genderLine.textContent = card.dataset.requestGender || "";
+            bornCell.appendChild(bornLine);
+            if (card.dataset.requestGender) bornCell.appendChild(genderLine);
+            row.appendChild(bornCell);
+
+            appendRequestCell(row, (card.dataset.requestCreatedLabel || "").slice(0, 10) || "—", "text-nowrap");
+            appendRequestCell(row, card.dataset.requestDepartureLabel || "—", "text-nowrap");
+            appendRequestCell(row, card.dataset.requestOffered || "—");
+            appendRequestCell(row, card.dataset.requestRequested || "—");
+
+            // Matches: three labeled badges with per-badge tooltips
+            const matchCell = document.createElement("td");
+            matchCell.className = "text-nowrap";
+            [
+                [card.dataset.requestFull || "0", "text-bg-dark", "full"],
+                [card.dataset.requestPartial || "0", "text-bg-secondary", "partial"],
+                [card.dataset.requestWeak || "0", "text-bg-warning", "weak"],
+            ].forEach(([value, cls, label], index) => {
+                if (index > 0) matchCell.appendChild(document.createTextNode(" "));
+                const badge = document.createElement("span");
+                badge.className = `badge ${cls}`;
+                badge.textContent = value;
+                badge.title = `${value} ${label} match${value !== "1" ? "es" : ""}`;
+                matchCell.appendChild(badge);
+            });
+            row.appendChild(matchCell);
+
             row.appendChild(createRequestFlagsCell(card));
-            appendRequestCell(row, card.dataset.requestComment || "", "tandem-table-comment pre-line");
             row.appendChild(createRequestActionsCell(card));
 
             return row;

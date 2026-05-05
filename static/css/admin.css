@@ -92,6 +92,8 @@
 
 .tandem-request-table-view {
     display: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .tandem-request-results[data-view-mode="table"] + .tandem-request-table-view {
@@ -99,20 +101,32 @@
 }
 
 .tandem-request-table {
-    min-width: 96rem;
+    min-width: 68rem;
+}
+
+.tandem-request-table th,
+.tandem-request-table td {
+    padding: 0.3rem 0.625rem;
 }
 
 .tandem-request-table th {
     white-space: nowrap;
 }
 
-.tandem-table-languages {
-    min-width: 14rem;
+.tandem-table-truncate {
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.tandem-table-comment {
-    min-width: 16rem;
-    max-width: 22rem;
+.tandem-action-btn {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
 .table-sort-button {
@@ -151,7 +165,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    min-width: min(100%, 18rem);
+    flex: 1 1 0;
+    min-width: min(100%, 14rem);
 }
 
 .tandem-card-header {
