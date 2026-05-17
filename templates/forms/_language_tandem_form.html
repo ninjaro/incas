@@ -101,7 +101,7 @@
                             <option value="">Select</option>
                             <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
                             <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
-                            <option value="Non-binary / Diverse" {% if values.gender == "Non-binary / Diverse" or values.gender == "Divers" %}selected{% endif %}>Non-binary / Diverse</option>
+                            <option value="Diverse" {% if values.gender in ("Non-binary / Diverse", "Divers", "Diverse") %}selected{% endif %}>Diverse</option>
                         </select>
                         {% if form_errors.get('gender') %}
                             <div class="invalid-feedback" id="gender_error">{{ form_errors.gender }}</div>
@@ -308,7 +308,7 @@
                             <option value="" {% if not values.preferred_gender %}selected{% endif %}>No preference</option>
                             <option value="Female" {% if values.preferred_gender == "Female" %}selected{% endif %}>Female</option>
                             <option value="Male" {% if values.preferred_gender == "Male" %}selected{% endif %}>Male</option>
-                            <option value="Non-binary / Diverse" {% if values.preferred_gender == "Non-binary / Diverse" %}selected{% endif %}>Non-binary / Diverse</option>
+                            <option value="Diverse" {% if values.preferred_gender in ("Non-binary / Diverse", "Diverse") %}selected{% endif %}>Diverse</option>
                             <option value="same" {% if values.preferred_gender == "same" %}selected{% endif %}>Same as mine</option>
                         </select>
                     </div>

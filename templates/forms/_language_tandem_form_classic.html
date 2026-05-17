@@ -121,7 +121,7 @@
                             <option value="">Select</option>
                             <option value="Female" {% if values.gender == "Female" %}selected{% endif %}>Female</option>
                             <option value="Male" {% if values.gender == "Male" %}selected{% endif %}>Male</option>
-                            <option value="Non-binary / Diverse" {% if values.gender == "Non-binary / Diverse" or values.gender == "Divers" %}selected{% endif %}>Non-binary / Diverse</option>
+                            <option value="Diverse" {% if values.gender in ("Non-binary / Diverse", "Divers", "Diverse") %}selected{% endif %}>Diverse</option>
                         </select>
                         {% if form_errors.get('gender') %}
                             <div class="invalid-feedback" id="gender_error">{{ form_errors.gender }}</div>
