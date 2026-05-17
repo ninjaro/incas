@@ -145,6 +145,8 @@
         scheduleScrollSync();
     }
 
+    window.initTandemFormSteps = initTandemFormSteps;
+
     document.querySelectorAll(".incas-tandem-form").forEach((form) => {
         initTandemFormSteps(form);
     });
