@@ -42,6 +42,7 @@ EVENT_KIND_ORDER = [
     "housing",
 ]
 CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin"}
+TANDEM_FORM_MODES = {"compact", "classic"}
 
 
 def get_local_now():
@@ -593,8 +594,7 @@ def suggest_event_form():
 
     return render_template("forms/suggest_event.html", values=values, errors=errors)
 
-@bp.route("/language-tandem", methods=["GET", "POST"])
-def language_tandem_form():
+def _handle_language_tandem_form(mode):
     return_to = request.form.get("return_to", "").strip() if request.method == "POST" else ""
     values = {
         "first_name": "",
@@ -690,7 +690,7 @@ def language_tandem_form():
             errors["requested_languages"] = "Select at least one requested language."
 
         if errors:
-            return render_language_tandem_form_page(values, errors=errors)
+            return render_language_tandem_form_page(values, errors=errors, mode=mode)
 
         item = LanguageTandemRequest(
             first_name=values["first_name"],
@@ -715,6 +715,18 @@ def language_tandem_form():
         db.session.commit()
 
         flash("Your request has been submitted.")
-        return redirect(return_to or url_for("main.language_tandem_form"))
+        return redirect(return_to or url_for("main.language_tandem_form_mode", mode=mode))
 
-    return render_language_tandem_form_page(values, errors=errors)
+    return render_language_tandem_form_page(values, errors=errors, mode=mode)
+
+
+@bp.route("/language-tandem", methods=["GET", "POST"])
+def language_tandem_form():
+    return _handle_language_tandem_form(mode="compact")
+
+
+@bp.route("/language-tandem-<mode>", methods=["GET", "POST"])
+def language_tandem_form_mode(mode):
+    if mode not in TANDEM_FORM_MODES:
+        abort(404)
+    return _handle_language_tandem_form(mode)

@@ -6,7 +6,7 @@ from functools import lru_cache
 import pycountry
 from babel import Locale
 from babel.languages import get_official_languages
-from flask import render_template
+from flask import render_template, url_for
 
 from app.models import LanguageTandemRequest, get_configured_local_now
 
@@ -198,13 +198,16 @@ def build_language_tandem_form_context(values):
     }
 
 
-def render_language_tandem_form_page(values, errors=None):
+def render_language_tandem_form_page(values, errors=None, mode="compact"):
     context = build_language_tandem_form_context(values)
+    form_action = url_for("main.language_tandem_form_mode", mode=mode)
 
     return render_template(
         "forms/language_tandem.html",
         values=values,
         errors=errors or {},
+        tandem_mode=mode,
+        form_action=form_action,
         **context,
     )
 

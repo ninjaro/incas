@@ -7,7 +7,27 @@
     <div class="col-lg-8">
         <h1 class="h3 mb-4">Language Tandem</h1>
 
-        {% include "forms/_language_tandem_form.html" %}
+        {% set tandem_mode_options = [
+            ("compact", "Compact"),
+            ("classic", "Classic"),
+        ] %}
+        <div class="calendar-mode-tabs btn-group btn-group-sm mb-3" role="group" aria-label="Form layout">
+            {% for option_mode, option_label in tandem_mode_options %}
+                <a
+                    href="{{ url_for('main.language_tandem_form_mode', mode=option_mode) }}"
+                    class="btn {% if tandem_mode == option_mode %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+                    aria-current="{{ 'page' if tandem_mode == option_mode else 'false' }}"
+                >
+                    {{ option_label }}
+                </a>
+            {% endfor %}
+        </div>
+
+        {% if tandem_mode == "classic" %}
+            {% include "forms/_language_tandem_form_classic.html" %}
+        {% else %}
+            {% include "forms/_language_tandem_form.html" %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}
