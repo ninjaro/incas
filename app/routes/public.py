@@ -342,7 +342,7 @@ def render_site_content_page(page_key):
             "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
-            "same_gender_only": False,
+            "preferred_gender": "",
             "comment": "",
         }
         form_action = url_for("main.language_tandem_form")
@@ -391,9 +391,49 @@ def country_evening():
 def international_tuesday():
     return render_site_content_page("international_tuesday")
 
+def _render_offer_language_tandem(mode):
+    page = get_site_page("language_tandem", g.locale)
+    values = {
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "occupation": "",
+        "occupation_other": "",
+        "gender": "",
+        "birth_year": "",
+        "departure_date": "",
+        "country_of_origin": "",
+        "offered_languages": [],
+        "offered_native_languages": [],
+        "offered_language_levels": {},
+        "requested_languages": [],
+        "requested_native_only": False,
+        "preferred_gender": "",
+        "comment": "",
+    }
+    extra_context = build_language_tandem_form_context(values)
+    return render_template(
+        "site_page.html",
+        page=page,
+        values=values,
+        form_preset_kind=None,
+        form_action=url_for("main.language_tandem_form_mode", mode=mode),
+        form_return_to=f"{request.path}#page-form",
+        tandem_mode=mode,
+        **extra_context,
+    )
+
+
 @bp.route("/offers/language-tandem")
 def offer_language_tandem():
-    return render_site_content_page("language_tandem")
+    return _render_offer_language_tandem(mode="compact")
+
+
+@bp.route("/offers/language-tandem-<mode>")
+def offer_language_tandem_mode(mode):
+    if mode not in TANDEM_FORM_MODES:
+        abort(404)
+    return _render_offer_language_tandem(mode)
 
 def render_calendar_page(mode="classic"):
     calendar_mode = mode if mode in CALENDAR_MODES else "classic"
