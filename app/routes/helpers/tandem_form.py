@@ -6,7 +6,7 @@ from functools import lru_cache
 import pycountry
 from babel import Locale
 from babel.languages import get_official_languages
-from flask import render_template
+from flask import render_template, url_for
 
 from app.models import LanguageTandemRequest, get_configured_local_now
 
@@ -198,13 +198,16 @@ def build_language_tandem_form_context(values):
     }
 
 
-def render_language_tandem_form_page(values, errors=None):
+def render_language_tandem_form_page(values, errors=None, mode="compact"):
     context = build_language_tandem_form_context(values)
+    form_action = url_for("main.language_tandem_form_mode", mode=mode)
 
     return render_template(
         "forms/language_tandem.html",
         values=values,
         errors=errors or {},
+        tandem_mode=mode,
+        form_action=form_action,
         **context,
     )
 
@@ -258,7 +261,7 @@ def build_tandem_form_values(item=None):
             "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
-            "same_gender_only": False,
+            "preferred_gender": "",
             "comment": "",
         }
 
@@ -280,7 +283,7 @@ def build_tandem_form_values(item=None):
         "offered_language_levels": dict(item.offered_language_levels_dict),
         "requested_languages": list(item.requested_languages_list),
         "requested_native_only": bool(item.requested_native_only),
-        "same_gender_only": bool(item.same_gender_only),
+        "preferred_gender": item.preferred_gender or "",
         "comment": item.comment or "",
     }
 

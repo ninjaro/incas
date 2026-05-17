@@ -69,7 +69,17 @@
                     {% include "forms/_suggest_event_form.html" %}
                 {% elif page.form.type == "language_tandem" %}
                     <h2 class="h4 mb-4">Language Tandem</h2>
-                    {% include "forms/_language_tandem_form.html" %}
+                    <div class="calendar-mode-tabs btn-group btn-group-sm mb-3" role="group" aria-label="Form layout">
+                        <button type="button" class="btn btn-primary" id="tandem-tab-compact" onclick="switchTandemForm('compact')">Compact</button>
+                        <button type="button" class="btn btn-outline-secondary" id="tandem-tab-classic" onclick="switchTandemForm('classic')">Classic</button>
+                    </div>
+                    <div id="tandem-form-container"></div>
+                    <template id="tandem-form-template-compact">
+                        {% include "forms/_language_tandem_form.html" %}
+                    </template>
+                    <template id="tandem-form-template-classic">
+                        {% include "forms/_language_tandem_form_classic.html" %}
+                    </template>
                 {% endif %}
             </div>
         {% endif %}
@@ -137,23 +147,39 @@
         <script src="{{ url_for('static', filename='js/tandem-form-steps.js') }}"></script>
         <script src="{{ url_for('static', filename='js/language-picker.js') }}"></script>
         <script>
-            initOccupationOther();
-            initCountryLookup({
-                options: JSON.parse(document.getElementById("country_options_json").textContent),
-                selected: {{ values.country_of_origin|tojson }}
-            });
+            function switchTandemForm(mode) {
+                const container = document.getElementById("tandem-form-container");
+                const tmpl = document.getElementById("tandem-form-template-" + mode);
+                container.innerHTML = "";
+                container.appendChild(tmpl.content.cloneNode(true));
 
-            initLanguagePicker({
-                offered: {
-                    options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
-                    selected: {{ values.offered_languages|tojson }},
-                    levels: {{ values.offered_language_levels|tojson }}
-                },
-                requested: {
-                    options: JSON.parse(document.getElementById("requested_language_options_json").textContent),
-                    selected: {{ values.requested_languages|tojson }}
-                }
-            });
+                const form = container.querySelector(".incas-tandem-form");
+                if (form) window.initTandemFormSteps(form);
+
+                initOccupationOther();
+                initCountryLookup({
+                    options: JSON.parse(document.getElementById("country_options_json").textContent),
+                    selected: {{ values.country_of_origin|tojson }}
+                });
+                initLanguagePicker({
+                    offered: {
+                        options: JSON.parse(document.getElementById("offered_language_options_json").textContent),
+                        selected: {{ values.offered_languages|tojson }},
+                        levels: {{ values.offered_language_levels|tojson }}
+                    },
+                    requested: {
+                        options: JSON.parse(document.getElementById("requested_language_options_json").textContent),
+                        selected: {{ values.requested_languages|tojson }}
+                    }
+                });
+
+                document.getElementById("tandem-tab-compact").className =
+                    "btn " + (mode === "compact" ? "btn-primary" : "btn-outline-secondary");
+                document.getElementById("tandem-tab-classic").className =
+                    "btn " + (mode === "classic" ? "btn-primary" : "btn-outline-secondary");
+            }
+
+            switchTandemForm("compact");
         </script>
     {% endif %}
 {% endblock %}
