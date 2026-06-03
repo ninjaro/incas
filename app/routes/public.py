@@ -86,10 +86,14 @@ def index():
         reverse=True,
     )
 
+    upcoming_events = sorted(live_events, key=lambda item: item.starts_at)[:3]
+
     return render_template(
         "index.html",
         active_items=active_items,
         archived_items=archived_items,
+        upcoming_events=upcoming_events,
+        about_page=get_site_page("about", g.locale),
     )
 
 @bp.before_app_request
