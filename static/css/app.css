@@ -352,6 +352,278 @@ main {
     overflow: hidden;
 }
 
+.fig-events {
+    --fig-events-bg: #fff8f0;
+    --fig-events-ink: #111827;
+    --fig-events-muted: #6b7280;
+    --fig-events-line: #e7b493;
+    --fig-events-card: #fffdfb;
+    margin-block: clamp(1.5rem, 4vw, 3rem);
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+    color: var(--fig-events-ink);
+    background:
+        radial-gradient(circle at 8% 0%, rgba(255, 102, 0, 0.1), transparent 32%),
+        var(--fig-events-bg);
+    border-radius: 0.35rem;
+}
+
+.fig-events-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.fig-events-kicker {
+    margin: 0 0 0.35rem;
+    color: var(--incas-primary);
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.fig-events-header h2 {
+    margin: 0;
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-size: clamp(2.1rem, 5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.fig-events-header-action {
+    flex: 0 0 auto;
+    color: var(--incas-primary);
+    background: rgba(255, 253, 251, 0.65);
+    border-color: rgba(var(--bs-primary-rgb), 0.65);
+}
+
+.fig-events-track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--fig-event-count), minmax(8.5rem, 1fr));
+    min-height: 18rem;
+    overflow-x: auto;
+    padding-block: 1.5rem;
+}
+
+.fig-events-line {
+    position: absolute;
+    top: 50%;
+    right: 2rem;
+    left: 2rem;
+    height: 1px;
+    background: var(--fig-events-line);
+    transform: translateY(-50%);
+}
+
+.fig-events-item {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: minmax(6.25rem, 1fr) 3.5rem minmax(6.25rem, 1fr);
+    min-width: 9rem;
+    color: var(--fig-events-ink);
+    text-align: center;
+    text-decoration: none;
+}
+
+.fig-events-copy {
+    display: grid;
+    gap: 0.25rem;
+    justify-items: center;
+    padding-inline: 0.5rem;
+}
+
+.fig-events-item.is-above .fig-events-copy {
+    grid-row: 1;
+    align-self: end;
+    padding-bottom: 0.8rem;
+}
+
+.fig-events-item.is-below .fig-events-copy {
+    grid-row: 3;
+    align-self: start;
+    padding-top: 0.8rem;
+}
+
+.fig-events-node {
+    display: inline-grid;
+    grid-row: 2;
+    place-items: center;
+    justify-self: center;
+    align-self: center;
+    width: 2.95rem;
+    height: 2.95rem;
+    color: #c94e15;
+    background: var(--fig-events-bg);
+    border: 1px solid #d65a21;
+    border-radius: 999px;
+}
+
+.fig-events-item.is-featured .fig-events-node {
+    width: 3.35rem;
+    height: 3.35rem;
+    color: #fff;
+    background: #c94e15;
+    border-color: #c94e15;
+    box-shadow: 0 0 0 0.5rem rgba(201, 78, 21, 0.12);
+}
+
+.fig-events-item:hover .fig-events-node,
+.fig-events-item:focus .fig-events-node {
+    box-shadow: 0 0 0 0.35rem rgba(255, 102, 0, 0.16);
+}
+
+.fig-events-date,
+.fig-events-next {
+    color: #d65a21;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.fig-events-title {
+    display: block;
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    line-height: 1.15;
+}
+
+.fig-events-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+    color: var(--fig-events-muted);
+    font-size: 0.8rem;
+}
+
+.fig-events-meta time {
+    color: var(--fig-events-ink);
+    font-weight: 800;
+}
+
+.fig-events-payment {
+    justify-content: center;
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+}
+
+.fig-events-empty {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    min-height: 9rem;
+    padding: 2rem 1rem;
+    color: var(--fig-events-ink);
+    text-align: center;
+    background: rgba(255, 253, 251, 0.78);
+    border: 1px dashed #d8c6b7;
+    border-radius: 0.7rem;
+}
+
+.fig-events-empty p {
+    max-width: 48rem;
+    margin: 0;
+}
+
+.landing-board-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+    gap: clamp(1rem, 4vw, 3rem);
+    align-items: end;
+    min-height: min(42rem, 78vh);
+    padding: clamp(1.5rem, 5vw, 4rem);
+    background:
+        linear-gradient(135deg, rgba(255, 102, 0, 0.16), transparent 42%),
+        var(--bs-tertiary-bg);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.16);
+    border-radius: 0.5rem;
+}
+
+.landing-board-copy h1 {
+    max-width: 13ch;
+    margin: 0 0 1rem;
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-size: clamp(3rem, 8vw, 6.8rem);
+    font-weight: 800;
+    line-height: 0.96;
+}
+
+.landing-board-copy p:not(.landing-kicker) {
+    max-width: 40rem;
+    color: var(--bs-secondary-color);
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.landing-board-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 1.35rem;
+}
+
+.landing-board-card {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1.25rem;
+    color: var(--incas-neutral-dark);
+    background: var(--incas-primary);
+    border-radius: 0.5rem;
+}
+
+.landing-board-card span {
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.landing-board-card strong {
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-size: 1.55rem;
+    line-height: 1.1;
+}
+
+.landing-board-card a {
+    color: var(--incas-neutral-dark);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.landing-board-about {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.42fr) minmax(0, 0.58fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    padding-block: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.landing-board-about h2 {
+    margin: 0;
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.landing-board-about p {
+    color: var(--bs-secondary-color);
+    line-height: 1.65;
+}
+
+.calendar-board-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.calendar-board-archive {
+    padding-top: 0.5rem;
+}
+
 .landing-poster {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(17rem, 23rem);
@@ -2877,6 +3149,8 @@ button.calendar-classic-daybutton:focus-visible {
     .landing-scroll-about,
     .landing-studio-hero,
     .landing-studio-band,
+    .landing-board-hero,
+    .landing-board-about,
     .landing-timeline-layout,
     .landing-portal {
         grid-template-columns: minmax(0, 1fr);
@@ -2916,6 +3190,70 @@ button.calendar-classic-daybutton:focus-visible {
 @media (max-width: 575.98px) {
     main {
         padding-top: 1rem !important;
+    }
+
+    .fig-events {
+        margin-right: calc(var(--bs-gutter-x, 1.5rem) * -0.25);
+        margin-left: calc(var(--bs-gutter-x, 1.5rem) * -0.25);
+        padding: 1.1rem;
+        border-radius: 0;
+    }
+
+    .fig-events-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .fig-events-header-action {
+        align-self: start;
+    }
+
+    .fig-events-track {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.8rem;
+        min-height: auto;
+        overflow: visible;
+        padding-block: 0.25rem;
+    }
+
+    .fig-events-line {
+        top: 0.8rem;
+        bottom: 0.8rem;
+        left: 1.45rem;
+        width: 1px;
+        height: auto;
+        transform: none;
+    }
+
+    .fig-events-item {
+        display: grid;
+        grid-template-columns: 3rem minmax(0, 1fr);
+        grid-template-rows: auto;
+        min-width: 0;
+        gap: 0.75rem;
+        text-align: left;
+    }
+
+    .fig-events-item.is-above .fig-events-copy,
+    .fig-events-item.is-below .fig-events-copy {
+        grid-column: 2;
+        grid-row: 1;
+        align-self: center;
+        justify-items: start;
+        padding: 0;
+    }
+
+    .fig-events-node,
+    .fig-events-item.is-featured .fig-events-node {
+        grid-column: 1;
+        grid-row: 1;
+        width: 2.85rem;
+        height: 2.85rem;
+    }
+
+    .fig-events-meta {
+        justify-content: start;
     }
 
     .calendar-toolbar {
@@ -2962,6 +3300,8 @@ button.calendar-classic-daybutton:focus-visible {
     .landing-scroll-section-head h2,
     .landing-studio-copy h1,
     .landing-studio-about h2,
+    .landing-board-copy h1,
+    .landing-board-about h2,
     .landing-timeline-hero h1,
     .landing-portal-heading h1 {
         font-size: 2.45rem;
@@ -2973,6 +3313,7 @@ button.calendar-classic-daybutton:focus-visible {
     .landing-scroll-section-head,
     .landing-studio-actions,
     .landing-studio-events-head,
+    .landing-board-actions,
     .landing-timeline-hero {
         align-items: stretch;
         flex-direction: column;
@@ -2984,12 +3325,14 @@ button.calendar-classic-daybutton:focus-visible {
     .landing-scroll-section-head .btn,
     .landing-studio-actions .btn,
     .landing-studio-events-head .btn,
+    .landing-board-actions .btn,
     .landing-timeline-hero .btn {
         width: 100%;
     }
 
     .landing-scroll-hero,
-    .landing-studio-hero {
+    .landing-studio-hero,
+    .landing-board-hero {
         min-height: calc(100vh - 5rem);
         padding: 1.25rem;
     }

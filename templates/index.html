@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 {% from "_event_registration_macros.html" import render_event_payment_notice with context %}
+{% from "_upcoming_events_timeline.html" import render_upcoming_events_timeline with context %}
 
 {% block title %}INCAS{% endblock %}
 
@@ -317,6 +318,45 @@
         {% endfor %}
     </section>
 
+{% elif landing_mode == "board" %}
+    <section class="landing-board-hero">
+        <div class="landing-board-copy">
+            <p class="landing-kicker">INCAS Aachen</p>
+            <h1>Meet people through the next thing happening in Aachen.</h1>
+            <p>Events, offers, trips, food, language exchange, and team life in one continuous public landing page.</p>
+            <div class="landing-board-actions">
+                <a href="{{ url_for('main.calendar_mode', mode='board') }}" class="btn btn-primary btn-lg">See What's On</a>
+                <a href="{{ url_for('main.offers') }}" class="btn btn-outline-primary btn-lg">Explore Offers</a>
+            </div>
+        </div>
+        <aside class="landing-board-card" aria-label="INCAS focus">
+            <span>Community first</span>
+            <strong>International and local students, one Aachen program.</strong>
+            <a href="#landing-board-events">Upcoming events <i class="bi bi-arrow-down"></i></a>
+        </aside>
+    </section>
+
+    <div id="landing-board-events">
+        {{ render_upcoming_events_timeline(
+            upcoming_events,
+            cta_url=url_for('main.calendar_mode', mode='board'),
+            cta_label="View Events",
+            empty_cta_url=url_for('main.calendar_mode', mode='board'),
+            modifier="fig-events-landing"
+        ) }}
+    </div>
+
+    <section class="landing-board-about">
+        <div>
+            <p class="landing-kicker">About Us</p>
+            <h2>INCAS connects students through regular public activities.</h2>
+        </div>
+        <div>
+            <p>{{ about_page.body_html|striptags|truncate(380) }}</p>
+            <a href="{{ url_for('main.about') }}" class="btn btn-outline-primary">Learn more</a>
+        </div>
+    </section>
+
 {% elif landing_mode == "timeline" %}
     <section class="landing-timeline-hero">
         <div>
@@ -374,9 +414,9 @@
                 <span>Open the calendar and find the next public INCAS activity.</span>
             </a>
 
-            {% for item in offers[:6] %}
+            {% for item in offers %}
                 <a href="{{ item.url }}" class="landing-portal-tile">
-                    <span class="landing-portal-icon"><i class="bi bi-arrow-up-right"></i></span>
+                    <span class="landing-portal-icon"><i class="bi {{ item.icon|default('bi-arrow-up-right') }}"></i></span>
                     <strong>{{ item.title }}</strong>
                     <span>Open offer page</span>
                 </a>

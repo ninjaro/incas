@@ -41,9 +41,9 @@ EVENT_KIND_ORDER = [
     "karaoke",
     "housing",
 ]
-CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin"}
+CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin", "board"}
 TANDEM_FORM_MODES = {"compact", "classic"}
-LANDING_MODES = {"classic", "poster", "timeline", "portal", "showcase", "magazine", "scroll", "studio"}
+LANDING_MODES = {"classic", "poster", "timeline", "portal", "showcase", "magazine", "scroll", "studio", "board"}
 LANDING_MODE_OPTIONS = [
     ("classic", "Classic"),
     ("poster", "Poster"),
@@ -51,6 +51,7 @@ LANDING_MODE_OPTIONS = [
     ("magazine", "Magazine"),
     ("scroll", "Scroll"),
     ("studio", "Studio"),
+    ("board", "Board"),
     ("timeline", "Timeline"),
     ("portal", "Portal"),
 ]

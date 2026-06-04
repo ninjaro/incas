@@ -39,34 +39,42 @@ SITE_OFFERS = {
             {
                 "title": "International Tuesday",
                 "url": "/offers/international-tuesday",
+                "icon": "bi-cup-hot",
             },
             {
                 "title": "Country Evening",
                 "url": "/offers/country-evening",
+                "icon": "bi-globe-americas",
             },
             {
                 "title": "Café Lingua",
                 "url": "/offers/cafe-lingua",
+                "icon": "bi-chat-dots",
             },
             {
                 "title": "International Breakfast",
                 "url": "/offers/international-breakfast",
+                "icon": "bi-egg-fried",
             },
             {
                 "title": "International Weekend",
                 "url": "/offers/international-weekend",
+                "icon": "bi-signpost-2",
             },
             {
                 "title": "INCAS Active",
                 "url": "/offers/incas-active",
+                "icon": "bi-bicycle",
             },
             {
                 "title": "Board Game Nights",
                 "url": "/offers/board-game-nights",
+                "icon": "bi-dice-5",
             },
             {
                 "title": "Dance Workshops",
                 "url": "/offers/dance-workshops",
+                "icon": "bi-music-note-beamed",
             },
         ],
         "forms": [
@@ -95,34 +103,42 @@ SITE_OFFERS = {
             {
                 "title": "Internationaler Dienstag",
                 "url": "/offers/international-tuesday",
+                "icon": "bi-cup-hot",
             },
             {
                 "title": "Länderabend",
                 "url": "/offers/country-evening",
+                "icon": "bi-globe-americas",
             },
             {
                 "title": "Café Lingua",
                 "url": "/offers/cafe-lingua",
+                "icon": "bi-chat-dots",
             },
             {
                 "title": "Internationales Frühstück",
                 "url": "/offers/international-breakfast",
+                "icon": "bi-egg-fried",
             },
             {
                 "title": "Internationales Wochenende",
                 "url": "/offers/international-weekend",
+                "icon": "bi-signpost-2",
             },
             {
                 "title": "INCAS Aktiv",
                 "url": "/offers/incas-active",
+                "icon": "bi-bicycle",
             },
             {
                 "title": "Brettspielabende",
                 "url": "/offers/board-game-nights",
+                "icon": "bi-dice-5",
             },
             {
                 "title": "Tanzworkshops",
                 "url": "/offers/dance-workshops",
+                "icon": "bi-music-note-beamed",
             },
         ],
         "forms": [
