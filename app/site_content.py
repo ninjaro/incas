@@ -60,6 +60,14 @@ SITE_OFFERS = {
                 "title": "INCAS Active",
                 "url": "/offers/incas-active",
             },
+            {
+                "title": "Board Game Nights",
+                "url": "/offers/board-game-nights",
+            },
+            {
+                "title": "Dance Workshops",
+                "url": "/offers/dance-workshops",
+            },
         ],
         "forms": [
             {
@@ -107,6 +115,14 @@ SITE_OFFERS = {
             {
                 "title": "INCAS Aktiv",
                 "url": "/offers/incas-active",
+            },
+            {
+                "title": "Brettspielabende",
+                "url": "/offers/board-game-nights",
+            },
+            {
+                "title": "Tanzworkshops",
+                "url": "/offers/dance-workshops",
             },
         ],
         "forms": [
@@ -249,85 +265,115 @@ SITE_PAGES = {
         <p class="lead mb-0">Our regular programme connects international and local students through language exchange, weekly meetings, cultural evenings, trips, breakfasts and team activities.</p>
     </div>
 
-    <div class="row g-3">
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/language-tandem">Language Tandem</a></h2>
-                <p>Practice a language with a suitable tandem partner. You offer a language you know well and request a language you want to improve.</p>
-                <p class="mb-3">More than 300 participants are matched each year.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="/language-tandem">Registration form</a>
+    <div class="row g-4 offers-grid">
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-translate"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/language-tandem">Language Tandem</a></h3>
+                <p class="offer-card-text">Practice a language with a suitable tandem partner. You offer a language you know well and request a language you want to improve.</p>
+                <p class="offer-card-text">More than 300 participants are matched each year.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/language-tandem">Registration form</a>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-tuesday">International Tuesday</a></h2>
-                <p>Every Tuesday evening, you can meet students from many countries, play games, talk in a relaxed atmosphere and enjoy inexpensive warm and cold drinks.</p>
-                <p class="mb-0"><strong>Every Tuesday from 8 pm to midnight</strong><br>Humboldt-Haus, Pontstraße 41</p>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-weekend">International Weekend</a></h2>
-                <p>Once a month, INCAS offers a day trip to a city or sight in Germany, Belgium, the Netherlands, France or Luxembourg.</p>
-                <p class="mb-0">Trips are announced in advance and usually include a guided city tour, museum visit or local sight.</p>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/international-breakfast">International Breakfast</a></h2>
-                <p>Our monthly breakfast buffet lets you start the day in a relaxed way while meeting people from all over the world.</p>
-                <p class="mb-3">Depending on the event, we serve dishes from different countries or a classic breakfast.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=breakfast">Suggest breakfast</a>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-cup-hot"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-tuesday">International Tuesday</a></h3>
+                <p class="offer-card-text">Every Tuesday evening, you can meet students from many countries, play games, talk in a relaxed atmosphere and enjoy inexpensive warm and cold drinks.</p>
+                <p class="offer-card-meta"><strong>Every Tuesday from 8 pm to midnight</strong><br>Humboldt-Haus, Pontstraße 41</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/cafe-lingua">Café Lingua</a></h2>
-                <p>Usually on the second Tuesday of each month, INCAS organizes a multilingual café where you can practice languages at different tables.</p>
-                <p class="mb-0">You do not need to be registered for Language Tandem to join.</p>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/incas-active">INCAS Active</a></h2>
-                <p>Besides public activities, we also organize team activities such as hiking trips, festivals, barbecues, ice cream in the park or escape rooms.</p>
-                <p class="mb-0">Join the team if you want to take part and help shape new activities.</p>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4"><a class="text-primary-emphasis text-decoration-none card-heading-link" href="/offers/country-evening">Country Evening</a></h2>
-                <p>Every month, one International Tuesday is dedicated to presenting a country through stories, photos, food, music and conversation.</p>
-                <p class="mb-3">You are welcome to present your own country. The presentation language should be English or German.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=country_evening">Suggest evening</a>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-signpost-2"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-weekend">International Weekend</a></h3>
+                <p class="offer-card-text">Once a month, INCAS offers a day trip to a city or sight in Germany, Belgium, the Netherlands, France or Luxembourg.</p>
+                <p class="offer-card-text">Trips are announced in advance and usually include a guided city tour, museum visit or local sight.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Board Game Nights</h2>
-                <p>On selected International Tuesdays, we host board game nights. Choose a game from INCAS for the evening or bring your own.</p>
-                <p class="mb-0">It is a simple way to meet new people and enjoy playing together.</p>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-egg-fried"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-breakfast">International Breakfast</a></h3>
+                <p class="offer-card-text">Our monthly breakfast buffet lets you start the day in a relaxed way while meeting people from all over the world.</p>
+                <p class="offer-card-text">Depending on the event, we serve dishes from different countries or a classic breakfast.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/suggest-event?kind=breakfast">Suggest breakfast</a>
+                </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Dance Workshops</h2>
-                <p>Usually once a semester, we collaborate with Sol de la Salsa for beginner dance classes.</p>
-                <p class="mb-0">Prior knowledge is not required. The evening starts with a course and ends with time to practice your new steps.</p>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-chat-dots"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/cafe-lingua">Café Lingua</a></h3>
+                <p class="offer-card-text">Usually on the second Tuesday of each month, INCAS organizes a multilingual café where you can practice languages at different tables.</p>
+                <p class="offer-card-text">You do not need to be registered for Language Tandem to join.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-bicycle"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/incas-active">INCAS Active</a></h3>
+                <p class="offer-card-text">Besides public activities, we also organize team activities such as hiking trips, festivals, barbecues, ice cream in the park or escape rooms.</p>
+                <p class="offer-card-text">Join the team if you want to take part and help shape new activities.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-globe-americas"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/country-evening">Country Evening</a></h3>
+                <p class="offer-card-text">Every month, one International Tuesday is dedicated to presenting a country through stories, photos, food, music and conversation.</p>
+                <p class="offer-card-text">You are welcome to present your own country. The presentation language should be English or German.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/suggest-event?kind=country_evening">Suggest evening</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-dice-5"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/board-game-nights">Board Game Nights</a></h3>
+                <p class="offer-card-text">On selected International Tuesdays, we host board game nights. Choose a game from INCAS for the evening or bring your own.</p>
+                <p class="offer-card-text">It is a simple way to meet new people and enjoy playing together.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-music-note-beamed"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/dance-workshops">Dance Workshops</a></h3>
+                <p class="offer-card-text">Usually once a semester, we collaborate with Sol de la Salsa for beginner dance classes.</p>
+                <p class="offer-card-text">Prior knowledge is not required. The evening starts with a course and ends with time to practice your new steps.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
+                </div>
             </div>
         </article>
     </div>
@@ -338,6 +384,52 @@ SITE_PAGES = {
     </section>
 </section>
         """.strip(),
+        },
+        "board_game_nights": {
+            "title": "Board Game Nights",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Play together at Humboldt-Haus</h2>
+        <p class="lead mb-0">On selected International Tuesdays, INCAS hosts board game nights for students who want to meet people in a relaxed, low-pressure setting.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">What to expect</h3>
+        <p class="mb-2">You can choose one of the games available at INCAS or bring your own game for the evening.</p>
+        <p class="mb-0">The focus is on easy conversation, playing together and meeting new people. You do not need to arrive with a group.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">When does it happen?</h2>
+        <p class="mb-0">Board Game Nights are not a fixed weekly offer. They are announced as part of the public programme in the <a class="link-primary" href="/events">event calendar</a> and on our social media channels.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "dance_workshops": {
+            "title": "Dance Workshops",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Beginner-friendly dance evenings</h2>
+        <p class="lead mb-0">Usually once a semester, INCAS collaborates with Sol de la Salsa to offer beginner dance workshops for students.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">How the evening works</h3>
+        <p class="mb-2">Prior knowledge is not required. The evening starts with a guided course and continues with time to practice the new steps.</p>
+        <p class="mb-0">The workshops are designed as social events, so you can come along even if you have not danced before.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Current dates</h2>
+        <p class="mb-0">Dance Workshop dates are announced in the <a class="link-primary" href="/events">event calendar</a> when the next collaboration is planned.</p>
+    </section>
+</section>
+""".strip(),
         },
         "international_breakfast": {
             "title": "International Breakfast",
@@ -786,92 +878,115 @@ SITE_PAGES = {
         <p class="lead mb-0">Unser regelmäßiges Programm verbindet internationale und lokale Studierende durch Sprachaustausch, wöchentliche Treffen, Kulturabende, Ausflüge, Frühstücke und Teamaktivitäten.</p>
     </div>
 
-    <div class="row g-3">
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Sprachtandem</h2>
-                <p>Übe eine Sprache mit einer passenden Tandempartnerin oder einem passenden Tandempartner. Du bietest eine Sprache an, die du gut kannst, und suchst eine Sprache, die du verbessern möchtest.</p>
-                <p class="mb-3">Seit dem 01. Oktober 2013 wurden mehr als 690 Teilnehmende vermittelt.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/language-tandem">Angebot öffnen</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="/language-tandem">Anmeldeformular</a>
+    <div class="row g-4 offers-grid">
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-translate"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/language-tandem">Sprachtandem</a></h3>
+                <p class="offer-card-text">Übe eine Sprache mit einer passenden Tandempartnerin oder einem passenden Tandempartner. Du bietest eine Sprache an, die du gut kannst, und suchst eine Sprache, die du verbessern möchtest.</p>
+                <p class="offer-card-text">Seit dem 01. Oktober 2013 wurden mehr als 690 Teilnehmende vermittelt.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/language-tandem">Anmeldeformular</a>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Internationaler Dienstag</h2>
-                <p>Jeden Dienstagabend kannst du Studierende aus aller Welt kennenlernen, spielen, dich in gemütlicher Atmosphäre austauschen und günstige warme und kalte Getränke genießen.</p>
-                <p class="mb-3"><strong>Jeden Dienstag ab 20:00 bis ca. 24:00 Uhr</strong><br>Humboldt-Haus, Pontstraße 41</p>
-                <a class="btn btn-sm btn-dark" href="/offers/international-tuesday">Angebot öffnen</a>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Internationales Wochenende</h2>
-                <p>Einmal im Monat organisiert INCAS einen Tagestrip in eine Stadt oder zu einer Sehenswürdigkeit in Deutschland, Belgien, den Niederlanden oder Luxemburg.</p>
-                <p class="mb-3">Die Fahrten werden im Voraus angekündigt und enthalten meistens eine Stadtführung, einen Museumsbesuch oder eine lokale Sehenswürdigkeit.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/international-weekend">Angebot öffnen</a>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Internationales Frühstück</h2>
-                <p>Unser monatliches Frühstücksbuffet bietet dir einen entspannten Start in den Tag und die Möglichkeit, neue Menschen aus aller Welt kennenzulernen.</p>
-                <p class="mb-3">Je nach Veranstaltung gibt es Spezialitäten aus unterschiedlichen Ländern oder ein klassisches Frühstück.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/international-breakfast">Angebot öffnen</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=breakfast">Frühstück vorschlagen</a>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-cup-hot"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-tuesday">Internationaler Dienstag</a></h3>
+                <p class="offer-card-text">Jeden Dienstagabend kannst du Studierende aus aller Welt kennenlernen, spielen, dich in gemütlicher Atmosphäre austauschen und günstige warme und kalte Getränke genießen.</p>
+                <p class="offer-card-meta"><strong>Jeden Dienstag ab 20:00 bis ca. 24:00 Uhr</strong><br>Humboldt-Haus, Pontstraße 41</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Café Lingua</h2>
-                <p>Normalerweise am zweiten Dienstag eines Monats organisiert INCAS ein mehrsprachiges Café, in dem du Sprachen an verschiedenen Sprachtischen üben kannst.</p>
-                <p class="mb-3">Du musst nicht für das Sprachtandem angemeldet sein, um mitzumachen.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/cafe-lingua">Angebot öffnen</a>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">INCAS Aktiv</h2>
-                <p>Neben öffentlichen Angeboten organisieren wir auch Teamaktivitäten wie Wanderungen, Festivalbesuche, Grillpartys, Eisessen im Park oder Escape Rooms.</p>
-                <p class="mb-3">Komm ins Team, wenn du mitmachen und neue Aktivitäten mitgestalten möchtest.</p>
-                <a class="btn btn-sm btn-dark" href="/offers/incas-active">Angebot öffnen</a>
-            </div>
-        </article>
-
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Länderabend</h2>
-                <p>Jeden Monat widmen wir einen Internationalen Dienstag der Vorstellung eines Landes mit Geschichten, Bildern, Essen, Musik und Gesprächen.</p>
-                <p class="mb-3">Du kannst gerne dein eigenes Land vorstellen. Die Präsentation sollte auf Deutsch oder Englisch stattfinden.</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm btn-dark" href="/offers/country-evening">Angebot öffnen</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="/suggest-event?kind=country_evening">Länderabend vorschlagen</a>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-signpost-2"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-weekend">Internationales Wochenende</a></h3>
+                <p class="offer-card-text">Einmal im Monat organisiert INCAS einen Tagestrip in eine Stadt oder zu einer Sehenswürdigkeit in Deutschland, Belgien, den Niederlanden oder Luxemburg.</p>
+                <p class="offer-card-text">Die Fahrten werden im Voraus angekündigt und enthalten meistens eine Stadtführung, einen Museumsbesuch oder eine lokale Sehenswürdigkeit.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
                 </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Brettspielabende</h2>
-                <p>An ausgewählten Internationalen Dienstagen veranstalten wir Brettspielabende. Du kannst ein Spiel von INCAS wählen oder dein eigenes mitbringen.</p>
-                <p class="mb-0">So lernst du leicht neue Leute kennen und kannst gemeinsam spielen.</p>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-egg-fried"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/international-breakfast">Internationales Frühstück</a></h3>
+                <p class="offer-card-text">Unser monatliches Frühstücksbuffet bietet dir einen entspannten Start in den Tag und die Möglichkeit, neue Menschen aus aller Welt kennenzulernen.</p>
+                <p class="offer-card-text">Je nach Veranstaltung gibt es Spezialitäten aus unterschiedlichen Ländern oder ein klassisches Frühstück.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/suggest-event?kind=breakfast">Frühstück vorschlagen</a>
+                </div>
             </div>
         </article>
 
-        <article class="col-md-6">
-            <div class="h-100 p-4 border rounded-2 bg-body-tertiary">
-                <h2 class="h4 text-primary-emphasis">Tanzworkshops</h2>
-                <p>Normalerweise einmal pro Semester arbeiten wir mit Sol de la Salsa zusammen und bieten Tanzkurse für Anfängerinnen und Anfänger an.</p>
-                <p class="mb-0">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem Kurs und endet mit Zeit zum Üben.</p>
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-chat-dots"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/cafe-lingua">Café Lingua</a></h3>
+                <p class="offer-card-text">Normalerweise am zweiten Dienstag eines Monats organisiert INCAS ein mehrsprachiges Café, in dem du Sprachen an verschiedenen Sprachtischen üben kannst.</p>
+                <p class="offer-card-text">Du musst nicht für das Sprachtandem angemeldet sein, um mitzumachen.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-bicycle"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/incas-active">INCAS Aktiv</a></h3>
+                <p class="offer-card-text">Neben öffentlichen Angeboten organisieren wir auch Teamaktivitäten wie Wanderungen, Festivalbesuche, Grillpartys, Eisessen im Park oder Escape Rooms.</p>
+                <p class="offer-card-text">Komm ins Team, wenn du mitmachen und neue Aktivitäten mitgestalten möchtest.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-globe-americas"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/country-evening">Länderabend</a></h3>
+                <p class="offer-card-text">Jeden Monat widmen wir einen Internationalen Dienstag der Vorstellung eines Landes mit Geschichten, Bildern, Essen, Musik und Gesprächen.</p>
+                <p class="offer-card-text">Du kannst gerne dein eigenes Land vorstellen. Die Präsentation sollte auf Deutsch oder Englisch stattfinden.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                    <a class="btn btn-sm btn-outline-primary offer-card-action" href="/suggest-event?kind=country_evening">Länderabend vorschlagen</a>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-dice-5"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/board-game-nights">Brettspielabende</a></h3>
+                <p class="offer-card-text">An ausgewählten Internationalen Dienstagen veranstalten wir Brettspielabende. Du kannst ein Spiel von INCAS wählen oder dein eigenes mitbringen.</p>
+                <p class="offer-card-text">So lernst du leicht neue Leute kennen und kannst gemeinsam spielen.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </div>
+        </article>
+
+        <article class="col-12 col-sm-6 col-xl-4">
+            <div class="offer-card is-linked h-100">
+                <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-music-note-beamed"></i></span>
+                <h3 class="offer-card-title"><a href="/offers/dance-workshops">Tanzworkshops</a></h3>
+                <p class="offer-card-text">Normalerweise einmal pro Semester arbeiten wir mit Sol de la Salsa zusammen und bieten Tanzkurse für Anfängerinnen und Anfänger an.</p>
+                <p class="offer-card-text">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem Kurs und endet mit Zeit zum Üben.</p>
+                <div class="offer-card-footer">
+                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
+                </div>
             </div>
         </article>
     </div>
@@ -882,6 +997,52 @@ SITE_PAGES = {
     </section>
 </section>
         """.strip(),
+        },
+        "board_game_nights": {
+            "title": "Brettspielabende",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Gemeinsam spielen im Humboldt-Haus</h2>
+        <p class="lead mb-0">An ausgewählten Internationalen Dienstagen veranstaltet INCAS Brettspielabende für Studierende, die in entspannter Atmosphäre neue Leute kennenlernen möchten.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Was dich erwartet</h3>
+        <p class="mb-2">Du kannst ein Spiel von INCAS auswählen oder dein eigenes Spiel für den Abend mitbringen.</p>
+        <p class="mb-0">Im Mittelpunkt stehen gemeinsames Spielen, einfache Gespräche und neue Kontakte. Du musst nicht mit einer eigenen Gruppe kommen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Wann findet es statt?</h2>
+        <p class="mb-0">Brettspielabende sind kein festes wöchentliches Angebot. Termine werden im <a class="link-primary" href="/events">Eventkalender</a> und über unsere Social-Media-Kanäle angekündigt.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "dance_workshops": {
+            "title": "Tanzworkshops",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Einsteigerfreundliche Tanzabende</h2>
+        <p class="lead mb-0">Normalerweise einmal pro Semester arbeitet INCAS mit Sol de la Salsa zusammen und bietet Tanzworkshops für Studierende an.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">So läuft der Abend ab</h3>
+        <p class="mb-2">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem angeleiteten Kurs und geht danach in Zeit zum Üben über.</p>
+        <p class="mb-0">Die Workshops sind als soziale Events gedacht, du kannst also auch ohne Tanzerfahrung einfach mitmachen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Aktuelle Termine</h2>
+        <p class="mb-0">Tanzworkshop-Termine werden im <a class="link-primary" href="/events">Eventkalender</a> angekündigt, sobald die nächste Kooperation geplant ist.</p>
+    </section>
+</section>
+""".strip(),
         },
         "international_breakfast": {
             "title": "Internationales Frühstück",
