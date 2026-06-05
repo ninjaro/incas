@@ -27,7 +27,7 @@ from app.routes.helpers.tandem_form import (
     parse_departure_date,
     render_language_tandem_form_page,
 )
-from app.site_content import get_site_page
+from app.site_content import get_site_offers, get_site_page
 
 SUPPORTED_LOCALES = {"en", "de"}
 DEFAULT_LOCALE = "en"
@@ -41,8 +41,20 @@ EVENT_KIND_ORDER = [
     "karaoke",
     "housing",
 ]
-CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin"}
+CALENDAR_MODES = {"default", "mini", "agenda", "classic", "timeline", "cards", "hardcore", "bulletin", "board"}
 TANDEM_FORM_MODES = {"compact", "classic"}
+LANDING_MODES = {"classic", "poster", "timeline", "portal", "showcase", "magazine", "scroll", "studio", "board"}
+LANDING_MODE_OPTIONS = [
+    ("classic", "Classic"),
+    ("poster", "Poster"),
+    ("showcase", "Showcase"),
+    ("magazine", "Magazine"),
+    ("scroll", "Scroll"),
+    ("studio", "Studio"),
+    ("board", "Board"),
+    ("timeline", "Timeline"),
+    ("portal", "Portal"),
+]
 
 
 def get_local_now():
@@ -60,8 +72,8 @@ def get_visible_post_or_404(slug):
     return item
 
 
-@bp.route("/")
-def index():
+def render_landing_page(mode="classic"):
+    landing_mode = mode if mode in LANDING_MODES else "classic"
     items = [
         item for item in get_public_posts_query().order_by(Post.created_at.desc()).all()
         if item.is_publicly_accessible
@@ -93,6 +105,19 @@ def index():
         upcoming_events=upcoming_events,
         about_page=get_site_page("about", g.locale),
     )
+
+
+@bp.route("/")
+def index():
+    return render_landing_page(request.args.get("view", "classic"))
+
+
+@bp.route("/landing-<mode>")
+def landing_mode(mode):
+    if mode not in LANDING_MODES:
+        abort(404)
+    return render_landing_page(mode)
+
 
 @bp.before_app_request
 def detect_locale():
@@ -382,6 +407,16 @@ def cafe_lingua():
 @bp.route("/offers/incas-active")
 def incas_active():
     return render_site_content_page("incas_active")
+
+
+@bp.route("/offers/board-game-nights")
+def board_game_nights():
+    return render_site_content_page("board_game_nights")
+
+
+@bp.route("/offers/dance-workshops")
+def dance_workshops():
+    return render_site_content_page("dance_workshops")
 
 
 @bp.route("/offers/country-evening")

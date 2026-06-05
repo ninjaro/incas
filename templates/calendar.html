@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 {% from "_event_registration_macros.html" import render_event_payment_notice with context %}
+{% from "_upcoming_events_timeline.html" import render_upcoming_events_timeline with context %}
 
 {% block title %}Calendar · INCAS{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+    rel="stylesheet"
+>
+{% endblock %}
 
 {% macro render_bulletin_entry(item, anchor_id=None, status_label="Upcoming", status_badge="text-bg-success") -%}
     {% set meta = event_kind_meta(item.event_kind) %}
@@ -78,6 +88,7 @@
     ("mini", "Mini"),
     ("agenda", "Agenda"),
     ("bulletin", "Bulletin"),
+    ("board", "Board"),
     ("timeline", "Timeline"),
     ("cards", "Cards"),
     ("hardcore", "Table"),
@@ -120,7 +131,7 @@
     </nav>
 {% endif %}
 
-{% if upcoming_items and calendar_mode != "classic" %}
+{% if upcoming_items and calendar_mode != "classic" and calendar_mode != "board" %}
     <div class="calendar-next-strip mb-3" aria-label="Next events">
         {% for item in upcoming_items[:3] %}
             <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-next-item">
@@ -133,7 +144,59 @@
     </div>
 {% endif %}
 
-{% if calendar_mode == "mini" %}
+{% if calendar_mode == "board" %}
+    <section class="calendar-board-shell mb-4">
+        {{ render_upcoming_events_timeline(
+            upcoming_items,
+            kicker=month_label,
+            cta_url=url_for('main.calendar_mode', mode='classic', month=current_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode='classic', month=current_month_value),
+            cta_label="Classic Calendar",
+            empty_cta_url=url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value),
+            empty_cta_label="Next month",
+            empty_message="No upcoming events are scheduled for this month — check the next month or switch back to the classic calendar.",
+            modifier="fig-events-calendar"
+        ) }}
+
+        {% if archived_items %}
+            <div class="calendar-board-archive">
+                <button
+                    class="btn btn-link text-body-secondary text-decoration-none ps-0 d-flex align-items-center gap-1"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#board-past-events"
+                    aria-expanded="false"
+                    aria-controls="board-past-events"
+                >
+                    <i class="bi bi-chevron-right collapsed-icon"></i>
+                    <span class="h6 mb-0">Earlier this month ({{ archived_items|length }})</span>
+                </button>
+                <div class="collapse mt-3" id="board-past-events">
+                    <div class="calendar-classic-list">
+                        {% for item in archived_items %}
+                            <a href="{{ url_for('main.post_detail', slug=item.slug) }}" class="calendar-classic-list-item is-muted">
+                                <div class="calendar-classic-list-date">
+                                    <span>{{ item.starts_at.strftime("%a") }}</span>
+                                    <strong>{{ item.starts_at.strftime("%d") }}</strong>
+                                    <span>{{ item.starts_at.strftime("%b") }}</span>
+                                    <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                                </div>
+                                <div class="calendar-classic-list-body">
+                                    <div class="calendar-classic-list-title">
+                                        {{ render_event_marker(item) }}
+                                        <span>{{ render_event_title_content(item) }}</span>
+                                    </div>
+                                    {% if item.summary %}
+                                        <p class="calendar-classic-list-summary">{{ item.summary }}</p>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+{% elif calendar_mode == "mini" %}
     <div class="calendar-mini-shell mb-4">
         <div class="calendar-mini-weekdays" aria-hidden="true">
             {% for day_name in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}

@@ -41,26 +41,42 @@ SITE_OFFERS = {
             {
                 "title": "International Tuesday",
                 "url": "/offers/international-tuesday",
+                "icon": "bi-cup-hot",
             },
             {
                 "title": "Country Evening",
                 "url": "/offers/country-evening",
+                "icon": "bi-globe-americas",
             },
             {
                 "title": "Café Lingua",
                 "url": "/offers/cafe-lingua",
+                "icon": "bi-chat-dots",
             },
             {
                 "title": "International Breakfast",
                 "url": "/offers/international-breakfast",
+                "icon": "bi-egg-fried",
             },
             {
                 "title": "International Weekend",
                 "url": "/offers/international-weekend",
+                "icon": "bi-signpost-2",
             },
             {
                 "title": "INCAS Active",
                 "url": "/offers/incas-active",
+                "icon": "bi-bicycle",
+            },
+            {
+                "title": "Board Game Nights",
+                "url": "/offers/board-game-nights",
+                "icon": "bi-dice-5",
+            },
+            {
+                "title": "Dance Workshops",
+                "url": "/offers/dance-workshops",
+                "icon": "bi-music-note-beamed",
             },
         ],
         "forms": [
@@ -89,26 +105,42 @@ SITE_OFFERS = {
             {
                 "title": "Internationaler Dienstag",
                 "url": "/offers/international-tuesday",
+                "icon": "bi-cup-hot",
             },
             {
                 "title": "Länderabend",
                 "url": "/offers/country-evening",
+                "icon": "bi-globe-americas",
             },
             {
                 "title": "Café Lingua",
                 "url": "/offers/cafe-lingua",
+                "icon": "bi-chat-dots",
             },
             {
                 "title": "Internationales Frühstück",
                 "url": "/offers/international-breakfast",
+                "icon": "bi-egg-fried",
             },
             {
                 "title": "Internationales Wochenende",
                 "url": "/offers/international-weekend",
+                "icon": "bi-signpost-2",
             },
             {
                 "title": "INCAS Aktiv",
                 "url": "/offers/incas-active",
+                "icon": "bi-bicycle",
+            },
+            {
+                "title": "Brettspielabende",
+                "url": "/offers/board-game-nights",
+                "icon": "bi-dice-5",
+            },
+            {
+                "title": "Tanzworkshops",
+                "url": "/offers/dance-workshops",
+                "icon": "bi-music-note-beamed",
             },
         ],
         "forms": [
@@ -364,6 +396,52 @@ SITE_PAGES = {
     </section>
 </section>
         """.strip(),
+        },
+        "board_game_nights": {
+            "title": "Board Game Nights",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Play together at Humboldt-Haus</h2>
+        <p class="lead mb-0">On selected International Tuesdays, INCAS hosts board game nights for students who want to meet people in a relaxed, low-pressure setting.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">What to expect</h3>
+        <p class="mb-2">You can choose one of the games available at INCAS or bring your own game for the evening.</p>
+        <p class="mb-0">The focus is on easy conversation, playing together and meeting new people. You do not need to arrive with a group.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">When does it happen?</h2>
+        <p class="mb-0">Board Game Nights are not a fixed weekly offer. They are announced as part of the public programme in the <a class="link-primary" href="/events">event calendar</a> and on our social media channels.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "dance_workshops": {
+            "title": "Dance Workshops",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Beginner-friendly dance evenings</h2>
+        <p class="lead mb-0">Usually once a semester, INCAS collaborates with Sol de la Salsa to offer beginner dance workshops for students.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">How the evening works</h3>
+        <p class="mb-2">Prior knowledge is not required. The evening starts with a guided course and continues with time to practice the new steps.</p>
+        <p class="mb-0">The workshops are designed as social events, so you can come along even if you have not danced before.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Current dates</h2>
+        <p class="mb-0">Dance Workshop dates are announced in the <a class="link-primary" href="/events">event calendar</a> when the next collaboration is planned.</p>
+    </section>
+</section>
+""".strip(),
         },
         "international_breakfast": {
             "title": "International Breakfast",
@@ -925,6 +1003,52 @@ SITE_PAGES = {
     </section>
 </section>
         """.strip(),
+        },
+        "board_game_nights": {
+            "title": "Brettspielabende",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Gemeinsam spielen im Humboldt-Haus</h2>
+        <p class="lead mb-0">An ausgewählten Internationalen Dienstagen veranstaltet INCAS Brettspielabende für Studierende, die in entspannter Atmosphäre neue Leute kennenlernen möchten.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">Was dich erwartet</h3>
+        <p class="mb-2">Du kannst ein Spiel von INCAS auswählen oder dein eigenes Spiel für den Abend mitbringen.</p>
+        <p class="mb-0">Im Mittelpunkt stehen gemeinsames Spielen, einfache Gespräche und neue Kontakte. Du musst nicht mit einer eigenen Gruppe kommen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Wann findet es statt?</h2>
+        <p class="mb-0">Brettspielabende sind kein festes wöchentliches Angebot. Termine werden im <a class="link-primary" href="/events">Eventkalender</a> und über unsere Social-Media-Kanäle angekündigt.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "dance_workshops": {
+            "title": "Tanzworkshops",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <div>
+        <h2 class="h3 text-body-emphasis">Einsteigerfreundliche Tanzabende</h2>
+        <p class="lead mb-0">Normalerweise einmal pro Semester arbeitet INCAS mit Sol de la Salsa zusammen und bietet Tanzworkshops für Studierende an.</p>
+    </div>
+
+    <div class="p-4 border-start border-4 border-primary bg-body-tertiary rounded-2">
+        <h3 class="h5 mb-2">So läuft der Abend ab</h3>
+        <p class="mb-2">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem angeleiteten Kurs und geht danach in Zeit zum Üben über.</p>
+        <p class="mb-0">Die Workshops sind als soziale Events gedacht, du kannst also auch ohne Tanzerfahrung einfach mitmachen.</p>
+    </div>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Aktuelle Termine</h2>
+        <p class="mb-0">Tanzworkshop-Termine werden im <a class="link-primary" href="/events">Eventkalender</a> angekündigt, sobald die nächste Kooperation geplant ist.</p>
+    </section>
+</section>
+""".strip(),
         },
         "international_breakfast": {
             "title": "Internationales Frühstück",

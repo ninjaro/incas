@@ -1,0 +1,88 @@
+{% from "_event_title_macros.html" import render_event_title_content with context %}
+{% from "_event_registration_macros.html" import render_event_payment_notice with context %}
+
+{% macro render_fig_event_icon(item) -%}
+    {% if item.event_kind == "breakfast" %}
+        <i class="bi bi-egg-fried"></i>
+    {% elif item.event_kind == "country_evening" %}
+        <i class="bi bi-globe-americas"></i>
+    {% elif item.event_kind == "cafe_lingua" %}
+        <i class="bi bi-chat-dots"></i>
+    {% elif item.event_kind == "board_games" %}
+        <i class="bi bi-dice-5"></i>
+    {% elif item.event_kind == "dance" %}
+        <i class="bi bi-music-note-beamed"></i>
+    {% elif item.event_kind == "trip" %}
+        <i class="bi bi-signpost-2"></i>
+    {% else %}
+        <i class="bi bi-calendar-event"></i>
+    {% endif %}
+{%- endmacro %}
+
+{% macro render_upcoming_events_timeline(
+    items,
+    title="Upcoming Events",
+    kicker="What's on",
+    cta_url=None,
+    cta_label="View Events",
+    empty_message="No upcoming events are scheduled right now — check the calendar for everything that's planned.",
+    empty_cta_url=None,
+    empty_cta_label="Go to the calendar",
+    modifier=""
+) -%}
+    {% set heading_id = "fig-events-title-" ~ range(100000, 999999)|random %}
+    {% set timeline_items = items[:6] %}
+    <section class="fig-events {{ modifier }}" aria-labelledby="{{ heading_id }}">
+        <header class="fig-events-header">
+            <div>
+                <p class="fig-events-kicker">{{ kicker }}</p>
+                <h2 id="{{ heading_id }}">{{ title }}</h2>
+            </div>
+            {% if cta_url %}
+                <a href="{{ cta_url }}" class="btn btn-sm btn-outline-primary fig-events-header-action">
+                    {{ cta_label }} <i class="bi bi-arrow-right"></i>
+                </a>
+            {% endif %}
+        </header>
+
+        {% if timeline_items %}
+            <div class="fig-events-track" style="--fig-event-count: {{ timeline_items|length }}">
+                <div class="fig-events-line" aria-hidden="true"></div>
+                {% for item in timeline_items %}
+                    <a
+                        href="{{ url_for('main.post_detail', slug=item.slug) }}"
+                        class="fig-events-item {% if loop.first %}is-featured{% endif %} {% if loop.index is odd %}is-above{% else %}is-below{% endif %}"
+                        style="--fig-event-index: {{ loop.index0 }}"
+                    >
+                        <span class="fig-events-copy">
+                            {% if loop.first %}
+                                <span class="fig-events-next">Next up</span>
+                            {% endif %}
+                            <time class="fig-events-date" datetime="{{ item.starts_at.isoformat() }}">
+                                {{ item.starts_at.strftime("%a") }} · {{ item.starts_at.strftime("%b") }} {{ item.starts_at.day }}
+                            </time>
+                            <strong class="fig-events-title">{{ render_event_title_content(item) }}</strong>
+                            <span class="fig-events-meta">
+                                <time datetime="{{ item.starts_at.isoformat() }}">{{ item.starts_at.strftime("%H:%M") }}</time>
+                                <span>Details</span>
+                            </span>
+                            {{ render_event_payment_notice(item, "fig-events-payment") }}
+                        </span>
+                        <span class="fig-events-node" aria-hidden="true">
+                            {{ render_fig_event_icon(item) }}
+                        </span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="fig-events-empty">
+                <p>{{ empty_message }}</p>
+                {% if empty_cta_url or cta_url %}
+                    <a href="{{ empty_cta_url or cta_url }}" class="btn btn-primary">
+                        {{ empty_cta_label }} <i class="bi bi-arrow-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+{%- endmacro %}
