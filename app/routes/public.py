@@ -90,8 +90,6 @@ def index():
 
     return render_template(
         "index.html",
-        active_items=active_items,
-        archived_items=archived_items,
         upcoming_events=upcoming_events,
         about_page=get_site_page("about", g.locale),
     )
