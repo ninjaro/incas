@@ -4096,7 +4096,7 @@ body.home-landing .site-footer {
     right: 0;
     bottom: 0;
     height: 70px;
-    background: linear-gradient(180deg, rgba(251, 247, 241, 0) 0%, var(--incas-cream) 100%);
+    background: linear-gradient(180deg, rgba(var(--bs-body-bg-rgb), 0) 0%, var(--bs-body-bg) 100%);
     z-index: 2;
     pointer-events: none;
 }
