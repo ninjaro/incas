@@ -16,10 +16,10 @@
     --bs-primary-border-subtle: #ffb380;
     --bs-body-color: var(--incas-neutral-dark);
     --bs-body-color-rgb: 17, 24, 39;
-    --bs-body-bg: var(--incas-neutral-light);
-    --bs-body-bg-rgb: 248, 249, 250;
-    --bs-secondary-color: #556070;
-    --bs-secondary-bg: #eef2f6;
+    --bs-body-bg: #fbf7f1;
+    --bs-body-bg-rgb: 251, 247, 241;
+    --bs-secondary-color: #6a5f54;
+    --bs-secondary-bg: #f3ede5;
     --bs-tertiary-bg: #fffdfb;
     --bs-tertiary-bg-rgb: 255, 253, 251;
     --bs-link-color-rgb: 143, 57, 0;
@@ -3679,5 +3679,620 @@ button.calendar-classic-daybutton:focus-visible {
     .footer-social {
         width: 2.75rem;
         height: 2.75rem;
+    }
+}
+
+/* ===== Landing hero (homepage) ===== */
+
+/* Navbar overlays the hero transparently, only on the landing page. */
+body.home-landing .site-navbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.28) 60%,
+        rgba(0, 0, 0, 0) 100%
+    ) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-bottom: 0 !important;
+}
+
+/* Truly center the nav links across the bar (logo left, actions right). */
+.site-navbar > .container {
+    position: relative;
+}
+
+@media (min-width: 992px) {
+    .site-navbar .navbar-nav.mx-lg-auto {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0 !important;
+    }
+
+    .site-navbar .site-nav-actions {
+        margin-left: auto;
+    }
+}
+
+body.home-landing main {
+    padding-top: 0 !important;
+}
+
+body.home-landing .site-navbar .nav-link,
+body.home-landing .site-navbar .navbar-toggler {
+    color: #f3e7d8;
+}
+
+body.home-landing .site-navbar .nav-link:hover,
+body.home-landing .site-navbar .nav-link:focus {
+    color: #fff;
+}
+
+body.home-landing .site-navbar .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Glassy EN/DE + theme controls over the dark hero, so the orange "Join Us"
+   stays the only accent on the right. */
+body.home-landing .site-navbar .btn-outline-secondary {
+    color: rgba(255, 255, 255, 0.85) !important;
+    background-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.home-landing .site-navbar .btn-outline-secondary:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+body.home-landing .site-navbar .btn-outline-secondary.active {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Join Us call-to-action in the navbar. */
+.site-nav-join {
+    font-weight: 600;
+    padding-inline: 1.1rem;
+    white-space: nowrap;
+}
+
+/* Full-bleed hero that breaks out of the centered container. */
+.landing-hero {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 1.5rem 3.5rem;
+    color: #fff;
+    background-color: #1d130a;
+    background-image:
+        radial-gradient(circle at 50% 32%, rgba(255, 138, 51, 0.22), transparent 58%),
+        linear-gradient(165deg, #34220f 0%, #1a1108 72%),
+        url("../img/site/hero-map.jpg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    overflow: hidden;
+}
+
+/* Fallback gradient layer keeps the vintage feel when no map image is present. */
+.landing-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 28%, rgba(255, 138, 51, 0.18), transparent 60%),
+        linear-gradient(165deg, #34220f 0%, #160e07 78%);
+    z-index: 0;
+}
+
+.landing-hero-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 46rem;
+    width: 100%;
+}
+
+.landing-hero-title {
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-weight: 800;
+    font-size: clamp(2.75rem, 7vw, 5rem);
+    line-height: 1.05;
+    margin-bottom: 2.5rem;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+.landing-hero-accent {
+    color: var(--bs-primary);
+    font-style: italic;
+    font-weight: 700;
+}
+
+.landing-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 3.5rem;
+}
+
+.landing-hero-btn {
+    font-weight: 600;
+    padding-inline: 1.75rem;
+}
+
+.landing-hero-btn.btn-outline-primary {
+    color: #fff;
+    border-color: var(--bs-primary);
+}
+
+.landing-hero-btn.btn-outline-primary:hover,
+.landing-hero-btn.btn-outline-primary:focus {
+    color: #fff;
+    background-color: var(--bs-primary);
+}
+
+.landing-hero-stats {
+    font-size: clamp(1.4rem, 3.2vw, 2rem);
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.landing-hero-scroll {
+    position: absolute;
+    left: 50%;
+    bottom: -2.25rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.landing-hero-scroll:hover,
+.landing-hero-scroll:focus {
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    body.home-landing main {
+        padding-top: 0 !important;
+    }
+
+    .landing-hero {
+        padding-top: 6.5rem;
+    }
+}
+
+/* ===== Landing page sections (About / Events) ===== */
+.home-section {
+    padding-block: clamp(3rem, 7vw, 5.5rem);
+}
+
+.home-section-kicker {
+    color: var(--bs-primary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.home-section-title {
+    font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+    font-weight: 800;
+    font-size: clamp(1.9rem, 4vw, 2.75rem);
+    margin-bottom: 1.25rem;
+}
+
+.home-about-copy .lead {
+    font-size: 1.15rem;
+}
+
+.home-about-image {
+    width: 100%;
+    height: 100%;
+    max-height: 26rem;
+    object-fit: cover;
+    border-radius: 1.25rem;
+    box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.12);
+}
+
+/* Event teaser cards */
+.event-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 1.1rem;
+    overflow: hidden;
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.event-card:hover,
+.event-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 1rem 2.25rem rgba(0, 0, 0, 0.16);
+    color: inherit;
+}
+
+.event-card-media {
+    position: relative;
+    min-height: 12rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #cdc8c3;
+    background-size: cover;
+    background-position: center;
+    color: #fff;
+}
+
+/* Darken photo backgrounds so the date badge and title stay readable. */
+.event-card-media:not(.event-card-media-empty)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.event-card-media-empty {
+    background-color: #d9d6d2;
+    color: #495057;
+}
+
+.event-card-media-empty::before {
+    content: "Picture";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #6c757d;
+}
+
+.event-card-date,
+.event-card-title {
+    position: relative;
+    z-index: 1;
+}
+
+.event-card-date {
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.05;
+    background: #fff;
+    color: #1d130a;
+    border-radius: 0.6rem;
+    padding: 0.4rem 0.65rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.18);
+}
+
+.event-card-day {
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.event-card-month {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.event-card-title {
+    font-weight: 800;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
+.event-card-media-empty .event-card-title {
+    text-shadow: none;
+    color: #343a40;
+}
+
+.event-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    background-color: var(--bs-primary);
+    color: #fff;
+}
+
+.event-card-info {
+    margin: 0;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.event-card-info-btn {
+    align-self: flex-end;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.4rem 1.1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.event-card:hover .event-card-info-btn,
+.event-card:focus-visible .event-card-info-btn {
+    background-color: #fff;
+    color: var(--bs-primary);
+}
+
+.home-events-empty {
+    padding: 2.5rem;
+    text-align: center;
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 1rem;
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* ===== Cohesive warm palette + smooth motion (landing) ===== */
+/* Kept deliberately subtle — a barely-warm neutral, not an obvious tint. */
+:root {
+    --incas-cream: #fbf7f1;
+    --incas-ink: #2a1c0f;
+    --incas-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Warm, consistent backdrop for the landing sections instead of cool grey,
+   so the sepia hero, the content, and the footer share one tone. */
+body.home-landing {
+    background-color: var(--incas-cream);
+}
+
+body.home-landing main,
+body.home-landing .site-footer {
+    background-color: transparent;
+}
+
+/* Warm dark headings echo the hero rather than stark black. */
+.home-section-title {
+    color: var(--incas-ink);
+}
+
+/* Smooth fade from the dark hero into the cream sections (no hard edge). */
+.landing-hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 70px;
+    background: linear-gradient(180deg, rgba(var(--bs-body-bg-rgb), 0) 0%, var(--bs-body-bg) 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* One shared transition curve for every interactive element. */
+.site-navbar .nav-link,
+.site-navbar .navbar-brand-logo,
+.btn,
+.event-card,
+.event-card-info-btn,
+.footer-social,
+.home-about-image,
+.landing-hero-scroll {
+    transition: color 0.22s var(--incas-ease),
+                background-color 0.22s var(--incas-ease),
+                border-color 0.22s var(--incas-ease),
+                box-shadow 0.22s var(--incas-ease),
+                transform 0.22s var(--incas-ease),
+                filter 0.22s var(--incas-ease);
+}
+
+/* Gentle, consistent lift on primary calls-to-action. */
+.landing-hero-btn:hover,
+.site-nav-join:hover,
+.home-section .btn:hover {
+    transform: translateY(-1px);
+}
+
+.landing-hero-scroll:hover {
+    transform: translateX(-50%) translateY(3px);
+}
+
+/* Softer, warmer event-card body — a gradient instead of flat saturated orange. */
+.event-card-body {
+    background: linear-gradient(155deg, #ff8124 0%, #ec5f08 100%);
+}
+
+.event-card:hover .event-card-info-btn,
+.event-card:focus-visible .event-card-info-btn {
+    color: #ec5f08;
+}
+
+/* Warm-tinted placeholder so empty cards match the palette. */
+.event-card-media-empty {
+    background-color: #efe7dd;
+    color: #8a7a68;
+}
+
+.event-card-media-empty::before {
+    color: #a8957f;
+}
+
+.event-card-media-empty .event-card-title {
+    color: #5c4a36;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .site-navbar .nav-link,
+    .btn,
+    .event-card,
+    .event-card-info-btn,
+    .footer-social,
+    .home-about-image,
+    .landing-hero-scroll {
+        transition: none;
+    }
+
+    .landing-hero-btn:hover,
+    .site-nav-join:hover,
+    .home-section .btn:hover,
+    .landing-hero-scroll:hover {
+        transform: none;
+    }
+}
+
+/* ===== Offers page cards ===== */
+.offer-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.5rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 1rem;
+    background-color: var(--bs-tertiary-bg);
+    transition: transform 0.2s var(--incas-ease),
+                box-shadow 0.2s var(--incas-ease),
+                border-color 0.2s var(--incas-ease);
+}
+
+/* Only linked cards advertise interactivity. */
+.offer-card.is-linked:hover,
+.offer-card.is-linked:focus-within {
+    transform: translateY(-3px);
+    box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.1);
+    border-color: var(--bs-primary-border-subtle);
+}
+
+.offer-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    border-radius: 0.85rem;
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+    font-size: 1.4rem;
+}
+
+.offer-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.offer-card-title a {
+    color: var(--bs-primary-text-emphasis);
+    text-decoration: none;
+}
+
+/* Whole-card click target for linked cards. */
+.offer-card-title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.offer-card-title a:focus-visible {
+    outline: none;
+}
+
+.offer-card.is-linked:focus-within {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.offer-card-text {
+    color: var(--bs-secondary-color);
+    margin-bottom: 0.75rem;
+}
+
+.offer-card-text:last-of-type {
+    margin-bottom: 1rem;
+}
+
+.offer-card-meta {
+    color: var(--bs-body-color);
+    margin-bottom: 1rem;
+}
+
+.offer-card-footer {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.offer-card-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+    color: var(--bs-primary);
+}
+
+.offer-card-more i {
+    transition: transform 0.2s var(--incas-ease);
+}
+
+.offer-card.is-linked:hover .offer-card-more i,
+.offer-card.is-linked:focus-within .offer-card-more i {
+    transform: translateX(3px);
+}
+
+/* Secondary actions stay clickable above the stretched card link. */
+.offer-card-action {
+    position: relative;
+    z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .offer-card,
+    .offer-card-more i {
+        transition: none;
+    }
+
+    .offer-card.is-linked:hover,
+    .offer-card.is-linked:focus-within {
+        transform: none;
     }
 }
