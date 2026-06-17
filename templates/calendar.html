@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 {% from "_event_registration_macros.html" import render_event_payment_notice with context %}
-{% from "_upcoming_events_timeline.html" import render_upcoming_events_timeline with context %}
 
 {% block title %}Calendar · INCAS{% endblock %}
 
@@ -146,16 +145,17 @@
 
 {% if calendar_mode == "board" %}
     <section class="calendar-board-shell mb-4">
-        {{ render_upcoming_events_timeline(
-            upcoming_items,
-            kicker=month_label,
-            cta_url=url_for('main.calendar_mode', mode='classic', month=current_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode='classic', month=current_month_value),
-            cta_label="Classic Calendar",
-            empty_cta_url=url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode=calendar_mode, month=next_month_value),
-            empty_cta_label="Next month",
-            empty_message="No upcoming events are scheduled for this month — check the next month or switch back to the classic calendar.",
-            modifier="fig-events-calendar"
-        ) }}
+        <div data-incas-component="upcoming-events-timeline">
+            <script type="application/json" data-incas-props>{{ board_timeline_payload|tojson }}</script>
+            <noscript>
+                <div class="fig-events-empty">
+                    <p>Enable JavaScript to view the interactive board timeline.</p>
+                    <a href="{{ url_for('main.calendar_mode', mode='classic', month=current_month_value, kind=event_kind_filter) if event_kind_filter else url_for('main.calendar_mode', mode='classic', month=current_month_value) }}" class="btn btn-primary">
+                        Classic Calendar
+                    </a>
+                </div>
+            </noscript>
+        </div>
 
         {% if archived_items %}
             <div class="calendar-board-archive">

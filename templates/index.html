@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% from "_event_title_macros.html" import render_event_marker, render_event_title_content with context %}
 {% from "_event_registration_macros.html" import render_event_payment_notice with context %}
-{% from "_upcoming_events_timeline.html" import render_upcoming_events_timeline with context %}
 
 {% block title %}INCAS{% endblock %}
 
@@ -337,13 +336,15 @@
     </section>
 
     <div id="landing-board-events">
-        {{ render_upcoming_events_timeline(
-            upcoming_events,
-            cta_url=url_for('main.calendar_mode', mode='board'),
-            cta_label="View Events",
-            empty_cta_url=url_for('main.calendar_mode', mode='board'),
-            modifier="fig-events-landing"
-        ) }}
+        <div data-incas-component="upcoming-events-timeline">
+            <script type="application/json" data-incas-props>{{ upcoming_events_timeline|tojson }}</script>
+            <noscript>
+                <div class="fig-events-empty">
+                    <p>Enable JavaScript to view the interactive upcoming events timeline.</p>
+                    <a href="{{ url_for('main.calendar_mode', mode='board') }}" class="btn btn-primary">View Events</a>
+                </div>
+            </noscript>
+        </div>
     </div>
 
     <section class="landing-board-about">
