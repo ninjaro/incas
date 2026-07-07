@@ -61,6 +61,58 @@ def get_local_now():
     return get_configured_local_now()
 
 
+def build_upcoming_events_timeline_payload(
+    items,
+    *,
+    title="Upcoming Events",
+    kicker="What's on",
+    cta_url=None,
+    cta_label="View Events",
+    empty_message="No upcoming events are scheduled right now — check the calendar for everything that's planned.",
+    empty_cta_url=None,
+    empty_cta_label="Go to the calendar",
+    modifier="",
+):
+    return {
+        "title": title,
+        "kicker": kicker,
+        "ctaUrl": cta_url,
+        "ctaLabel": cta_label,
+        "emptyMessage": empty_message,
+        "emptyCtaUrl": empty_cta_url,
+        "emptyCtaLabel": empty_cta_label,
+        "modifier": modifier,
+        "items": [build_timeline_event_payload(item) for item in items],
+    }
+
+
+def build_timeline_event_payload(item):
+    payment = None
+    if item.has_registration_queue and item.registration_price_display:
+        payment = {
+            "capacity": item.registration_limit or 0,
+            "isDeposit": bool(item.registration_is_deposit),
+            "kindLabel": item.registration_payment_kind_label,
+            "priceDisplay": item.registration_price_display,
+        }
+
+    title_parts = item.display_title_parts
+    return {
+        "dateLabel": f"{item.starts_at.strftime('%a')} · {item.starts_at.strftime('%b')} {item.starts_at.day}",
+        "eventKind": item.event_kind,
+        "isPinned": bool(item.is_pinned),
+        "payment": payment,
+        "startsAt": item.starts_at.isoformat(),
+        "timeLabel": item.starts_at.strftime("%H:%M"),
+        "title": {
+            "full": title_parts.get("full", item.display_title),
+            "prefix": title_parts.get("prefix", ""),
+            "focus": title_parts.get("focus", ""),
+        },
+        "url": url_for("main.post_detail", slug=item.slug),
+    }
+
+
 def get_public_posts_query():
     return Post.query.filter(Post.is_active.is_(True))
 
@@ -542,6 +594,34 @@ def render_calendar_page(mode="classic"):
         next_month = 1
         next_year += 1
 
+    current_month_value = f"{year:04d}-{month:02d}"
+    prev_month_value = f"{prev_year:04d}-{prev_month:02d}"
+    next_month_value = f"{next_year:04d}-{next_month:02d}"
+    today_month_value = f"{today.year:04d}-{today.month:02d}"
+    classic_calendar_url = (
+        url_for("main.calendar_mode", mode="classic", month=current_month_value, kind=event_kind_filter)
+        if event_kind_filter
+        else url_for("main.calendar_mode", mode="classic", month=current_month_value)
+    )
+    next_board_month_url = (
+        url_for("main.calendar_mode", mode=calendar_mode, month=next_month_value, kind=event_kind_filter)
+        if event_kind_filter
+        else url_for("main.calendar_mode", mode=calendar_mode, month=next_month_value)
+    )
+    board_timeline_payload = build_upcoming_events_timeline_payload(
+        upcoming_items,
+        kicker=datetime(year, month, 1).strftime("%B %Y"),
+        cta_url=classic_calendar_url,
+        cta_label="Classic Calendar",
+        empty_cta_url=next_board_month_url,
+        empty_cta_label="Next month",
+        empty_message=(
+            "No upcoming events are scheduled for this month — check the next month "
+            "or switch back to the classic calendar."
+        ),
+        modifier="fig-events-calendar",
+    )
+
     return render_template(
         "calendar.html",
         calendar_mode=calendar_mode,
@@ -550,10 +630,10 @@ def render_calendar_page(mode="classic"):
         current_year=year,
         current_month=month,
         month_label=datetime(year, month, 1).strftime("%B %Y"),
-        current_month_value=f"{year:04d}-{month:02d}",
-        prev_month_value=f"{prev_year:04d}-{prev_month:02d}",
-        next_month_value=f"{next_year:04d}-{next_month:02d}",
-        today_month_value=f"{today.year:04d}-{today.month:02d}",
+        current_month_value=current_month_value,
+        prev_month_value=prev_month_value,
+        next_month_value=next_month_value,
+        today_month_value=today_month_value,
         event_kind_filter=event_kind_filter,
         event_kind_options=event_kind_options,
         event_kind_total_count=len(unfiltered_month_items),
@@ -563,6 +643,7 @@ def render_calendar_page(mode="classic"):
         month_items=month_items,
         upcoming_items=upcoming_items,
         archived_items=archived_items,
+        board_timeline_payload=board_timeline_payload,
         now_local=now_local,
         today=today,
     )

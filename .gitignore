@@ -8,6 +8,8 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+node_modules/
+.claude/
 
 #.env
 #.env.*
@@ -19,3 +21,7 @@ instance/
 .vscode/
 .idea/
 .DS_Store
+
+# Frontend build output
+static/app/
+dist-demo/

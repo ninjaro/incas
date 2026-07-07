@@ -199,6 +199,7 @@ class Post(db.Model):
     image_url = db.Column(db.String(500), nullable=False, default="")
     instagram_media_id = db.Column(db.String(64), nullable=False, default="", index=True)
     instagram_permalink = db.Column(db.String(500), nullable=False, default="")
+    status = db.Column(db.String(32), nullable=False, default="published", index=True)
 
     @property
     def is_event(self):
@@ -221,9 +222,18 @@ class Post(db.Model):
 
     @property
     def is_published(self):
+        if self.status in ("draft", "archived"):
+            return False
         if self.publish_at is None:
             return True
         return get_configured_local_now() >= self.publish_at
+
+    @property
+    def publication_status(self):
+        current = self.status or "published"
+        if current == "scheduled" and self.is_published:
+            return "published"
+        return current
 
     @property
     def is_publicly_accessible(self):
@@ -231,7 +241,9 @@ class Post(db.Model):
 
     @property
     def publication_state(self):
-        if not self.is_active:
+        if self.status == "draft":
+            return "draft"
+        if not self.is_active or self.status == "archived":
             return "inactive"
         if not self.is_published:
             return "scheduled"
@@ -530,3 +542,192 @@ class AccessKey(db.Model):
     @property
     def scopes_list(self):
         return json.loads(self.scopes or "[]")
+
+
+POST_STATUS_DRAFT = "draft"
+POST_STATUS_SCHEDULED = "scheduled"
+POST_STATUS_PUBLISHED = "published"
+POST_STATUS_ARCHIVED = "archived"
+
+POST_STATUSES = {
+    POST_STATUS_DRAFT,
+    POST_STATUS_SCHEDULED,
+    POST_STATUS_PUBLISHED,
+    POST_STATUS_ARCHIVED,
+}
+
+
+class PostTemplate(db.Model):
+    __tablename__ = "post_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    title_pattern = db.Column(db.String(160), nullable=False, default="")
+    summary = db.Column(db.String(256), nullable=False, default="")
+    body = db.Column(db.Text, nullable=False, default="")
+    event_kind = db.Column(db.String(64), nullable=True)
+    registration_limit_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    registration_limit = db.Column(db.Integer, nullable=True)
+    registration_price_cents = db.Column(db.Integer, nullable=True)
+    registration_is_deposit = db.Column(db.Boolean, nullable=False, default=False)
+    image_url = db.Column(db.String(500), nullable=False, default="")
+    social_settings = db.Column(db.Text, nullable=False, default="{}")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def social_settings_dict(self):
+        try:
+            result = json.loads(self.social_settings or "{}")
+            return result if isinstance(result, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+
+class PageThemeSelection(db.Model):
+    __tablename__ = "page_theme_selections"
+
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    theme_id = db.Column(db.String(64), nullable=False)
+    last_forced_at = db.Column(db.DateTime, nullable=True)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PageThemeVote(db.Model):
+    __tablename__ = "page_theme_votes"
+    __table_args__ = (
+        db.UniqueConstraint("page_id", "voter_id", name="uq_page_theme_vote_voter"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.String(64), nullable=False, index=True)
+    theme_id = db.Column(db.String(64), nullable=False)
+    voter_id = db.Column(db.String(64), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PageThemeAudit(db.Model):
+    __tablename__ = "page_theme_audits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.String(64), nullable=False, index=True)
+    previous_theme = db.Column(db.String(64), nullable=False, default="")
+    new_theme = db.Column(db.String(64), nullable=False)
+    action = db.Column(db.String(32), nullable=False, default="force", index=True)
+    actor = db.Column(db.String(64), nullable=False, default="")
+    note = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+KARAOKE_STATUS_PENDING = "pending"
+KARAOKE_STATUS_APPROVED = "approved"
+KARAOKE_STATUS_PERFORMING = "performing"
+KARAOKE_STATUS_COMPLETED = "completed"
+KARAOKE_STATUS_REJECTED = "rejected"
+KARAOKE_STATUS_CANCELLED = "cancelled"
+
+KARAOKE_STATUSES = {
+    KARAOKE_STATUS_PENDING,
+    KARAOKE_STATUS_APPROVED,
+    KARAOKE_STATUS_PERFORMING,
+    KARAOKE_STATUS_COMPLETED,
+    KARAOKE_STATUS_REJECTED,
+    KARAOKE_STATUS_CANCELLED,
+}
+
+KARAOKE_QUEUE_STATUSES = {
+    KARAOKE_STATUS_APPROVED,
+    KARAOKE_STATUS_PERFORMING,
+}
+
+
+class KaraokeSongRequest(db.Model):
+    __tablename__ = "karaoke_song_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(24), nullable=False, unique=True, index=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=True, index=True)
+    display_name = db.Column(db.String(120), nullable=False)
+    song_title = db.Column(db.String(200), nullable=False)
+    artist = db.Column(db.String(200), nullable=False, default="")
+    note = db.Column(db.Text, nullable=False, default="")
+    contact = db.Column(db.String(255), nullable=False, default="")
+    status = db.Column(db.String(32), nullable=False, default=KARAOKE_STATUS_PENDING, index=True)
+    position = db.Column(db.Integer, nullable=True, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KaraokeQueueAudit(db.Model):
+    __tablename__ = "karaoke_queue_audits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.Integer, db.ForeignKey("karaoke_song_requests.id"), nullable=False, index=True)
+    action = db.Column(db.String(32), nullable=False)
+    detail = db.Column(db.Text, nullable=False, default="")
+    actor = db.Column(db.String(64), nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+SOCIAL_STATUS_SCHEDULED = "scheduled"
+SOCIAL_STATUS_PUBLISHED = "published"
+SOCIAL_STATUS_FAILED = "failed"
+
+
+class SocialPublication(db.Model):
+    __tablename__ = "social_publications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
+    provider = db.Column(db.String(32), nullable=False, index=True)
+    status = db.Column(db.String(32), nullable=False, default=SOCIAL_STATUS_SCHEDULED, index=True)
+    provider_post_id = db.Column(db.String(64), nullable=False, default="")
+    permalink = db.Column(db.String(500), nullable=False, default="")
+    media_url = db.Column(db.String(500), nullable=False, default="")
+    error_code = db.Column(db.String(64), nullable=False, default="")
+    error_message = db.Column(db.Text, nullable=False, default="")
+    attempt_count = db.Column(db.Integer, nullable=False, default=0)
+    is_simulated = db.Column(db.Boolean, nullable=False, default=False)
+    scheduled_for = db.Column(db.DateTime, nullable=True, index=True)
+    last_attempt_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+PAYMENT_STATUS_NOT_REQUIRED = "not_required"
+PAYMENT_STATUS_PENDING = "pending"
+PAYMENT_STATUS_PAID = "paid"
+PAYMENT_STATUS_FAILED = "failed"
+PAYMENT_STATUS_CANCELLED = "cancelled"
+PAYMENT_STATUS_REFUND_PENDING = "refund_pending"
+PAYMENT_STATUS_REFUNDED = "refunded"
+
+PAYMENT_STATUSES = {
+    PAYMENT_STATUS_NOT_REQUIRED,
+    PAYMENT_STATUS_PENDING,
+    PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_CANCELLED,
+    PAYMENT_STATUS_REFUND_PENDING,
+    PAYMENT_STATUS_REFUNDED,
+}
+
+
+class PaymentTransaction(db.Model):
+    __tablename__ = "payment_transactions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(32), nullable=False, unique=True, index=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=True, index=True)
+    registration_id = db.Column(db.Integer, db.ForeignKey("event_registrations.id"), nullable=True, index=True)
+    amount_cents = db.Column(db.Integer, nullable=False)
+    currency = db.Column(db.String(8), nullable=False, default="EUR")
+    status = db.Column(db.String(32), nullable=False, default=PAYMENT_STATUS_PENDING, index=True)
+    provider = db.Column(db.String(32), nullable=False, default="mock")
+    provider_session_id = db.Column(db.String(128), nullable=False, default="")
+    is_simulated = db.Column(db.Boolean, nullable=False, default=True)
+    error_message = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

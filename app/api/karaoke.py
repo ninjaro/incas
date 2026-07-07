@@ -1,0 +1,289 @@
+import secrets
+import time
+from collections import defaultdict, deque
+
+from flask import jsonify, request
+
+from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.models import (
+    KARAOKE_QUEUE_STATUSES,
+    KARAOKE_STATUS_APPROVED,
+    KARAOKE_STATUS_CANCELLED,
+    KARAOKE_STATUS_COMPLETED,
+    KARAOKE_STATUS_PENDING,
+    KARAOKE_STATUS_PERFORMING,
+    KARAOKE_STATUS_REJECTED,
+    KARAOKE_STATUSES,
+    KaraokeQueueAudit,
+    KaraokeSongRequest,
+    Post,
+    db,
+)
+from app.routes.helpers.access import get_session_audit_id
+
+# Allowed transitions; "restore" is only safe from cancelled/rejected back to
+# pending so it re-enters moderation instead of jumping into the live queue.
+TRANSITIONS = {
+    "approve": ({KARAOKE_STATUS_PENDING}, KARAOKE_STATUS_APPROVED),
+    "reject": ({KARAOKE_STATUS_PENDING}, KARAOKE_STATUS_REJECTED),
+    "cancel": (
+        {KARAOKE_STATUS_PENDING, KARAOKE_STATUS_APPROVED, KARAOKE_STATUS_PERFORMING},
+        KARAOKE_STATUS_CANCELLED,
+    ),
+    "restore": ({KARAOKE_STATUS_CANCELLED, KARAOKE_STATUS_REJECTED}, KARAOKE_STATUS_PENDING),
+    "performing": ({KARAOKE_STATUS_APPROVED}, KARAOKE_STATUS_PERFORMING),
+    "complete": ({KARAOKE_STATUS_PERFORMING, KARAOKE_STATUS_APPROVED}, KARAOKE_STATUS_COMPLETED),
+}
+
+# Minimal in-process rate limit for the public submission endpoint.
+SUBMIT_LIMIT = 10
+SUBMIT_WINDOW_SECONDS = 3600
+_submissions_by_ip = defaultdict(deque)
+
+
+def submission_allowed(ip):
+    now = time.monotonic()
+    window = _submissions_by_ip[ip]
+    while window and now - window[0] > SUBMIT_WINDOW_SECONDS:
+        window.popleft()
+    if len(window) >= SUBMIT_LIMIT:
+        return False
+    window.append(now)
+    return True
+
+
+def new_public_id():
+    return f"KRQ-{secrets.token_hex(4).upper()}"
+
+
+def queue_position(item):
+    if item.status not in KARAOKE_QUEUE_STATUSES or item.position is None:
+        return None
+    ahead = (
+        KaraokeSongRequest.query
+        .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .filter(KaraokeSongRequest.post_id == item.post_id)
+        .filter(KaraokeSongRequest.position < item.position)
+        .count()
+    )
+    return ahead + 1
+
+
+def serialize_public(item):
+    return {
+        "publicId": item.public_id,
+        "displayName": item.display_name,
+        "songTitle": item.song_title,
+        "artist": item.artist,
+        "status": item.status,
+        "queuePosition": queue_position(item),
+    }
+
+
+def serialize_admin(item):
+    payload = serialize_public(item)
+    payload.update(
+        {
+            "id": item.id,
+            "postId": item.post_id,
+            "note": item.note,
+            "contact": item.contact,
+            "position": item.position,
+            "createdAt": item.created_at.isoformat() if item.created_at else None,
+        }
+    )
+    return payload
+
+
+def audit(item, action, detail=""):
+    db.session.add(
+        KaraokeQueueAudit(
+            request_id=item.id,
+            action=action,
+            detail=detail,
+            actor=get_session_audit_id(),
+        )
+    )
+
+
+def next_queue_position(post_id):
+    current_max = (
+        db.session.query(db.func.max(KaraokeSongRequest.position))
+        .filter(KaraokeSongRequest.post_id == post_id)
+        .scalar()
+    )
+    return (current_max or 0) + 1
+
+
+def resolve_event(slug_or_none):
+    if not slug_or_none:
+        return None, None
+    event = Post.query.filter_by(slug=slug_or_none).first()
+    if event is None or not event.is_publicly_accessible:
+        return None, api_error("event_unknown", "Unknown karaoke event.", status=422)
+    return event, None
+
+
+@api_bp.post("/public/karaoke/requests")
+def api_karaoke_submit():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
+    if not submission_allowed(ip):
+        return api_error("rate_limited", "Too many requests, try again later.", status=429)
+
+    body = get_json_body()
+    errors = {}
+    display_name = (body.get("displayName") or "").strip()
+    song_title = (body.get("songTitle") or "").strip()
+    if not display_name:
+        errors["displayName"] = "Enter a name or nickname."
+    if not song_title:
+        errors["songTitle"] = "Enter a song title."
+    if errors:
+        return validation_error(errors)
+
+    event, error = resolve_event((body.get("eventSlug") or "").strip())
+    if error:
+        return error
+
+    item = KaraokeSongRequest(
+        public_id=new_public_id(),
+        post_id=event.id if event else None,
+        display_name=display_name[:120],
+        song_title=song_title[:200],
+        artist=(body.get("artist") or "").strip()[:200],
+        note=(body.get("note") or "").strip(),
+        contact=(body.get("contact") or "").strip()[:255],
+    )
+    db.session.add(item)
+    db.session.flush()
+    audit(item, "submitted")
+    db.session.commit()
+
+    return jsonify({"publicId": item.public_id, "status": item.status}), 201
+
+
+@api_bp.get("/public/karaoke/requests/<public_id>")
+def api_karaoke_track(public_id):
+    item = KaraokeSongRequest.query.filter_by(public_id=public_id).first()
+    if item is None:
+        return api_error("not_found", "Request not found.", status=404)
+    return jsonify(serialize_public(item))
+
+
+@api_bp.get("/public/karaoke/queue")
+def api_karaoke_public_queue():
+    event, error = resolve_event(request.args.get("event", "").strip())
+    if error:
+        return error
+
+    query = (
+        KaraokeSongRequest.query
+        .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .filter(KaraokeSongRequest.post_id == (event.id if event else None))
+        .order_by(KaraokeSongRequest.position.asc())
+    )
+    return jsonify({"items": [serialize_public(item) for item in query.all()]})
+
+
+@api_bp.get("/admin/karaoke")
+@require_capability("karaoke_queue")
+def api_admin_karaoke_list():
+    query = KaraokeSongRequest.query
+    status = request.args.get("status", "").strip()
+    if status:
+        if status not in KARAOKE_STATUSES:
+            return api_error("status_unknown", "Unknown status.", status=422)
+        query = query.filter(KaraokeSongRequest.status == status)
+
+    items = query.order_by(
+        KaraokeSongRequest.position.asc().nullslast(),
+        KaraokeSongRequest.created_at.asc(),
+    ).all()
+    return jsonify({"items": [serialize_admin(item) for item in items]})
+
+
+@api_bp.post("/admin/karaoke/<int:request_id>/<action>")
+@require_capability("karaoke_queue")
+def api_admin_karaoke_action(request_id, action):
+    if action not in TRANSITIONS:
+        return api_error("action_unknown", "Unknown queue action.", status=404)
+
+    item = db.session.get(KaraokeSongRequest, request_id)
+    if item is None:
+        return api_error("not_found", "Request not found.", status=404)
+
+    allowed_from, target = TRANSITIONS[action]
+    if item.status not in allowed_from:
+        return api_error(
+            "invalid_transition",
+            f"Cannot {action} a request in status '{item.status}'.",
+            status=409,
+        )
+
+    previous = item.status
+    item.status = target
+    if target == KARAOKE_STATUS_APPROVED:
+        item.position = next_queue_position(item.post_id)
+    if target in (KARAOKE_STATUS_COMPLETED, KARAOKE_STATUS_CANCELLED, KARAOKE_STATUS_REJECTED, KARAOKE_STATUS_PENDING):
+        item.position = None
+
+    audit(item, action, detail=f"{previous} -> {target}")
+    db.session.commit()
+    return jsonify(serialize_admin(item))
+
+
+@api_bp.post("/admin/karaoke/reorder")
+@require_capability("karaoke_queue")
+def api_admin_karaoke_reorder():
+    body = get_json_body()
+    order = body.get("order")
+    if not isinstance(order, list) or not all(isinstance(entry, int) for entry in order):
+        return validation_error({"order": "Provide the full ordered list of request ids."})
+
+    items = (
+        KaraokeSongRequest.query
+        .filter(KaraokeSongRequest.id.in_(order))
+        .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .all()
+    )
+    items_by_id = {item.id: item for item in items}
+    if set(items_by_id) != set(order):
+        # An id vanished or changed status since the admin loaded the queue;
+        # reject so concurrent moderation cannot corrupt positions.
+        return api_error(
+            "queue_changed",
+            "The queue changed while reordering. Reload and try again.",
+            status=409,
+        )
+
+    for position, request_id in enumerate(order, start=1):
+        item = items_by_id[request_id]
+        if item.position != position:
+            item.position = position
+            audit(item, "reorder", detail=f"position {position}")
+    db.session.commit()
+
+    ordered = sorted(items_by_id.values(), key=lambda entry: entry.position or 0)
+    return jsonify({"items": [serialize_admin(item) for item in ordered]})
+
+
+@api_bp.get("/admin/karaoke/audit")
+@require_capability("karaoke_queue")
+def api_admin_karaoke_audit():
+    entries = (
+        KaraokeQueueAudit.query.order_by(KaraokeQueueAudit.created_at.desc()).limit(200).all()
+    )
+    return jsonify(
+        {
+            "entries": [
+                {
+                    "requestId": entry.request_id,
+                    "action": entry.action,
+                    "detail": entry.detail,
+                    "actor": entry.actor,
+                    "createdAt": entry.created_at.isoformat(),
+                }
+                for entry in entries
+            ]
+        }
+    )

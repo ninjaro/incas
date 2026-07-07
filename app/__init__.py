@@ -129,6 +129,10 @@ def create_app():
                     "ALTER TABLE posts "
                     "ADD COLUMN registration_is_deposit BOOLEAN NOT NULL DEFAULT 0"
                 ),
+                (
+                    "ALTER TABLE posts "
+                    "ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'published'"
+                ),
             )
 
             for statement in schema_updates:
@@ -142,4 +146,33 @@ def create_app():
     from app.routes import bp
     app.register_blueprint(bp)
 
+    from app.api import api_bp
+    app.register_blueprint(api_bp)
+
+    register_spa_routes(app)
+
     return app
+
+
+def register_spa_routes(app):
+    """Serve the compiled React application from static/app when it exists.
+
+    The SPA uses hash-based routing, so a single entry HTML is enough and no
+    server-side rewrites are needed.
+    """
+    import os
+
+    from flask import send_from_directory
+
+    spa_dir = os.path.join(app.static_folder, "app")
+
+    @app.route("/app/")
+    @app.route("/app")
+    def spa_index():
+        index_path = os.path.join(spa_dir, "index.html")
+        if not os.path.exists(index_path):
+            return (
+                "The frontend bundle has not been built yet. Run: npm run build",
+                503,
+            )
+        return send_from_directory(spa_dir, "index.html")

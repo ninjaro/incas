@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 from datetime import datetime
+from uuid import uuid4
 
 from flask import current_app, flash, redirect, session, url_for
 
@@ -19,9 +20,36 @@ ACCESS_LABELS = {
     "posts": "Posts and Events",
     "event_registrations": "Event Registrations",
     "language_tandem": "Language Tandem",
+    "language_tandem_blind": "Tandem Matching (Blind)",
+    "language_tandem_private": "Tandem Contact Details",
     "language_tandem_corrections": "Tandem Corrections",
     "forms": "Forms",
     "access_keys": "Access Keys",
+    "theme_review": "Theme Review and Voting",
+    "theme_force": "Theme Force",
+    "karaoke_queue": "Karaoke Queue",
+}
+
+# Each scope unlocks a set of capabilities. Stronger scopes are strict
+# supersets of the weaker ones so the admin UI can stay a single panel.
+# Legacy keys ("language_tandem", "language_tandem_corrections") keep working
+# by expanding to the closest new capabilities.
+SCOPE_CAPABILITIES = {
+    "posts": {"posts"},
+    "event_registrations": {"event_registrations"},
+    "language_tandem": {"language_tandem_blind", "language_tandem_private"},
+    "language_tandem_blind": {"language_tandem_blind"},
+    "language_tandem_private": {"language_tandem_blind", "language_tandem_private"},
+    "language_tandem_corrections": {
+        "language_tandem_blind",
+        "language_tandem_private",
+        "language_tandem_corrections",
+    },
+    "forms": {"forms"},
+    "access_keys": {"access_keys"},
+    "theme_review": {"theme_review"},
+    "theme_force": {"theme_review", "theme_force"},
+    "karaoke_queue": {"karaoke_queue"},
 }
 
 def get_access_scopes():
@@ -79,6 +107,29 @@ def has_any_access_key():
 
 def has_scope(scope):
     return scope in get_access_scopes()
+
+
+def get_capabilities():
+    capabilities = set()
+    for scope in get_access_scopes():
+        capabilities.update(SCOPE_CAPABILITIES.get(scope, {scope}))
+    return capabilities
+
+
+def has_capability(capability):
+    return capability in get_capabilities()
+
+
+def get_session_audit_id():
+    """Opaque per-session identifier used for votes and audit trails.
+
+    Never derived from access keys, so audit rows cannot leak key material.
+    """
+    audit_id = session.get("session_audit_id")
+    if not audit_id:
+        audit_id = uuid4().hex[:16]
+        session["session_audit_id"] = audit_id
+    return audit_id
 
 
 def grant_scope(scope):
