@@ -18,6 +18,13 @@ type FormState = {
   occupation: string;
 };
 
+// The legacy form lives on the Flask origin. In `npm run dev` the SPA is
+// served by Vite (which knows nothing about /language-tandem), so point at
+// the Flask dev server directly; in production builds Flask serves both.
+const LEGACY_TANDEM_FORM_URL = import.meta.env.DEV
+  ? "http://127.0.0.1:5000/language-tandem"
+  : "/language-tandem";
+
 const STEP_LABELS = ["Your languages", "About you", "Review"];
 
 function useTandemForm() {
@@ -34,9 +41,9 @@ function useTandemForm() {
       setDone(true);
       return;
     }
-    // Hand over to the legacy Flask form with sensible prefills until the
-    // React form reaches full parity.
-    window.location.href = "/language-tandem";
+    // Hand over to the legacy Flask form until the React form reaches
+    // full parity.
+    window.location.href = LEGACY_TANDEM_FORM_URL;
   };
 
   return { form, setForm, submit, done, isDemo: data.isDemo };

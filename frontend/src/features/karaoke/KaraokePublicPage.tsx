@@ -115,8 +115,20 @@ export function KaraokePublicPage() {
           <h3>Request a song</h3>
           {submitted ? (
             <p className="notice notice-ok">
-              Request received! Your tracking code is <strong>{submitted}</strong>. You can follow
-              its status on this page.
+              Request received! Your tracking code is <strong>{submitted}</strong>. Follow its
+              status in{" "}
+              <button
+                type="button"
+                className="link-button"
+                onClick={() =>
+                  document
+                    .getElementById("karaoke-tracked")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+              >
+                Your requests
+              </button>{" "}
+              below.
             </p>
           ) : null}
           <Field label="Your name or nickname" error={fieldErrors.displayName}>
@@ -180,7 +192,7 @@ export function KaraokePublicPage() {
               ))
             )}
           </div>
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16 }} id="karaoke-tracked">
             <TrackedRequests refreshKey={refreshKey} />
           </div>
         </div>
