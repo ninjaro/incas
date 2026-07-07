@@ -3,19 +3,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "frontend:build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "dev": "vite",
+    "build": "vite build && vite build --config vite.widget.config.ts",
+    "build:app": "vite build",
+    "build:demo": "vite build --mode demo",
+    "build:widget": "vite build --config vite.widget.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^29.1.1",
     "typescript": "^5.8.0",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.10"
   }
 }
