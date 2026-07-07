@@ -1,12 +1,13 @@
 SITE_UI = {
     "en": {
         "nav.home": "Home",
-        "nav.calendar": "Calendar",
-        "nav.about": "About",
+        "nav.calendar": "Events",
+        "nav.about": "About Us",
         "nav.about_us": "About us",
         "nav.working_groups": "Working Groups",
         "nav.team_meetings": "Team Meetings",
-        "nav.contacts": "Contacts",
+        "nav.contacts": "Contact",
+        "nav.join": "Join Us",
         "nav.forms": "Offers",
         "nav.forms_all": "All forms",
         "nav.language_tandem": "Language Tandem",
@@ -16,12 +17,13 @@ SITE_UI = {
     },
     "de": {
         "nav.home": "Start",
-        "nav.calendar": "Kalender",
+        "nav.calendar": "Veranstaltungen",
         "nav.about": "Über uns",
         "nav.about_us": "Über uns",
         "nav.working_groups": "Arbeitsgruppen",
         "nav.team_meetings": "Teamtreffen",
         "nav.contacts": "Kontakt",
+        "nav.join": "Mitmachen",
         "nav.forms": "Angebote",
         "nav.forms_all": "Alle Formulare",
         "nav.language_tandem": "Sprachtandem",
@@ -370,26 +372,20 @@ SITE_PAGES = {
         </article>
 
         <article class="col-12 col-sm-6 col-xl-4">
-            <div class="offer-card is-linked h-100">
+            <div class="offer-card h-100">
                 <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-dice-5"></i></span>
-                <h3 class="offer-card-title"><a href="/offers/board-game-nights">Board Game Nights</a></h3>
+                <h3 class="offer-card-title">Board Game Nights</h3>
                 <p class="offer-card-text">On selected International Tuesdays, we host board game nights. Choose a game from INCAS for the evening or bring your own.</p>
                 <p class="offer-card-text">It is a simple way to meet new people and enjoy playing together.</p>
-                <div class="offer-card-footer">
-                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
-                </div>
             </div>
         </article>
 
         <article class="col-12 col-sm-6 col-xl-4">
-            <div class="offer-card is-linked h-100">
+            <div class="offer-card h-100">
                 <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-music-note-beamed"></i></span>
-                <h3 class="offer-card-title"><a href="/offers/dance-workshops">Dance Workshops</a></h3>
+                <h3 class="offer-card-title">Dance Workshops</h3>
                 <p class="offer-card-text">Usually once a semester, we collaborate with Sol de la Salsa for beginner dance classes.</p>
                 <p class="offer-card-text">Prior knowledge is not required. The evening starts with a course and ends with time to practice your new steps.</p>
-                <div class="offer-card-footer">
-                    <span class="offer-card-more" aria-hidden="true">Learn more <i class="bi bi-arrow-right"></i></span>
-                </div>
             </div>
         </article>
     </div>
@@ -983,26 +979,20 @@ SITE_PAGES = {
         </article>
 
         <article class="col-12 col-sm-6 col-xl-4">
-            <div class="offer-card is-linked h-100">
+            <div class="offer-card h-100">
                 <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-dice-5"></i></span>
-                <h3 class="offer-card-title"><a href="/offers/board-game-nights">Brettspielabende</a></h3>
+                <h3 class="offer-card-title">Brettspielabende</h3>
                 <p class="offer-card-text">An ausgewählten Internationalen Dienstagen veranstalten wir Brettspielabende. Du kannst ein Spiel von INCAS wählen oder dein eigenes mitbringen.</p>
                 <p class="offer-card-text">So lernst du leicht neue Leute kennen und kannst gemeinsam spielen.</p>
-                <div class="offer-card-footer">
-                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
-                </div>
             </div>
         </article>
 
         <article class="col-12 col-sm-6 col-xl-4">
-            <div class="offer-card is-linked h-100">
+            <div class="offer-card h-100">
                 <span class="offer-card-icon" aria-hidden="true"><i class="bi bi-music-note-beamed"></i></span>
-                <h3 class="offer-card-title"><a href="/offers/dance-workshops">Tanzworkshops</a></h3>
+                <h3 class="offer-card-title">Tanzworkshops</h3>
                 <p class="offer-card-text">Normalerweise einmal pro Semester arbeiten wir mit Sol de la Salsa zusammen und bieten Tanzkurse für Anfängerinnen und Anfänger an.</p>
                 <p class="offer-card-text">Vorkenntnisse sind nicht nötig. Der Abend beginnt mit einem Kurs und endet mit Zeit zum Üben.</p>
-                <div class="offer-card-footer">
-                    <span class="offer-card-more" aria-hidden="true">Mehr erfahren <i class="bi bi-arrow-right"></i></span>
-                </div>
             </div>
         </article>
     </div>

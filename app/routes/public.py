@@ -150,27 +150,12 @@ def render_landing_page(mode="classic"):
         reverse=True,
     )
 
-    upcoming_events = sorted(live_events, key=lambda item: item.starts_at)
-    featured_event = upcoming_events[0] if upcoming_events else None
+    upcoming_events = sorted(live_events, key=lambda item: item.starts_at)[:3]
 
     return render_template(
         "index.html",
-        landing_mode=landing_mode,
-        landing_mode_options=LANDING_MODE_OPTIONS,
-        active_items=active_items,
-        archived_items=archived_items,
         upcoming_events=upcoming_events,
-        upcoming_events_timeline=build_upcoming_events_timeline_payload(
-            upcoming_events,
-            cta_url=url_for("main.calendar_mode", mode="board"),
-            cta_label="View Events",
-            empty_cta_url=url_for("main.calendar_mode", mode="board"),
-            modifier="fig-events-landing",
-        ),
-        featured_event=featured_event,
-        live_posts=live_posts,
         about_page=get_site_page("about", g.locale),
-        offers=get_site_offers(g.locale).get("pages", []),
     )
 
 
