@@ -32,3 +32,28 @@ def test_public_site_de_localizes(client):
 def test_public_site_invalid_locale_falls_back_to_en(client):
     payload = client.get("/api/v1/public/site?locale=xx").get_json()
     assert payload["locale"] == "en"
+
+
+def test_public_content_about_en(client):
+    payload = client.get("/api/v1/public/content/about?locale=en").get_json()
+    assert payload["slug"] == "about"
+    assert payload["title"] == "About us"
+    assert "INtercultural" in payload["bodyHtml"] or "IN" in payload["bodyHtml"]
+
+
+def test_public_content_hyphen_slug(client):
+    payload = client.get("/api/v1/public/content/working-groups?locale=en").get_json()
+    assert payload["slug"] == "working-groups"
+    assert "work group" in payload["bodyHtml"].lower()
+
+
+def test_public_content_de(client):
+    en = client.get("/api/v1/public/content/about?locale=en").get_json()
+    de = client.get("/api/v1/public/content/about?locale=de").get_json()
+    assert en["bodyHtml"] != de["bodyHtml"]
+
+
+def test_public_content_unknown_slug_404(client):
+    response = client.get("/api/v1/public/content/nope?locale=en")
+    assert response.status_code == 404
+    assert response.get_json()["error"]["code"] == "not_found"

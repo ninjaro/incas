@@ -2,9 +2,16 @@ from datetime import datetime
 
 from flask import jsonify, request
 
-from app.api import api_bp
+from app.api import api_bp, api_error
 from app.models import PageThemeSelection, Post
-from app.site_content import SITE_UI, get_footer_offer_links, get_site_offers, t
+from app.site_content import (
+    SITE_PAGES,
+    SITE_UI,
+    get_footer_offer_links,
+    get_site_offers,
+    get_site_page,
+    t,
+)
 from app.social import process_due_social_publications
 from app.themes_registry import THEME_PAGES, resolve_public_theme
 
@@ -204,3 +211,28 @@ def serialize_site(locale):
 @api_bp.get("/public/site")
 def api_public_site():
     return jsonify(serialize_site(request.args.get("locale", DEFAULT_LOCALE)))
+
+
+def _content_key(slug):
+    return slug.replace("-", "_")
+
+
+def serialize_content(slug, locale):
+    key = _content_key(slug)
+    if key not in SITE_PAGES["en"]:
+        return None
+    page = get_site_page(key, _coerce_locale(locale))
+    return {
+        "slug": slug,
+        "title": page["title"],
+        "image": page.get("image"),
+        "bodyHtml": page["body_html"],
+    }
+
+
+@api_bp.get("/public/content/<slug>")
+def api_public_content(slug):
+    payload = serialize_content(slug, request.args.get("locale", DEFAULT_LOCALE))
+    if payload is None:
+        return api_error("not_found", "Page not found.", status=404)
+    return jsonify(payload)
