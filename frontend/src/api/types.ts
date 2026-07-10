@@ -307,3 +307,56 @@ export type ApiErrorPayload = {
     details?: Record<string, unknown> & { fields?: Record<string, string> };
   };
 };
+
+export type Locale = "en" | "de";
+
+export interface SiteNavItem {
+  label: string;
+  to: string | null;
+  children?: SiteNavItem[];
+}
+
+export interface SiteOfferPage {
+  title: string;
+  to: string;
+  icon: string;
+}
+
+export interface SiteOfferForm {
+  title: string;
+  to: string;
+}
+
+export interface SiteFooterSocial {
+  platform: string;
+  url: string | null;
+}
+
+export interface SiteFooterLink {
+  title: string;
+  to: string;
+}
+
+export interface SiteResponse {
+  locale: Locale;
+  strings: Record<string, string>;
+  nav: SiteNavItem[];
+  offers: {
+    title: string;
+    subtitle: string;
+    pages: SiteOfferPage[];
+    forms: SiteOfferForm[];
+  };
+  footer: {
+    copy: string;
+    social: SiteFooterSocial[];
+    offerLinks: SiteFooterLink[];
+  };
+}
+
+export interface ContentPageResponse {
+  slug: string;
+  title: string;
+  image: string | null;
+  bodyHtml: string;
+}
