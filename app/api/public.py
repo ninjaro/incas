@@ -4,6 +4,7 @@ from flask import jsonify, request
 
 from app.api import api_bp
 from app.models import PageThemeSelection, Post
+from app.site_content import SITE_UI, get_footer_offer_links, get_site_offers, t
 from app.social import process_due_social_publications
 from app.themes_registry import THEME_PAGES, resolve_public_theme
 
@@ -109,3 +110,97 @@ def api_public_calendar():
     ]
     events.sort(key=lambda payload: payload["startsAt"])
     return jsonify({"year": year, "month": month, "events": events})
+
+
+# Kept in sync with app/routes/public.py; defined locally to avoid a
+# circular import between the API and legacy route modules.
+SUPPORTED_LOCALES = {"en", "de"}
+DEFAULT_LOCALE = "en"
+
+# Legacy Flask path -> React (HashRouter) route. Values are react-router
+# "to" paths (no leading "#"); query strings are preserved.
+_LEGACY_TO_APP = {
+    "/language-tandem": "/tandem",
+    "/contact-form": "/contact",
+    "/contacts": "/contact",
+}
+
+
+def _app_route(url):
+    if not url:
+        return url
+    path, _, query = url.partition("?")
+    path = _LEGACY_TO_APP.get(path, path)
+    return f"{path}?{query}" if query else path
+
+
+def _coerce_locale(raw):
+    return raw if raw in SUPPORTED_LOCALES else DEFAULT_LOCALE
+
+
+def _serialize_nav(locale):
+    return [
+        {"label": t(locale, "nav.home"), "to": "/"},
+        {"label": t(locale, "nav.calendar"), "to": "/calendar"},
+        {
+            "label": t(locale, "nav.about"),
+            "to": None,
+            "children": [
+                {"label": t(locale, "nav.about_us"), "to": "/about"},
+                {"label": t(locale, "nav.working_groups"), "to": "/about/working-groups"},
+                {"label": t(locale, "nav.team_meetings"), "to": "/about/team-meetings"},
+            ],
+        },
+        {"label": t(locale, "nav.forms"), "to": "/offers"},
+        {"label": t(locale, "nav.language_tandem"), "to": "/tandem"},
+        {"label": t(locale, "nav.karaoke"), "to": "/karaoke"},
+        {"label": t(locale, "nav.contacts"), "to": "/contact"},
+        {"label": t(locale, "nav.team"), "to": "/team"},
+    ]
+
+
+def _serialize_offers(locale):
+    offers = get_site_offers(locale)
+    return {
+        "title": offers["title"],
+        "subtitle": offers["subtitle"],
+        "pages": [
+            {"title": p["title"], "to": _app_route(p["url"]), "icon": p["icon"]}
+            for p in offers["pages"]
+        ],
+        "forms": [
+            {"title": f["title"], "to": _app_route(f["url"])} for f in offers["forms"]
+        ],
+    }
+
+
+def _serialize_footer(locale):
+    return {
+        "copy": "INCAS — Intercultural Centre of Aachen Students",
+        "social": [
+            {"platform": "facebook", "url": "https://www.facebook.com/INCASAachen/"},
+            {"platform": "instagram", "url": "https://www.instagram.com/incas_aachen/"},
+            {"platform": "youtube", "url": None},
+            {"platform": "linkedin", "url": None},
+        ],
+        "offerLinks": [
+            {"title": link["title"], "to": _app_route(link["url"])}
+            for link in get_footer_offer_links(locale)
+        ],
+    }
+
+
+def serialize_site(locale):
+    locale = _coerce_locale(locale)
+    return {
+        "locale": locale,
+        "strings": SITE_UI.get(locale, SITE_UI["en"]),
+        "nav": _serialize_nav(locale),
+        "offers": _serialize_offers(locale),
+        "footer": _serialize_footer(locale),
+    }
+
+
+@api_bp.get("/public/site")
+def api_public_site():
+    return jsonify(serialize_site(request.args.get("locale", DEFAULT_LOCALE)))

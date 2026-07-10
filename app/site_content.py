@@ -14,6 +14,8 @@ SITE_UI = {
         "nav.suggest_event": "Suggest an Event",
         "nav.contact_questions": "Contact / Questions",
         "nav.admin": "Admin",
+        "nav.karaoke": "Karaoke",
+        "nav.team": "Team",
     },
     "de": {
         "nav.home": "Start",
@@ -30,6 +32,8 @@ SITE_UI = {
         "nav.suggest_event": "Event vorschlagen",
         "nav.contact_questions": "Kontakt / Fragen",
         "nav.admin": "Admin",
+        "nav.karaoke": "Karaoke",
+        "nav.team": "Team",
     },
 }
 
