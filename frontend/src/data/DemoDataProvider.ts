@@ -1,20 +1,24 @@
 import type {
   AdminPost,
   Capability,
+  ContentPageResponse,
   KaraokeAction,
   KaraokeAdminEntry,
   KaraokeAuditEntry,
   KaraokeStatus,
   KaraokeSubmission,
+  Locale,
   PageId,
   PaymentInfo,
   PostInput,
   PostTemplateInfo,
   PublicPost,
   SessionInfo,
+  SiteResponse,
   SocialPublication,
   ThemeAuditEntry,
 } from "../api/types";
+import siteSnapshot from "../content/site.generated.json";
 import { PAGE_THEMES } from "../features/themes/registry";
 import type { DataProvider } from "./DataProvider";
 import {
@@ -549,5 +553,32 @@ export class DemoDataProvider implements DataProvider {
     const payment = this.payments.find((entry) => entry.publicId === publicId);
     if (!payment) throw new DemoError("not_found", "Payment not found.", 404);
     return payment;
+  }
+
+  async getSite(locale: Locale): Promise<SiteResponse> {
+    const snapshot = siteSnapshot as Record<
+      string,
+      { strings: Record<string, string>; nav: unknown; offers: unknown; footer: unknown }
+    >;
+    const snap = snapshot[locale] ?? snapshot["en"];
+    return {
+      locale,
+      strings: snap.strings,
+      nav: snap.nav,
+      offers: snap.offers,
+      footer: snap.footer,
+    } as SiteResponse;
+  }
+
+  async getContent(slug: string, locale: Locale): Promise<ContentPageResponse> {
+    const key = slug.replace(/-/g, "_");
+    const localeSnap =
+      (siteSnapshot as Record<string, { pages: Record<string, ContentPageResponse | null> }>)[locale] ??
+      (siteSnapshot as Record<string, { pages: Record<string, ContentPageResponse | null> }>)["en"];
+    const page = localeSnap.pages[key];
+    if (!page) {
+      throw new DemoError("not_found", "Page not found.", 404);
+    }
+    return page;
   }
 }

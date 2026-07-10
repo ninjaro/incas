@@ -100,4 +100,21 @@ describe("DemoDataProvider", () => {
       code: "payment_not_required",
     });
   });
+
+  it("serves localized site chrome from the snapshot", async () => {
+    const en = await provider.getSite("en");
+    expect(en.strings["nav.home"]).toBe("Home");
+    const de = await provider.getSite("de");
+    expect(de.strings["nav.home"]).toBe("Start");
+  });
+
+  it("serves content pages and rejects unknown slugs", async () => {
+    const about = await provider.getContent("about", "en");
+    expect(about.title).toBe("About us");
+    expect(about.bodyHtml.length).toBeGreaterThan(0);
+    await expect(provider.getContent("nope", "en")).rejects.toMatchObject({
+      code: "not_found",
+      status: 404,
+    });
+  });
 });
