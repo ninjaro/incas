@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import type { Locale, SiteNavItem } from "../api/types";
 import { useSession } from "../auth/SessionContext";
@@ -14,24 +14,41 @@ function initialAppearance(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function NavItem({ item }: { item: SiteNavItem }) {
-  const [open, setOpen] = useState(false);
+function NavItem({
+  item,
+  isOpen,
+  onToggle,
+  onClose,
+}: {
+  item: SiteNavItem;
+  isOpen: boolean;
+  onToggle: (label: string) => void;
+  onClose: () => void;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   if (item.children?.length) {
     return (
-      <div className={`site-nav-group${open ? " is-open" : ""}`}>
+      <div className={`site-nav-group${isOpen ? " is-open" : ""}`}>
         <button
+          ref={triggerRef}
           type="button"
           className="site-nav-group-label"
           aria-haspopup="true"
-          aria-expanded={open}
-          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={isOpen}
+          onClick={() => onToggle(item.label)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && isOpen) {
+              onClose();
+              triggerRef.current?.focus();
+            }
+          }}
         >
           {item.label}
         </button>
         <div className="site-nav-group-menu">
           {item.children.map((child) => (
-            <NavLink key={child.to} to={child.to ?? "#"}>
+            <NavLink key={child.to} to={child.to ?? "#"} onClick={onClose}>
               {child.label}
             </NavLink>
           ))}
@@ -40,7 +57,7 @@ function NavItem({ item }: { item: SiteNavItem }) {
     );
   }
   return (
-    <NavLink to={item.to ?? "#"} end={item.to === "/"}>
+    <NavLink to={item.to ?? "#"} end={item.to === "/"} onClick={onClose}>
       {item.label}
     </NavLink>
   );
@@ -52,11 +69,46 @@ export function PublicLayout() {
   const { locale, setLocale, site } = useLocale();
   const t = useT();
   const [appearance, setAppearance] = useState<"light" | "dark">(initialAppearance);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const location = useLocation();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", appearance);
     localStorage.setItem(APPEARANCE_KEY, appearance);
   }, [appearance]);
+
+  // Close any open dropdown whenever the route changes.
+  useEffect(() => {
+    setOpenGroup(null);
+  }, [location.pathname]);
+
+  // Close the open dropdown on Escape or on a click outside the nav.
+  useEffect(() => {
+    if (!openGroup) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenGroup(null);
+      }
+    };
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setOpenGroup(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openGroup]);
+
+  const closeGroup = () => setOpenGroup(null);
+  const toggleGroup = (label: string) =>
+    setOpenGroup((prev) => (prev === label ? null : label));
 
   const nav = site?.nav ?? [];
   const footer = site?.footer;
@@ -68,17 +120,25 @@ export function PublicLayout() {
           <strong>Demo mode</strong> — synthetic data, no real backend. Actions are simulated.
         </div>
       ) : null}
-      <nav className="site-nav" aria-label="Main navigation">
+      <nav className="site-nav" aria-label="Main navigation" ref={navRef}>
         <div className="site-nav-inner">
-          <NavLink to="/" className="site-nav-brand">
+          <NavLink to="/" className="site-nav-brand" onClick={closeGroup}>
             IN<em>CAS</em>
           </NavLink>
           <div className="site-nav-links">
             {nav.map((item) => (
-              <NavItem key={item.label} item={item} />
+              <NavItem
+                key={item.label}
+                item={item}
+                isOpen={openGroup === item.label}
+                onToggle={toggleGroup}
+                onClose={closeGroup}
+              />
             ))}
             {session.capabilities.length > 0 || data.isDemo ? (
-              <NavLink to="/admin">{t("nav.admin")}</NavLink>
+              <NavLink to="/admin" onClick={closeGroup}>
+                {t("nav.admin")}
+              </NavLink>
             ) : null}
           </div>
           <div className="site-nav-controls">
