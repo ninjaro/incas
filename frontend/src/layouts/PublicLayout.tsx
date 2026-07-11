@@ -15,10 +15,20 @@ function initialAppearance(): "light" | "dark" {
 }
 
 function NavItem({ item }: { item: SiteNavItem }) {
+  const [open, setOpen] = useState(false);
+
   if (item.children?.length) {
     return (
-      <div className="site-nav-group">
-        <span className="site-nav-group-label">{item.label}</span>
+      <div className={`site-nav-group${open ? " is-open" : ""}`}>
+        <button
+          type="button"
+          className="site-nav-group-label"
+          aria-haspopup="true"
+          aria-expanded={open}
+          onClick={() => setOpen((prev) => !prev)}
+        >
+          {item.label}
+        </button>
         <div className="site-nav-group-menu">
           {item.children.map((child) => (
             <NavLink key={child.to} to={child.to ?? "#"}>

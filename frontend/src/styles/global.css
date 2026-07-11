@@ -152,15 +152,19 @@ a {
 
 .site-nav-group-label {
   display: inline-block;
+  border: 0;
+  background: transparent;
+  font: inherit;
   color: var(--ink-soft);
   padding: 6px 12px;
   border-radius: 999px;
   font-weight: 500;
-  cursor: default;
+  cursor: pointer;
 }
 
 .site-nav-group:hover .site-nav-group-label,
-.site-nav-group:focus-within .site-nav-group-label {
+.site-nav-group:focus-within .site-nav-group-label,
+.site-nav-group.is-open .site-nav-group-label {
   background: var(--incas-orange-soft);
   color: var(--incas-orange-deep);
 }
@@ -182,7 +186,8 @@ a {
 }
 
 .site-nav-group:hover .site-nav-group-menu,
-.site-nav-group:focus-within .site-nav-group-menu {
+.site-nav-group:focus-within .site-nav-group-menu,
+.site-nav-group.is-open .site-nav-group-menu {
   display: flex;
 }
 
