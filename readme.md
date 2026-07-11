@@ -40,6 +40,16 @@ checking, frontend and backend tests, and all builds.
 Demo access keys (demo build only): `demo-admin`, `demo-review`,
 `demo-karaoke`, `demo-tandem-blind`.
 
+### Regenerating site content for the demo
+
+The React app reads public site copy from `app/site_content.py`. After editing
+it, regenerate the committed demo snapshot:
+
+    DATABASE_URL="sqlite://" python -m app.export_site_content
+
+`tests/test_export_site_content.py` fails if the committed
+`frontend/src/content/site.generated.json` is out of sync.
+
 ## API
 
 JSON endpoints live under `/api/v1` (session, access unlock, public

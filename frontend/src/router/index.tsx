@@ -13,8 +13,11 @@ import { ThemesPanel } from "../features/admin/ThemesPanel";
 import { KaraokePublicPage } from "../features/karaoke/KaraokePublicPage";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { CalendarPage } from "../pages/CalendarPage";
+import { ContactPage } from "../pages/ContactPage";
+import { ContentPage } from "../pages/ContentPage";
 import { EventDetailPage } from "../pages/EventDetailPage";
 import { LandingPage } from "../pages/LandingPage";
+import { OffersPage } from "../pages/OffersPage";
 import { TandemFormPage } from "../pages/TandemFormPage";
 import { TeamPage } from "../pages/TeamPage";
 
@@ -60,6 +63,12 @@ export const router = createHashRouter([
       { path: "/team", element: <TeamPage /> },
       { path: "/karaoke", element: <KaraokePublicPage /> },
       { path: "/tandem", element: <TandemFormPage /> },
+      { path: "/about", element: <ContentPage slug="about" /> },
+      { path: "/about/working-groups", element: <ContentPage slug="working-groups" /> },
+      { path: "/about/team-meetings", element: <ContentPage slug="team-meetings" /> },
+      { path: "/offers", element: <OffersPage /> },
+      { path: "/offers/:slug", element: <ContentPage /> },
+      { path: "/contact", element: <ContactPage /> },
       {
         path: "/admin",
         element: <AdminLayout />,

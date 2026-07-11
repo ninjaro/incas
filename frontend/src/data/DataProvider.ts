@@ -3,11 +3,13 @@ import type {
   AdminPostsResponse,
   AdminThemesResponse,
   CalendarResponse,
+  ContentPageResponse,
   KaraokeAction,
   KaraokeAdminEntry,
   KaraokeAuditEntry,
   KaraokePublicEntry,
   KaraokeSubmission,
+  Locale,
   PageId,
   PaymentInfo,
   PostInput,
@@ -16,6 +18,7 @@ import type {
   PublicPost,
   PublicPostsResponse,
   SessionInfo,
+  SiteResponse,
   SocialPublication,
   TandemListResponse,
   TandemMatchesResponse,
@@ -39,6 +42,8 @@ export interface DataProvider {
   getPublicPosts(): Promise<PublicPostsResponse>;
   getPublicPost(slug: string): Promise<PublicPost>;
   getCalendar(year: number, month: number): Promise<CalendarResponse>;
+  getSite(locale: Locale): Promise<SiteResponse>;
+  getContent(slug: string, locale: Locale): Promise<ContentPageResponse>;
 
   getAdminThemes(): Promise<AdminThemesResponse>;
   voteTheme(page: PageId, theme: string): Promise<{ myVote: string; votes: Record<string, number> }>;

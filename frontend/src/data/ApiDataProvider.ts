@@ -4,11 +4,13 @@ import type {
   AdminPostsResponse,
   AdminThemesResponse,
   CalendarResponse,
+  ContentPageResponse,
   KaraokeAction,
   KaraokeAdminEntry,
   KaraokeAuditEntry,
   KaraokePublicEntry,
   KaraokeSubmission,
+  Locale,
   PageId,
   PaymentInfo,
   PostInput,
@@ -17,6 +19,7 @@ import type {
   PublicPost,
   PublicPostsResponse,
   SessionInfo,
+  SiteResponse,
   SocialPublication,
   TandemListResponse,
   TandemMatchesResponse,
@@ -49,6 +52,16 @@ export class ApiDataProvider implements DataProvider {
 
   getCalendar(year: number, month: number) {
     return http.get<CalendarResponse>(`/public/calendar?year=${year}&month=${month}`);
+  }
+
+  getSite(locale: Locale) {
+    return http.get<SiteResponse>(`/public/site?locale=${locale}`);
+  }
+
+  getContent(slug: string, locale: Locale) {
+    return http.get<ContentPageResponse>(
+      `/public/content/${encodeURIComponent(slug)}?locale=${locale}`,
+    );
   }
 
   getAdminThemes() {

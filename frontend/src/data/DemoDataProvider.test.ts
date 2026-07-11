@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { Locale } from "../api/types";
 import { DemoDataProvider } from "./DemoDataProvider";
 
 describe("DemoDataProvider", () => {
@@ -98,6 +99,31 @@ describe("DemoDataProvider", () => {
   it("refuses checkout for free events", async () => {
     await expect(provider.startCheckout("karaoke-night")).rejects.toMatchObject({
       code: "payment_not_required",
+    });
+  });
+
+  it("serves localized site chrome from the snapshot", async () => {
+    const en = await provider.getSite("en");
+    expect(en.strings["nav.home"]).toBe("Home");
+    const de = await provider.getSite("de");
+    expect(de.strings["nav.home"]).toBe("Start");
+  });
+
+  it("reports the locale actually served when falling back to en", async () => {
+    // "fr" isn't in the snapshot, so getSite falls back to the "en" content;
+    // the response must say `locale: "en"`, not echo back the request.
+    const fallback = await provider.getSite("fr" as Locale);
+    expect(fallback.locale).toBe("en");
+    expect(fallback.strings["nav.home"]).toBe("Home");
+  });
+
+  it("serves content pages and rejects unknown slugs", async () => {
+    const about = await provider.getContent("about", "en");
+    expect(about.title).toBe("About us");
+    expect(about.bodyHtml.length).toBeGreaterThan(0);
+    await expect(provider.getContent("nope", "en")).rejects.toMatchObject({
+      code: "not_found",
+      status: 404,
     });
   });
 });
