@@ -560,9 +560,13 @@ export class DemoDataProvider implements DataProvider {
       string,
       { strings: Record<string, string>; nav: unknown; offers: unknown; footer: unknown }
     >;
-    const snap = snapshot[locale] ?? snapshot["en"];
+    // Fall back to "en" when the requested locale isn't in the snapshot, and
+    // report the locale actually served rather than echoing back the
+    // (unsupported) requested one, matching the backend's coercion.
+    const servedLocale: Locale = snapshot[locale] ? locale : "en";
+    const snap = snapshot[servedLocale];
     return {
-      locale,
+      locale: servedLocale,
       strings: snap.strings,
       nav: snap.nav,
       offers: snap.offers,

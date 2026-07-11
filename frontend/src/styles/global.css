@@ -162,7 +162,12 @@ a {
   cursor: pointer;
 }
 
-.site-nav-group:hover .site-nav-group-label,
+/* Menu visibility is click-driven (`.is-open`, mirrored 1:1 by React's
+   `aria-expanded`) plus `:focus-within` for keyboard tabbing. There is
+   deliberately no `:hover` reveal here: combined with a click-to-toggle
+   trigger, a CSS hover-open would let the pointer resting on the trigger
+   reopen the menu the instant a click closes it, and would desync
+   `aria-expanded` from what's visually shown. */
 .site-nav-group:focus-within .site-nav-group-label,
 .site-nav-group.is-open .site-nav-group-label {
   background: var(--incas-orange-soft);
@@ -185,7 +190,6 @@ a {
   z-index: 30;
 }
 
-.site-nav-group:hover .site-nav-group-menu,
 .site-nav-group:focus-within .site-nav-group-menu,
 .site-nav-group.is-open .site-nav-group-menu {
   display: flex;

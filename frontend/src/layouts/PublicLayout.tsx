@@ -117,10 +117,10 @@ export function PublicLayout() {
     <div className="shell">
       {data.isDemo ? (
         <div className="demo-banner" role="note">
-          <strong>Demo mode</strong> — synthetic data, no real backend. Actions are simulated.
+          <strong>{t("demo.banner_label")}</strong> — {t("demo.banner_body")}
         </div>
       ) : null}
-      <nav className="site-nav" aria-label="Main navigation" ref={navRef}>
+      <nav className="site-nav" aria-label={t("aria.main_nav")} ref={navRef}>
         <div className="site-nav-inner">
           <NavLink to="/" className="site-nav-brand" onClick={closeGroup}>
             IN<em>CAS</em>
@@ -142,7 +142,7 @@ export function PublicLayout() {
             ) : null}
           </div>
           <div className="site-nav-controls">
-            <div className="locale-switch" role="group" aria-label="Language">
+            <div className="locale-switch" role="group" aria-label={t("aria.language")}>
               {(["en", "de"] as Locale[]).map((code) => (
                 <button
                   key={code}
@@ -158,7 +158,7 @@ export function PublicLayout() {
             <button
               type="button"
               className="appearance-toggle"
-              aria-label="Toggle light or dark appearance"
+              aria-label={t("aria.appearance")}
               onClick={() => setAppearance((prev) => (prev === "dark" ? "light" : "dark"))}
             >
               {appearance === "dark" ? "☀︎" : "☾"}
@@ -173,7 +173,7 @@ export function PublicLayout() {
         <footer className="site-footer">
           <div className="site-footer-inner">
             <p className="site-footer-copy">{footer.copy}</p>
-            <div className="site-footer-socials" aria-label="Social media">
+            <div className="site-footer-socials" aria-label={t("aria.social")}>
               {footer.social
                 .filter((s) => s.url)
                 .map((s) => (

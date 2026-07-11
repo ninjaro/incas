@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 import { Loading } from "../components/ui";
-import { useLocale } from "../i18n/LocaleContext";
+import { useLocale, useT } from "../i18n/LocaleContext";
 
 /**
  * Interim /contact page. The real contact form is not migrated yet (tracked
@@ -11,6 +11,7 @@ import { useLocale } from "../i18n/LocaleContext";
  */
 export function ContactPage() {
   const { site, loading } = useLocale();
+  const t = useT();
   if (loading) return <Loading />;
 
   const forms = (site?.offers.forms ?? []).filter((form) => form.to !== "/contact");
@@ -18,9 +19,9 @@ export function ContactPage() {
 
   return (
     <div className="state-box contact-page">
-      <h1>Contact</h1>
-      <p>The contact form is being migrated to the new site and isn&apos;t ready yet.</p>
-      <p>In the meantime, you can reach us through:</p>
+      <h1>{t("contact.title")}</h1>
+      <p>{t("contact.intro")}</p>
+      <p>{t("contact.channels_intro")}</p>
       {forms.length ? (
         <ul>
           {forms.map((form) => (

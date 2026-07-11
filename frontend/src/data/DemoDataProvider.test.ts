@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { Locale } from "../api/types";
 import { DemoDataProvider } from "./DemoDataProvider";
 
 describe("DemoDataProvider", () => {
@@ -106,6 +107,14 @@ describe("DemoDataProvider", () => {
     expect(en.strings["nav.home"]).toBe("Home");
     const de = await provider.getSite("de");
     expect(de.strings["nav.home"]).toBe("Start");
+  });
+
+  it("reports the locale actually served when falling back to en", async () => {
+    // "fr" isn't in the snapshot, so getSite falls back to the "en" content;
+    // the response must say `locale: "en"`, not echo back the request.
+    const fallback = await provider.getSite("fr" as Locale);
+    expect(fallback.locale).toBe("en");
+    expect(fallback.strings["nav.home"]).toBe("Home");
   });
 
   it("serves content pages and rejects unknown slugs", async () => {
