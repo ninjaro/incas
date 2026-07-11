@@ -38,12 +38,20 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    data.getSite(locale).then((next) => {
-      if (active) {
-        setSite(next);
-        setLoading(false);
-      }
-    });
+    data.getSite(locale).then(
+      (next) => {
+        if (active) {
+          setSite(next);
+          setLoading(false);
+        }
+      },
+      (err) => {
+        console.error("Failed to load site data", err);
+        if (active) {
+          setLoading(false);
+        }
+      },
+    );
     return () => {
       active = false;
     };

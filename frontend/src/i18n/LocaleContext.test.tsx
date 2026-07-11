@@ -18,6 +18,17 @@ function Probe() {
   );
 }
 
+function LoadingProbe() {
+  const t = useT();
+  const { loading } = useLocale();
+  return (
+    <div>
+      <span data-testid="loading">{String(loading)}</span>
+      <span data-testid="fallback">{t("nav.home")}</span>
+    </div>
+  );
+}
+
 describe("LocaleContext", () => {
   it("provides translations and falls back to the key", async () => {
     render(
@@ -29,5 +40,21 @@ describe("LocaleContext", () => {
     );
     await waitFor(() => expect(screen.getByTestId("home").textContent).toBe("Home"));
     expect(screen.getByTestId("missing").textContent).toBe("nope.key");
+  });
+
+  it("stops loading and falls back to translation keys when the site fetch fails", async () => {
+    const failingProvider = new DemoDataProvider();
+    failingProvider.getSite = () => Promise.reject(new Error("network error"));
+
+    render(
+      <DataProviderProvider provider={failingProvider}>
+        <LocaleProvider>
+          <LoadingProbe />
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("false"));
+    expect(screen.getByTestId("fallback").textContent).toBe("nav.home");
   });
 });
