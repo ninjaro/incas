@@ -1,6 +1,11 @@
-"""Canonical per-event-kind metadata. Single source of truth consolidating what
-used to live in app/__init__.py, app/models.py, app/site_content.py, and
-app/demo_seed.py. Pure data — do not import from `app` (avoids import cycles).
+"""Canonical per-event-kind metadata. Single source of truth for event kinds.
+
+A1 refactored app/__init__.py (event_kind_meta) and app/models.py
+(EVENT_TITLE_PREFIXES / TITLE_HIGHLIGHT_KINDS) to derive from this registry.
+app/site_content.py (SITE_OFFERS labels/icons) and app/demo_seed.py
+(schedule/deposit literals) still hold their own copies and are migrated to
+read from here in later Phase-A chunks (A4). Pure data — do not import from
+`app` (avoids import cycles).
 
 Weekday: Monday=0 … Sunday=6. `marker` is a semantic token mapped to a CSS
 variable by the React EventIcon/EventMarker components (A3). `schedule` and the
