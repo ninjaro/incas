@@ -3,7 +3,15 @@ from datetime import datetime
 from flask import jsonify, request
 
 from app.api import api_bp, api_error
-from app.models import PageThemeSelection, Post
+from app.event_kinds import EVENT_KIND_SCHEMA_VERSION, EVENT_KINDS
+from app.models import (
+    EVENT_REGISTRATION_STATUS_APPROVED,
+    PageThemeSelection,
+    Post,
+    SocialPublication,
+)
+from app.routes.helpers.event_post_maps import build_event_post_map_context
+from app.sanitize import sanitize_rich_html
 from app.site_content import (
     SITE_PAGES,
     SITE_UI,
@@ -16,9 +24,87 @@ from app.social import process_due_social_publications
 from app.themes_registry import THEME_PAGES, resolve_public_theme
 
 
-def serialize_public_post(item):
-    title_parts = item.display_title_parts
+def _serialize_map(item):
+    configured = item.map_config_dict
+    source = configured or build_event_post_map_context(item)
+    if not source:
+        return None
+    if configured:
+        return configured
+
+    target = source.get("target") or {}
     return {
+        "providerId": source.get("provider_id"),
+        "providerName": source.get("provider_name"),
+        "title": source.get("title"),
+        "description": source.get("description"),
+        "note": source.get("note"),
+        "target": {
+            "kind": target.get("kind"),
+            "label": target.get("label") or target.get("country_name"),
+            "countryCodes": target.get("country_codes", []),
+            "center": target.get("center"),
+            "zoom": target.get("zoom"),
+            "marker": target.get("marker"),
+            "origin": target.get("origin"),
+            "destination": target.get("destination"),
+        },
+    }
+
+
+def _serialize_social_links(item):
+    links = []
+    if item.instagram_permalink:
+        links.append({"provider": "instagram", "url": item.instagram_permalink})
+    if item.id is not None:
+        publications = SocialPublication.query.filter_by(post_id=item.id, status="published").all()
+        for publication in publications:
+            if publication.permalink and not any(link["url"] == publication.permalink for link in links):
+                links.append({"provider": publication.provider, "url": publication.permalink})
+    return links
+
+
+def _serialize_registration(item):
+    if not item.has_registration_queue:
+        return None
+
+    confirmed_count = item.registration_reserved_count
+    if item.id is not None:
+        from app.models import EventRegistration
+
+        confirmed_count = EventRegistration.query.filter_by(
+            post_id=item.id,
+            status=EVENT_REGISTRATION_STATUS_APPROVED,
+        ).count()
+
+    if not item.is_live:
+        availability = "closed"
+    elif item.registration_places_remaining > 0:
+        availability = "available"
+    else:
+        availability = "waiting_list"
+
+    return {
+        "hasQueue": True,
+        "availability": availability,
+        "capacity": item.registration_limit or 0,
+        "confirmedCount": confirmed_count,
+        "reservedCount": item.registration_reserved_count,
+        "waitingListCount": item.registration_waiting_list_count,
+        "nonCancelledCount": item.registration_non_cancelled_count,
+        "placesRemaining": item.registration_places_remaining,
+        "mode": item.effective_registration_mode,
+        "priceCents": item.registration_price_cents,
+        "currency": "EUR",
+        "isDeposit": bool(item.registration_is_deposit),
+        "depositExplanation": item.deposit_explanation
+        or ("This refundable deposit is returned after participation." if item.registration_is_deposit else ""),
+    }
+
+
+def serialize_public_post(item, *, include_body=False):
+    title_parts = item.display_title_parts
+    payload = {
         "slug": item.slug,
         "title": {
             "full": title_parts.get("full", item.display_title),
@@ -27,20 +113,43 @@ def serialize_public_post(item):
         },
         "summary": item.summary,
         "eventKind": item.event_kind,
+        "eventKindMeta": item.event_kind_config or None,
         "isEvent": item.is_event,
         "isPinned": bool(item.is_pinned),
         "isLive": item.is_live,
+        "publicationState": item.publication_state,
         "startsAt": item.starts_at.isoformat() if item.starts_at else None,
+        "endsAt": item.ends_at.isoformat() if item.ends_at else None,
+        "durationMinutes": item.duration_minutes,
         "imageUrl": item.image_url,
-        "registration": {
-            "hasQueue": item.has_registration_queue,
-            "priceCents": item.registration_price_cents,
-            "isDeposit": bool(item.registration_is_deposit),
-            "placesRemaining": item.registration_places_remaining,
-        }
-        if item.has_registration_queue
-        else None,
+        "eventPublicId": item.event_public_id if item.is_event else None,
+        "venue": item.venue,
+        "address": item.address,
+        "city": item.city,
+        "meetingPoint": item.meeting_point,
+        "destination": item.destination,
+        "coordinates": (
+            {"latitude": item.latitude, "longitude": item.longitude}
+            if item.latitude is not None and item.longitude is not None
+            else None
+        ),
+        "destinationCoordinates": (
+            {
+                "latitude": item.destination_latitude,
+                "longitude": item.destination_longitude,
+            }
+            if item.destination_latitude is not None and item.destination_longitude is not None
+            else None
+        ),
+        "countryCode": item.country_code or None,
+        "socialLinks": _serialize_social_links(item),
+        "features": item.effective_features,
+        "map": _serialize_map(item),
+        "registration": _serialize_registration(item),
     }
+    if include_body:
+        payload["bodyHtml"] = sanitize_rich_html(item.body)
+    return payload
 
 
 def get_public_items():
@@ -77,11 +186,17 @@ def api_public_posts():
         key=lambda item: item.starts_at,
     )
     live_posts = [item for item in items if not item.is_event and item.is_live]
+    archived_events = sorted(
+        (item for item in items if item.is_event and not item.is_live),
+        key=lambda item: item.starts_at,
+        reverse=True,
+    )
 
     return jsonify(
         {
             "events": [serialize_public_post(item) for item in live_events],
             "posts": [serialize_public_post(item) for item in live_posts],
+            "archivedEvents": [serialize_public_post(item) for item in archived_events],
         }
     )
 
@@ -91,9 +206,13 @@ def api_public_post_detail(slug):
     item = Post.query.filter_by(slug=slug).first()
     if item is None or not item.is_publicly_accessible:
         return jsonify({"error": {"code": "not_found", "message": "Post not found."}}), 404
-    payload = serialize_public_post(item)
-    payload["body"] = item.body
+    payload = serialize_public_post(item, include_body=True)
     return jsonify(payload)
+
+
+@api_bp.get("/public/event-kinds")
+def api_public_event_kinds():
+    return jsonify({"schemaVersion": EVENT_KIND_SCHEMA_VERSION, "items": EVENT_KINDS})
 
 
 @api_bp.get("/public/calendar")
@@ -156,13 +275,12 @@ def _serialize_nav(locale):
                 {"label": t(locale, "nav.about_us"), "to": "/about"},
                 {"label": t(locale, "nav.working_groups"), "to": "/about/working-groups"},
                 {"label": t(locale, "nav.team_meetings"), "to": "/about/team-meetings"},
+                {"label": t(locale, "nav.team"), "to": "/about/team"},
             ],
         },
         {"label": t(locale, "nav.forms"), "to": "/offers"},
         {"label": t(locale, "nav.language_tandem"), "to": "/tandem"},
-        {"label": t(locale, "nav.karaoke"), "to": "/karaoke"},
         {"label": t(locale, "nav.contacts"), "to": "/contact"},
-        {"label": t(locale, "nav.team"), "to": "/team"},
     ]
 
 
@@ -172,7 +290,12 @@ def _serialize_offers(locale):
         "title": offers["title"],
         "subtitle": offers["subtitle"],
         "pages": [
-            {"title": p["title"], "to": _app_route(p["url"]), "icon": p["icon"]}
+            {
+                "title": p["title"],
+                "to": _app_route(p["url"]),
+                "icon": p["icon"],
+                "description": p.get("description", ""),
+            }
             for p in offers["pages"]
         ],
         "forms": [
@@ -227,6 +350,7 @@ def serialize_content(slug, locale):
         "title": page["title"],
         "image": page.get("image"),
         "bodyHtml": page["body_html"],
+        "form": page.get("form"),
     }
 
 

@@ -7,16 +7,17 @@ const SUPPORTED: Locale[] = ["en", "de"];
 const STORAGE_KEY = "incas.locale";
 
 function readCookieLocale(): Locale | null {
+  if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|;\s*)locale=(en|de)/);
   return match ? (match[1] as Locale) : null;
 }
 
 function initialLocale(): Locale {
-  const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
+  const stored = globalThis.localStorage?.getItem?.(STORAGE_KEY) as Locale | null;
   if (stored && SUPPORTED.includes(stored)) return stored;
   const cookie = readCookieLocale();
   if (cookie) return cookie;
-  const browser = navigator.language.slice(0, 2) as Locale;
+  const browser = (globalThis.navigator?.language ?? "en").slice(0, 2) as Locale;
   return SUPPORTED.includes(browser) ? browser : "en";
 }
 
@@ -58,7 +59,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [data, locale]);
 
   const setLocale = useCallback((next: Locale) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    globalThis.localStorage?.setItem?.(STORAGE_KEY, next);
     document.cookie = `locale=${next}; path=/; max-age=${60 * 60 * 24 * 365}`;
     document.documentElement.lang = next;
     setLocaleState(next);

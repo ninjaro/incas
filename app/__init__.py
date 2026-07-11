@@ -1,7 +1,7 @@
 from flask import Flask
 
-from flask import g, url_for
-from sqlalchemy import text
+from flask import g, redirect, request, url_for
+from flask_migrate import Migrate
 from app.site_content import get_footer_offer_links, t
 
 from app.demo_seed import seed_demo_data
@@ -17,6 +17,61 @@ from app.models import (
 from app.routes.helpers.access import has_any_access, has_any_access_key
 from config import Config
 from app.event_kinds import get_event_kind
+
+migrate = Migrate(compare_type=True)
+
+
+def legacy_react_target(path):
+    """Map externally bookmarked Jinja URLs to their React equivalents."""
+    exact = {
+        "/": "/",
+        "/posts": "/",
+        "/events": "/calendar",
+        "/calendar": "/calendar",
+        "/contacts": "/contact",
+        "/contact-form": "/contact",
+        "/suggest-event": "/suggest-event",
+        "/language-tandem": "/tandem",
+        "/team": "/about?section=team",
+        "/about": "/about",
+        "/about/working-groups": "/about/working-groups",
+        "/about/team-meetings": "/about/team-meetings",
+        "/offers": "/offers",
+        "/admin": "/admin",
+        "/admin/corridor": "/admin",
+        "/admin/unlock": "/admin",
+        "/admin/scan": "/admin/access-keys",
+        "/admin/posts": "/admin/posts",
+        "/admin/event-registrations": "/admin/registrations",
+        "/admin/forms": "/admin/forms",
+        "/admin/access-keys": "/admin/access-keys",
+        "/admin/language-tandem": "/admin/tandem",
+    }
+    if path in exact:
+        return exact[path]
+    if path.startswith("/landing-"):
+        return "/"
+    if path.startswith("/calendar-"):
+        return "/calendar"
+    if path.startswith("/language-tandem-"):
+        return "/tandem"
+    if path.startswith("/offers/"):
+        return path
+    if path.startswith("/events/"):
+        return path
+    if path.startswith("/content/") and not path.endswith("/register"):
+        return f"/events/{path.removeprefix('/content/')}"
+    if path.startswith("/event-registrations/"):
+        return f"/registrations/{path.removeprefix('/event-registrations/')}"
+    if path.startswith("/admin/event-registrations/"):
+        return "/admin/registrations"
+    if path.startswith("/admin/language-tandem/"):
+        return "/admin/tandem"
+    if path.startswith("/admin/posts/"):
+        return "/admin/posts"
+    if path.startswith("/admin/access/"):
+        return "/admin"
+    return None
 
 # Transitional Bootstrap display values for the legacy Jinja UI. badge/color
 # are not a clean function of the registry `marker` (housing is text-bg-light
@@ -79,15 +134,18 @@ def event_registration_status_badge(status):
     return mapping.get(status, "text-bg-secondary")
 
 
-def create_app():
+def create_app(config_overrides=None):
     app = Flask(
         __name__,
         template_folder="../templates",
         static_folder="../static",
     )
     app.config.from_object(Config)
+    if config_overrides:
+        app.config.update(config_overrides)
 
     db.init_app(app)
+    migrate.init_app(app, db)
 
     @app.context_processor
     def inject_common_helpers():
@@ -106,53 +164,16 @@ def create_app():
         }
 
     with app.app_context():
-        db.create_all()
-        with db.engine.connect() as conn:
-            schema_updates = (
-                (
-                    "ALTER TABLE language_tandem_requests "
-                    "ADD COLUMN offered_language_levels TEXT NOT NULL DEFAULT '{}'"
-                ),
-                (
-                    "ALTER TABLE tandem_match_review_states "
-                    "ADD COLUMN contacted_at DATETIME"
-                ),
-                (
-                    "ALTER TABLE tandem_match_review_states "
-                    "ADD COLUMN final_pair_at DATETIME"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN publish_at DATETIME"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN registration_limit_enabled BOOLEAN NOT NULL DEFAULT 0"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN registration_limit INTEGER"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN registration_price_cents INTEGER"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN registration_is_deposit BOOLEAN NOT NULL DEFAULT 0"
-                ),
-                (
-                    "ALTER TABLE posts "
-                    "ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'published'"
-                ),
-            )
+        if app.config["AUTO_CREATE_SCHEMA"]:
+            db.create_all()
+        if app.config["SEED_DEMO_DATA"]:
+            seed_demo_data()
 
-            for statement in schema_updates:
-                try:
-                    conn.execute(text(statement))
-                    conn.commit()
-                except Exception:
-                    pass
+    @app.cli.command("seed-demo")
+    def seed_demo_command():
+        """Seed synthetic records only in explicit development/demo environments."""
+        if app.config["APP_ENV"] not in {"development", "demo", "test"}:
+            raise RuntimeError("Refusing to seed outside development, demo, or test.")
         seed_demo_data()
 
     from app.routes import bp
@@ -162,6 +183,19 @@ def create_app():
     app.register_blueprint(api_bp)
 
     register_spa_routes(app)
+
+    @app.before_request
+    def route_primary_frontend():
+        if not app.config["REACT_PRIMARY_FRONTEND"] or request.method != "GET":
+            return None
+        target = legacy_react_target(request.path)
+        if target is None or request.path.startswith(("/api/", "/static/", "/app")):
+            return None
+        query = request.query_string.decode("utf-8")
+        separator = "&" if "?" in target else "?"
+        if query:
+            target = f"{target}{separator}{query}"
+        return redirect(f"/app/#{target}", code=302)
 
     return app
 

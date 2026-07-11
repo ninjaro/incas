@@ -3,16 +3,19 @@ from app.event_kinds import EVENT_KINDS, event_kind_ids, get_event_kind
 REQUIRED_KEYS = {
     "id", "label", "icon", "marker", "titlePrefix", "highlightTitle",
     "schedule", "mapMode", "features", "registrationDefault", "depositDefault",
+    "defaultCapacity", "defaultPriceCents", "defaultDurationMinutes",
+    "registrationMode", "calendarPresentation", "landingPresentation",
 }
 MARKERS = {"accent", "info", "ok", "warn", "bad", "muted", "ink"}
 MAP_MODES = {"none", "venue", "country", "destination"}
 FEATURES = {"registration", "deposit", "map", "karaoke_queue"}
 
 
-def test_registry_covers_the_eight_kinds():
-    assert set(event_kind_ids()) == {
+def test_registry_covers_supported_kinds():
+    assert set(event_kind_ids()) >= {
         "country_evening", "cafe_lingua", "board_games", "karaoke",
-        "dance", "breakfast", "trip", "housing",
+        "dance", "breakfast", "trip", "housing", "incas_active",
+        "international_tuesday", "opening_ceremony",
     }
 
 
@@ -26,6 +29,8 @@ def test_every_kind_has_valid_shape():
         assert set(kind["features"]) <= FEATURES
         assert kind["titlePrefix"] is None or set(kind["titlePrefix"]) == {"en", "de"}
         assert kind["schedule"] is None or set(kind["schedule"]) == {"weekday", "time"}
+        assert kind["registrationMode"] in {"none", "queue", "karaoke"}
+        assert kind["defaultDurationMinutes"] > 0
 
 
 def test_get_event_kind_unknown_returns_none():

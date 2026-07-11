@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { cpSync } from "node:fs";
 import { resolve } from "node:path";
 
 import react from "@vitejs/plugin-react";
@@ -10,16 +11,25 @@ import { defineConfig } from "vite";
 // The legacy Jinja widget bundle has its own config: vite.widget.config.ts.
 export default defineConfig(({ mode }) => {
   const isDemo = mode === "demo";
+  const outDir = isDemo ? resolve(__dirname, "dist-demo") : resolve(__dirname, "static/app");
 
   return {
     root: resolve(__dirname, "frontend"),
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: "incas-static-images",
+        closeBundle() {
+          cpSync(resolve(__dirname, "static/img"), resolve(outDir, "img"), { recursive: true });
+        },
+      },
+    ],
     base: isDemo ? "./" : "/static/app/",
     define: {
       "import.meta.env.VITE_DATA_MODE": JSON.stringify(isDemo ? "demo" : "api"),
     },
     build: {
-      outDir: isDemo ? resolve(__dirname, "dist-demo") : resolve(__dirname, "static/app"),
+      outDir,
       emptyOutDir: true,
     },
     server: {

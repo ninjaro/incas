@@ -21,11 +21,53 @@ export type SessionInfo = {
   capabilities: Capability[];
   capabilityLabels: Record<string, string>;
   sessionAuditId: string;
+  hasAccessKeys: boolean;
   newScopes?: string[];
 };
 
 export type PublicConfig = {
   themes: Record<string, string>;
+};
+
+export type PublicationState = "draft" | "scheduled" | "live" | "archived" | "inactive";
+
+export type EventMapPoint = {
+  name: string;
+  coordinates: [number, number];
+};
+
+export type EventMapConfig = {
+  providerId: "openlayers" | "amcharts-maps" | "openstreetmap" | string;
+  providerName: string;
+  title: string;
+  description: string;
+  note: string;
+  target: {
+    kind: "country" | "country_group" | "trip" | "marker" | string;
+    label?: string | null;
+    countryCodes?: string[];
+    center?: [number, number] | null;
+    zoom?: number | null;
+    marker?: EventMapPoint | null;
+    origin?: EventMapPoint | null;
+    destination?: EventMapPoint | null;
+  };
+};
+
+export type EventRegistrationSummary = {
+  hasQueue: true;
+  availability: "available" | "waiting_list" | "closed";
+  capacity: number;
+  confirmedCount: number;
+  reservedCount: number;
+  waitingListCount: number;
+  nonCancelledCount: number;
+  placesRemaining: number;
+  mode: "none" | "queue" | "karaoke";
+  priceCents: number | null;
+  currency: string;
+  isDeposit: boolean;
+  depositExplanation: string;
 };
 
 export type PostTitle = {
@@ -42,20 +84,31 @@ export type PublicPost = {
   isEvent: boolean;
   isPinned: boolean;
   isLive: boolean;
+  publicationState: PublicationState;
   startsAt: string | null;
+  endsAt: string | null;
+  durationMinutes: number | null;
   imageUrl: string;
-  body?: string;
-  registration: {
-    hasQueue: boolean;
-    priceCents: number | null;
-    isDeposit: boolean;
-    placesRemaining: number;
-  } | null;
+  bodyHtml?: string;
+  eventPublicId: string | null;
+  venue: string;
+  address: string;
+  city: string;
+  meetingPoint: string;
+  destination: string;
+  coordinates: { latitude: number; longitude: number } | null;
+  destinationCoordinates: { latitude: number; longitude: number } | null;
+  countryCode: string | null;
+  socialLinks: { provider: string; url: string }[];
+  features: string[];
+  map: EventMapConfig | null;
+  registration: EventRegistrationSummary | null;
 };
 
 export type PublicPostsResponse = {
   events: PublicPost[];
   posts: PublicPost[];
+  archivedEvents: PublicPost[];
 };
 
 export type CalendarResponse = {
@@ -112,6 +165,8 @@ export type AdminPost = {
   body: string;
   eventKind: string | null;
   startsAt: string | null;
+  endsAt: string | null;
+  durationMinutes: number | null;
   publishAt: string | null;
   status: PostStatus;
   storedStatus: PostStatus;
@@ -122,6 +177,20 @@ export type AdminPost = {
   registrationLimit: number | null;
   registrationPriceCents: number | null;
   registrationIsDeposit: boolean;
+  registrationMode: "none" | "queue" | "karaoke";
+  depositExplanation: string;
+  venue: string;
+  address: string;
+  city: string;
+  meetingPoint: string;
+  destination: string;
+  countryCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  destinationLatitude: number | null;
+  destinationLongitude: number | null;
+  mapConfig: Record<string, unknown>;
+  featureFlags: string[];
   createdAt: string | null;
   updatedAt: string | null;
   social?: SocialPublication[];
@@ -141,6 +210,8 @@ export type PostInput = Partial<{
   body: string;
   eventKind: string;
   startsAt: string;
+  endsAt: string;
+  durationMinutes: number | null;
   publishAt: string;
   status: PostStatus;
   isPinned: boolean;
@@ -149,6 +220,20 @@ export type PostInput = Partial<{
   registrationLimit: number | null;
   registrationPriceCents: number | null;
   registrationIsDeposit: boolean;
+  registrationMode: "none" | "queue" | "karaoke";
+  depositExplanation: string;
+  venue: string;
+  address: string;
+  city: string;
+  meetingPoint: string;
+  destination: string;
+  countryCode: string;
+  latitude: number | null;
+  longitude: number | null;
+  destinationLatitude: number | null;
+  destinationLongitude: number | null;
+  mapConfig: Record<string, unknown>;
+  featureFlags: string[];
   socialChannels: string[];
 }>;
 
@@ -182,6 +267,11 @@ export type SocialPublication = {
   isSimulated: boolean;
   scheduledFor: string | null;
   lastAttemptAt: string | null;
+};
+
+export type AdminSocialPublication = SocialPublication & {
+  postTitle: string;
+  postSlug: string;
 };
 
 export type TandemRequest = {
@@ -219,12 +309,29 @@ export type TandemMatch = {
   score: number;
   reasons: string[];
   warnings: string[];
+  review: {
+    hidden: boolean;
+    shortlisted: boolean;
+    contactedAt: string | null;
+    finalPairAt: string | null;
+  };
 };
 
 export type TandemMatchesResponse = {
   source: TandemRequest;
   groups: Record<string, TandemMatch[]>;
   totals: Record<string, number>;
+};
+
+export type TandemReviewAction = "hide" | "show" | "shortlist" | "unshortlist" | "contacted" | "uncontacted" | "final_pair" | "unpair";
+
+export type TandemDuplicate = {
+  left: TandemRequest;
+  right: TandemRequest;
+  category: "exact" | "likely";
+  score: number;
+  reasons: string[];
+  decision: "ignore" | "different" | null;
 };
 
 export type KaraokeStatus =
@@ -242,6 +349,8 @@ export type KaraokePublicEntry = {
   artist: string;
   status: KaraokeStatus;
   queuePosition: number | null;
+  eventSlug: string | null;
+  eventTitle: string | null;
 };
 
 export type KaraokeAdminEntry = KaraokePublicEntry & {
@@ -290,6 +399,7 @@ export type PaymentStatus =
 export type PaymentInfo = {
   publicId: string;
   postId: number | null;
+  registrationId?: number | null;
   amountCents: number;
   currency: string;
   status: PaymentStatus;
@@ -298,6 +408,155 @@ export type PaymentInfo = {
   errorMessage: string;
   checkoutUrl?: string;
   simulated?: boolean;
+};
+
+export type AdminPayment = PaymentInfo & {
+  id: number;
+  eventTitle: string;
+  eventSlug: string;
+  registrationPublicId: string | null;
+  registrationName: string | null;
+  createdAt: string;
+};
+
+export type FormOptions = {
+  countries: { code: string; label: string }[];
+  languages: { code: string; label: string }[];
+  occupations: string[];
+  languageLevels: { value: string; label: string }[];
+};
+
+export type ContactSubmission = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
+export type EventSuggestionSubmission = {
+  kind: "country_evening" | "breakfast";
+  country: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  comment: string;
+};
+
+export type TandemSubmission = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  occupation: string;
+  occupationOther: string;
+  gender: string;
+  birthYear: string;
+  departureDate: string;
+  countryOfOrigin: string;
+  offeredLanguages: string[];
+  offeredLanguageLevels: Record<string, string>;
+  requestedLanguages: string[];
+  requestedNativeOnly: boolean;
+  sameGenderOnly: boolean;
+  preferredGender: string;
+  comment: string;
+};
+
+export type EventRegistrationInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  occupation: string;
+  dietPreference: "" | "vegan" | "vegetarian" | "omnivore";
+  comment: string;
+};
+
+export type EventRegistrationStatus =
+  | "approved"
+  | "cancelled"
+  | "waiting_payment"
+  | "waiting_list"
+  | "waiting_refund";
+
+export type RegistrationRecord = {
+  id: number | null;
+  publicId: string;
+  name: string;
+  firstName: string | null;
+  lastName: string | null;
+  email?: string;
+  occupation?: string;
+  dietPreference?: string;
+  comment?: string;
+  status: EventRegistrationStatus;
+  statusLabel: string;
+  waitingListPosition: number | null;
+  event: {
+    slug: string;
+    title: string;
+    startsAt: string | null;
+    capacity: number | null;
+    placesRemaining: number;
+    priceCents: number | null;
+    isDeposit: boolean;
+  };
+  payment: {
+    publicId: string;
+    status: PaymentStatus;
+    amountCents: number;
+    currency: string;
+    isSimulated: boolean;
+  } | null;
+  trackingPath: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EventQueueSummary = {
+  postId: number;
+  slug: string;
+  title: string;
+  startsAt: string | null;
+  capacity: number;
+  confirmedCount: number;
+  reservedCount: number;
+  waitingListCount: number;
+  nonCancelledCount: number;
+  placesRemaining: number;
+  priceCents: number | null;
+  isDeposit: boolean;
+};
+
+export type FormInboxEntry = {
+  type: "contact" | "suggestion";
+  id: number;
+  publicId: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  kind: string;
+  status: "new" | "in_progress" | "resolved" | "archived";
+  isViewed: boolean;
+  createdAt: string;
+};
+
+export type AccessKeyInfo = {
+  id: number;
+  label: string;
+  prefix: string;
+  scopes: string[];
+  status: "active" | "expired" | "revoked";
+  expiresAt: string;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+};
+
+export type CreatedAccessKey = AccessKeyInfo & {
+  secret: string;
+  unlockFragment: string;
+  secretVisibleOnce: true;
 };
 
 export type ApiErrorPayload = {
@@ -320,6 +579,7 @@ export interface SiteOfferPage {
   title: string;
   to: string;
   icon: string;
+  description: string;
 }
 
 export interface SiteOfferForm {
@@ -359,4 +619,8 @@ export interface ContentPageResponse {
   title: string;
   image: string | null;
   bodyHtml: string;
+  form: {
+    type: "suggest_event" | "language_tandem";
+    preset?: Record<string, string>;
+  } | null;
 }

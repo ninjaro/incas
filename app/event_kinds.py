@@ -1,16 +1,12 @@
-"""Canonical per-event-kind metadata. Single source of truth for event kinds.
+"""Canonical event-kind metadata shared with the React application.
 
-A1 refactored app/__init__.py (event_kind_meta) and app/models.py
-(EVENT_TITLE_PREFIXES / TITLE_HIGHLIGHT_KINDS) to derive from this registry.
-app/site_content.py (SITE_OFFERS labels/icons) and app/demo_seed.py
-(schedule/deposit literals) still hold their own copies and are migrated to
-read from here in later Phase-A chunks (A4). Pure data — do not import from
-`app` (avoids import cycles).
-
-Weekday: Monday=0 … Sunday=6. `marker` is a semantic token mapped to a CSS
-variable by the React EventIcon/EventMarker components (A3). `schedule` and the
-`*Default` flags are default patterns/hints; real per-event values live on Post.
+This module is deliberately pure data so it can be exported as JSON without an
+application context. Per-event values (dates, prices and coordinates) remain on
+``Post``; this registry describes stable defaults and supported presentation
+features. Weekdays follow Python's convention: Monday=0 through Sunday=6.
 """
+
+EVENT_KIND_SCHEMA_VERSION = 2
 
 EVENT_KINDS = {
     "country_evening": {
@@ -25,6 +21,12 @@ EVENT_KINDS = {
         "features": ["map"],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "featured",
     },
     "cafe_lingua": {
         "id": "cafe_lingua",
@@ -38,6 +40,12 @@ EVENT_KINDS = {
         "features": ["map"],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "standard",
     },
     "board_games": {
         "id": "board_games",
@@ -51,6 +59,12 @@ EVENT_KINDS = {
         "features": ["map"],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "standard",
     },
     "karaoke": {
         "id": "karaoke",
@@ -64,6 +78,12 @@ EVENT_KINDS = {
         "features": ["karaoke_queue", "map"],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "karaoke",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "featured",
     },
     "dance": {
         "id": "dance",
@@ -77,6 +97,12 @@ EVENT_KINDS = {
         "features": ["map"],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "standard",
     },
     "breakfast": {
         "id": "breakfast",
@@ -90,6 +116,12 @@ EVENT_KINDS = {
         "features": ["registration", "deposit", "map"],
         "registrationDefault": True,
         "depositDefault": True,
+        "defaultCapacity": 40,
+        "defaultPriceCents": 200,
+        "defaultDurationMinutes": 180,
+        "registrationMode": "queue",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "featured",
     },
     "trip": {
         "id": "trip",
@@ -103,6 +135,69 @@ EVENT_KINDS = {
         "features": ["registration", "map"],
         "registrationDefault": True,
         "depositDefault": False,
+        "defaultCapacity": 80,
+        "defaultPriceCents": 2500,
+        "defaultDurationMinutes": 600,
+        "registrationMode": "queue",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "featured",
+    },
+    "international_tuesday": {
+        "id": "international_tuesday",
+        "label": {"en": "International Tuesday", "de": "Internationaler Dienstag"},
+        "icon": "people",
+        "marker": "accent",
+        "titlePrefix": None,
+        "highlightTitle": False,
+        "schedule": {"weekday": 1, "time": "20:00"},
+        "mapMode": "venue",
+        "features": ["map"],
+        "registrationDefault": False,
+        "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 240,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "standard",
+    },
+    "incas_active": {
+        "id": "incas_active",
+        "label": {"en": "INCAS Active", "de": "INCAS Aktiv"},
+        "icon": "activity",
+        "marker": "ok",
+        "titlePrefix": None,
+        "highlightTitle": False,
+        "schedule": None,
+        "mapMode": "venue",
+        "features": ["map"],
+        "registrationDefault": False,
+        "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 180,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "standard",
+    },
+    "opening_ceremony": {
+        "id": "opening_ceremony",
+        "label": {"en": "Opening Ceremony", "de": "Eröffnungsfeier"},
+        "icon": "sparkles",
+        "marker": "accent",
+        "titlePrefix": None,
+        "highlightTitle": False,
+        "schedule": None,
+        "mapMode": "venue",
+        "features": ["map"],
+        "registrationDefault": False,
+        "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 180,
+        "registrationMode": "none",
+        "calendarPresentation": "highlight",
+        "landingPresentation": "featured",
     },
     "housing": {
         "id": "housing",
@@ -116,6 +211,12 @@ EVENT_KINDS = {
         "features": [],
         "registrationDefault": False,
         "depositDefault": False,
+        "defaultCapacity": None,
+        "defaultPriceCents": None,
+        "defaultDurationMinutes": 120,
+        "registrationMode": "none",
+        "calendarPresentation": "standard",
+        "landingPresentation": "standard",
     },
 }
 

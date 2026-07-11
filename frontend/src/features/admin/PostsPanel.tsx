@@ -12,6 +12,7 @@ import {
   StatusBadge,
 } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
+import { EVENT_KINDS, getEventKind } from "../../domain/eventKinds";
 import { useAsync } from "../../hooks/useAsync";
 
 const STATUS_FILTERS: (PostStatus | "all")[] = ["all", "draft", "scheduled", "published", "archived"];
@@ -22,6 +23,8 @@ type EditorState = {
   body: string;
   eventKind: string;
   startsAt: string;
+  endsAt: string;
+  durationMinutes: string;
   publishAt: string;
   status: PostStatus;
   imageUrl: string;
@@ -29,6 +32,20 @@ type EditorState = {
   registrationLimit: string;
   registrationPriceCents: string;
   registrationIsDeposit: boolean;
+  registrationMode: "none" | "queue" | "karaoke";
+  depositExplanation: string;
+  venue: string;
+  address: string;
+  city: string;
+  meetingPoint: string;
+  destination: string;
+  countryCode: string;
+  latitude: string;
+  longitude: string;
+  destinationLatitude: string;
+  destinationLongitude: string;
+  featureFlags: string;
+  isPinned: boolean;
   socialFacebook: boolean;
   socialInstagram: boolean;
 };
@@ -39,6 +56,8 @@ const EMPTY_EDITOR: EditorState = {
   body: "",
   eventKind: "",
   startsAt: "",
+  endsAt: "",
+  durationMinutes: "",
   publishAt: "",
   status: "draft",
   imageUrl: "",
@@ -46,6 +65,20 @@ const EMPTY_EDITOR: EditorState = {
   registrationLimit: "",
   registrationPriceCents: "",
   registrationIsDeposit: false,
+  registrationMode: "none",
+  depositExplanation: "",
+  venue: "",
+  address: "",
+  city: "Aachen",
+  meetingPoint: "",
+  destination: "",
+  countryCode: "",
+  latitude: "",
+  longitude: "",
+  destinationLatitude: "",
+  destinationLongitude: "",
+  featureFlags: "",
+  isPinned: false,
   socialFacebook: false,
   socialInstagram: false,
 };
@@ -57,6 +90,8 @@ function editorFromPost(post: AdminPost): EditorState {
     body: post.body,
     eventKind: post.eventKind ?? "",
     startsAt: post.startsAt?.slice(0, 16) ?? "",
+    endsAt: post.endsAt?.slice(0, 16) ?? "",
+    durationMinutes: post.durationMinutes?.toString() ?? "",
     publishAt: post.publishAt?.slice(0, 16) ?? "",
     status: post.storedStatus,
     imageUrl: post.imageUrl,
@@ -64,6 +99,20 @@ function editorFromPost(post: AdminPost): EditorState {
     registrationLimit: post.registrationLimit?.toString() ?? "",
     registrationPriceCents: post.registrationPriceCents?.toString() ?? "",
     registrationIsDeposit: post.registrationIsDeposit,
+    registrationMode: post.registrationMode,
+    depositExplanation: post.depositExplanation,
+    venue: post.venue,
+    address: post.address,
+    city: post.city,
+    meetingPoint: post.meetingPoint,
+    destination: post.destination,
+    countryCode: post.countryCode,
+    latitude: post.latitude?.toString() ?? "",
+    longitude: post.longitude?.toString() ?? "",
+    destinationLatitude: post.destinationLatitude?.toString() ?? "",
+    destinationLongitude: post.destinationLongitude?.toString() ?? "",
+    featureFlags: post.featureFlags.join(", "),
+    isPinned: post.isPinned,
     socialFacebook: false,
     socialInstagram: false,
   };
@@ -76,6 +125,8 @@ function editorToInput(editor: EditorState): PostInput {
     body: editor.body,
     eventKind: editor.eventKind || undefined,
     startsAt: editor.startsAt || undefined,
+    endsAt: editor.endsAt || undefined,
+    durationMinutes: editor.durationMinutes ? Number(editor.durationMinutes) : null,
     publishAt: editor.publishAt || undefined,
     status: editor.status,
     imageUrl: editor.imageUrl,
@@ -85,6 +136,20 @@ function editorToInput(editor: EditorState): PostInput {
       ? Number(editor.registrationPriceCents)
       : null,
     registrationIsDeposit: editor.registrationIsDeposit,
+    registrationMode: editor.registrationMode,
+    depositExplanation: editor.depositExplanation,
+    venue: editor.venue,
+    address: editor.address,
+    city: editor.city,
+    meetingPoint: editor.meetingPoint,
+    destination: editor.destination,
+    countryCode: editor.countryCode,
+    latitude: editor.latitude ? Number(editor.latitude) : null,
+    longitude: editor.longitude ? Number(editor.longitude) : null,
+    destinationLatitude: editor.destinationLatitude ? Number(editor.destinationLatitude) : null,
+    destinationLongitude: editor.destinationLongitude ? Number(editor.destinationLongitude) : null,
+    featureFlags: editor.featureFlags.split(",").map((value) => value.trim()).filter(Boolean),
+    isPinned: editor.isPinned,
   };
 }
 
@@ -116,6 +181,30 @@ function PostEditor({
 
   const set = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
     setEditor((current) => ({ ...current, [key]: value }));
+    setDirty(true);
+  };
+
+  const setEventKind = (eventKind: string) => {
+    const kind = getEventKind(eventKind);
+    setEditor((current) => {
+      if (!kind) return { ...current, eventKind };
+      const date = new Date();
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const defaultStart = `${date.getFullYear()}-${month}-${day}T${kind.schedule?.time ?? "20:00"}`;
+      return {
+        ...current,
+        eventKind,
+        startsAt: current.startsAt || defaultStart,
+        durationMinutes: current.durationMinutes || String(kind.defaultDurationMinutes),
+        registrationLimitEnabled: current.registrationLimitEnabled || kind.registrationDefault,
+        registrationLimit: current.registrationLimit || String(kind.defaultCapacity ?? ""),
+        registrationPriceCents: current.registrationPriceCents || String(kind.defaultPriceCents ?? ""),
+        registrationIsDeposit: current.registrationIsDeposit || kind.depositDefault,
+        registrationMode: kind.registrationMode,
+        featureFlags: current.featureFlags || kind.features.join(", "),
+      };
+    });
     setDirty(true);
   };
 
@@ -222,16 +311,9 @@ function PostEditor({
           <h4>Event details</h4>
           <div className="form-grid">
             <Field label="Event type">
-              <select value={editor.eventKind} onChange={(event) => set("eventKind", event.target.value)}>
+              <select value={editor.eventKind} onChange={(event) => setEventKind(event.target.value)}>
                 <option value="">Not an event / other</option>
-                <option value="country_evening">Country Evening</option>
-                <option value="cafe_lingua">Café Lingua</option>
-                <option value="breakfast">International Breakfast</option>
-                <option value="board_games">Board Games</option>
-                <option value="dance">Dance Workshops</option>
-                <option value="trip">International Weekend</option>
-                <option value="karaoke">Karaoke</option>
-                <option value="housing">Housing</option>
+                {Object.values(EVENT_KINDS).map((kind) => <option key={kind.id} value={kind.id}>{kind.label.en}</option>)}
               </select>
             </Field>
             <Field label="Starts at" error={fieldErrors.startsAt}>
@@ -241,7 +323,27 @@ function PostEditor({
                 onChange={(event) => set("startsAt", event.target.value)}
               />
             </Field>
+            <Field label="Ends at" error={fieldErrors.endsAt}>
+              <input type="datetime-local" value={editor.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
+            </Field>
+            <Field label="Duration (minutes)" error={fieldErrors.durationMinutes}>
+              <input type="number" min={1} value={editor.durationMinutes} onChange={(event) => set("durationMinutes", event.target.value)} />
+            </Field>
           </div>
+
+          <div className="form-grid">
+            <Field label="Venue"><input value={editor.venue} onChange={(event) => set("venue", event.target.value)} /></Field>
+            <Field label="Address"><input value={editor.address} onChange={(event) => set("address", event.target.value)} /></Field>
+            <Field label="City"><input value={editor.city} onChange={(event) => set("city", event.target.value)} /></Field>
+            <Field label="Meeting point"><input value={editor.meetingPoint} onChange={(event) => set("meetingPoint", event.target.value)} /></Field>
+            <Field label="Destination"><input value={editor.destination} onChange={(event) => set("destination", event.target.value)} /></Field>
+            <Field label="Country code" error={fieldErrors.countryCode}><input maxLength={2} value={editor.countryCode} onChange={(event) => set("countryCode", event.target.value.toUpperCase())} /></Field>
+            <Field label="Venue latitude" error={fieldErrors.latitude}><input type="number" step="any" value={editor.latitude} onChange={(event) => set("latitude", event.target.value)} /></Field>
+            <Field label="Venue longitude" error={fieldErrors.longitude}><input type="number" step="any" value={editor.longitude} onChange={(event) => set("longitude", event.target.value)} /></Field>
+            <Field label="Destination latitude"><input type="number" step="any" value={editor.destinationLatitude} onChange={(event) => set("destinationLatitude", event.target.value)} /></Field>
+            <Field label="Destination longitude"><input type="number" step="any" value={editor.destinationLongitude} onChange={(event) => set("destinationLongitude", event.target.value)} /></Field>
+          </div>
+          <Field label="Extra feature flags (comma separated)"><input value={editor.featureFlags} onChange={(event) => set("featureFlags", event.target.value)} /></Field>
 
           <h4>Registration</h4>
           <div className="form-grid">
@@ -260,6 +362,7 @@ function PostEditor({
                 min={0}
                 value={editor.registrationLimit}
                 onChange={(event) => set("registrationLimit", event.target.value)}
+                disabled={!editor.registrationLimitEnabled}
               />
             </Field>
             <Field label="Price (cents)" error={fieldErrors.registrationPriceCents}>
@@ -268,6 +371,7 @@ function PostEditor({
                 min={0}
                 value={editor.registrationPriceCents}
                 onChange={(event) => set("registrationPriceCents", event.target.value)}
+                disabled={!editor.registrationLimitEnabled}
               />
             </Field>
             <div className="field field-check">
@@ -276,10 +380,13 @@ function PostEditor({
                 type="checkbox"
                 checked={editor.registrationIsDeposit}
                 onChange={(event) => set("registrationIsDeposit", event.target.checked)}
+                disabled={!editor.registrationLimitEnabled}
               />
               <label htmlFor="reg-deposit">Price is a deposit</label>
             </div>
+            <Field label="Registration mode"><select value={editor.registrationMode} disabled={!editor.registrationLimitEnabled} onChange={(event) => set("registrationMode", event.target.value as EditorState["registrationMode"])}><option value="none">None</option><option value="queue">Queue</option><option value="karaoke">Karaoke</option></select></Field>
           </div>
+          {editor.registrationIsDeposit ? <Field label="Deposit explanation"><input value={editor.depositExplanation} onChange={(event) => set("depositExplanation", event.target.value)} /></Field> : null}
 
           <h4>Media</h4>
           <Field label="Image URL (external images preferred)">
@@ -308,6 +415,7 @@ function PostEditor({
                 />
               </Field>
             ) : null}
+            <label className="check-row"><input type="checkbox" checked={editor.isPinned} onChange={(event) => set("isPinned", event.target.checked)} />Pin this post</label>
           </div>
 
           <h4>Social channels</h4>

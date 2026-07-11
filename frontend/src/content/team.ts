@@ -1,64 +1,60 @@
-/**
- * Team and organization content.
- *
- * This file is the single source of truth for team members shown on the
- * Team page, in both production and demo builds. It is deliberately not
- * stored in the database: edit names, roles, descriptions, and image paths
- * right here. A missing image falls back to a default avatar, and a missing
- * description falls back to a placeholder, so partial entries are fine.
- */
+/** Manually maintained organizational team content; no personal roster is fabricated. */
+export type TeamText = { en: string; de: string };
 
 export type TeamMember = {
   id: string;
-  name: string;
-  role: string;
-  description: string;
+  name: TeamText;
+  role: TeamText;
+  description: TeamText;
   imagePath: string;
-  links?: {
-    label: string;
-    url: string;
-  }[];
+  links?: { label: string; url: string }[];
 };
 
-export const DEFAULT_MEMBER_DESCRIPTION =
-  "Part of the INCAS team, helping international and local students meet in Aachen.";
+export const DEFAULT_MEMBER_DESCRIPTION: TeamText = {
+  en: "Part of the INCAS team, helping international and local students meet in Aachen.",
+  de: "Teil des INCAS Teams und engagiert für Begegnungen zwischen internationalen und lokalen Studierenden in Aachen.",
+};
 
-// TODO(maintainer): replace with real team roster. No real member names,
-// roles, or bios were available in this repository (the legacy site never
-// stored team members in the DB or templates), so the entries below are
-// clearly-marked sample placeholders. Swap them for actual INCAS board/team
-// members before this page ships to real visitors.
 export const teamMembers: TeamMember[] = [
   {
     id: "board-chair",
-    name: "Alex Example",
-    role: "Chairperson",
-    description:
-      "Coordinates the INCAS board, keeps the weekly program running, and welcomes new members.",
+    name: { en: "INCAS Board", de: "INCAS Vorstand" },
+    role: { en: "Coordination", de: "Koordination" },
+    description: {
+      en: "Coordinates the INCAS board, keeps the weekly programme running, and welcomes new members.",
+      de: "Koordiniert den Vorstand, hält das Wochenprogramm am Laufen und begrüßt neue Mitglieder.",
+    },
     imagePath: "/static/img/site/about-team.webp",
   },
   {
     id: "events-lead",
-    name: "Sam Sample",
-    role: "Events Lead",
-    description:
-      "Plans country evenings, breakfasts, and the international weekend trips.",
+    name: { en: "International Tuesday Team", de: "International Tuesday Team" },
+    role: { en: "Events", de: "Veranstaltungen" },
+    description: {
+      en: "Plans country evenings, breakfasts, and the international weekend trips.",
+      de: "Plant Länderabende, Frühstücke und die International-Weekend-Ausflüge.",
+    },
     imagePath: "",
   },
   {
     id: "tandem-lead",
-    name: "Robin Placeholder",
-    role: "Language Tandem",
-    description: "",
+    name: { en: "Language Tandem Team", de: "Sprachtandem-Team" },
+    role: { en: "Language exchange", de: "Sprachaustausch" },
+    description: {
+      en: "Reviews registrations and brings suitable tandem partners together.",
+      de: "Prüft Anmeldungen und bringt passende Tandempartner:innen zusammen.",
+    },
     imagePath: "",
   },
   {
     id: "communications",
-    name: "Kim Demo",
-    role: "Communications",
-    description:
-      "Runs the newsletter and social channels and keeps the website up to date.",
+    name: { en: "Communications Team", de: "Kommunikationsteam" },
+    role: { en: "Communications", de: "Kommunikation" },
+    description: {
+      en: "Runs the newsletter and social channels and keeps the website up to date.",
+      de: "Betreut Newsletter und Social Media und hält die Website aktuell.",
+    },
     imagePath: "",
-    links: [{ label: "Instagram", url: "https://www.instagram.com/incas.aachen/" }],
+    links: [{ label: "Instagram", url: "https://www.instagram.com/incas_aachen/" }],
   },
 ];

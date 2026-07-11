@@ -100,10 +100,15 @@ export function KaraokePanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState<KaraokeAdminEntry | null>(null);
   const [dragId, setDragId] = useState<number | null>(null);
+  const [eventSlug, setEventSlug] = useState("");
 
+  const overview = useAsync(() => data.getAdminKaraoke(), [data]);
+  const activeEvent = eventSlug || overview.data?.events[0]?.slug || "";
   const list = useAsync(
-    () => data.getAdminKaraoke(filter === "all" ? undefined : filter),
-    [filter],
+    () => activeEvent
+      ? data.getAdminKaraoke(filter === "all" ? undefined : filter, activeEvent)
+      : Promise.resolve({ items: [], events: [] }),
+    [data, filter, activeEvent],
   );
 
   const runAction = async (entry: KaraokeAdminEntry, action: KaraokeAction) => {
@@ -183,6 +188,9 @@ export function KaraokePanel() {
       ) : (
         <>
           <div style={{ marginBottom: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <select aria-label="Karaoke event" value={activeEvent} onChange={(event) => setEventSlug(event.target.value)}>
+              {(overview.data?.events ?? []).map((event) => <option key={event.slug} value={event.slug}>{event.title} ({event.startsAt?.slice(0, 10)})</option>)}
+            </select>
             {STATUS_FILTERS.map((status) => (
               <button
                 key={status}
@@ -218,6 +226,7 @@ export function KaraokePanel() {
                     <span>
                       {entry.artist ? `${entry.artist} · ` : ""}
                       {entry.displayName}
+                      {entry.eventTitle ? ` · ${entry.eventTitle}` : ""}
                       {entry.note ? ` · “${entry.note}”` : ""}
                     </span>
                   </div>

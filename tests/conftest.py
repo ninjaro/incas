@@ -7,6 +7,9 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["APP_ENV"] = "test"
+os.environ["AUTO_CREATE_SCHEMA"] = "1"
+os.environ["SEED_DEMO_DATA"] = "1"
 
 from app import create_app  # noqa: E402
 from app.models import AccessKey, db, get_configured_local_now  # noqa: E402

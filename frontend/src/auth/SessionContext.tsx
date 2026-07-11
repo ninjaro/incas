@@ -15,6 +15,7 @@ type SessionState = {
   loading: boolean;
   capabilities: Capability[];
   capabilityLabels: Record<string, string>;
+  hasAccessKeys: boolean;
   hasCapability: (capability: Capability) => boolean;
   /** Activates another key without logging out and refreshes capabilities. */
   unlock: (key: string) => Promise<SessionInfo>;
@@ -28,10 +29,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [capabilityLabels, setCapabilityLabels] = useState<Record<string, string>>({});
+  const [hasAccessKeys, setHasAccessKeys] = useState(false);
 
   const applySession = useCallback((session: SessionInfo) => {
     setCapabilities(session.capabilities);
     setCapabilityLabels(session.capabilityLabels);
+    setHasAccessKeys(session.hasAccessKeys);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -60,11 +63,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       loading,
       capabilities,
       capabilityLabels,
+      hasAccessKeys,
       hasCapability: (capability) => capabilities.includes(capability),
       unlock,
       refresh,
     }),
-    [loading, capabilities, capabilityLabels, unlock, refresh],
+    [loading, capabilities, capabilityLabels, hasAccessKeys, unlock, refresh],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

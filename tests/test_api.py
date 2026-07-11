@@ -11,6 +11,27 @@ from app.models import (
 from tests.conftest import API_HEADERS, unlock
 
 
+def karaoke_event_slug(app):
+    with app.app_context():
+        return Post.query.filter_by(event_kind="karaoke").first().slug
+
+
+def register_for_event(client, slug, email="participant@example.org"):
+    response = client.post(
+        f"/api/v1/public/events/{slug}/registrations",
+        json={
+            "firstName": "Test",
+            "lastName": "Participant",
+            "email": email,
+            "occupation": "student",
+            "comment": "",
+        },
+        headers=API_HEADERS,
+    )
+    assert response.status_code == 201
+    return response.get_json()
+
+
 def test_write_requires_csrf_header(client):
     response = client.post("/api/v1/admin/theme-votes", json={})
     assert response.status_code == 403
@@ -276,9 +297,15 @@ def test_template_lifecycle(client, app):
 
 
 def test_karaoke_public_flow(client, app):
+    event_slug = karaoke_event_slug(app)
     submitted = client.post(
         "/api/v1/public/karaoke/requests",
-        json={"displayName": "Ana", "songTitle": "Bohemian Rhapsody", "artist": "Queen"},
+        json={
+            "displayName": "Ana",
+            "songTitle": "Bohemian Rhapsody",
+            "artist": "Queen",
+            "eventSlug": event_slug,
+        },
         headers=API_HEADERS,
     )
     assert submitted.status_code == 201
@@ -289,7 +316,7 @@ def test_karaoke_public_flow(client, app):
     assert tracked["queuePosition"] is None
 
     # Pending requests are not in the public queue.
-    queue = client.get("/api/v1/public/karaoke/queue").get_json()
+    queue = client.get(f"/api/v1/public/karaoke/queue?event={event_slug}").get_json()
     assert all(entry["publicId"] != public_id for entry in queue["items"])
 
 
@@ -304,12 +331,17 @@ def test_karaoke_validation(client):
 
 def test_karaoke_admin_flow(client, app):
     unlock(client, app, "karaoke-key", ["karaoke_queue"])
+    event_slug = karaoke_event_slug(app)
 
     ids = []
     for index in range(3):
         response = client.post(
             "/api/v1/public/karaoke/requests",
-            json={"displayName": f"Singer {index}", "songTitle": f"Song {index}"},
+            json={
+                "displayName": f"Singer {index}",
+                "songTitle": f"Song {index}",
+                "eventSlug": event_slug,
+            },
             headers=API_HEADERS,
         )
         public_id = response.get_json()["publicId"]
@@ -326,7 +358,7 @@ def test_karaoke_admin_flow(client, app):
     assert conflict.status_code == 409
 
     # Public queue shows names but no contact/note fields.
-    queue = client.get("/api/v1/public/karaoke/queue").get_json()["items"]
+    queue = client.get(f"/api/v1/public/karaoke/queue?event={event_slug}").get_json()["items"]
     assert [entry["queuePosition"] for entry in queue] == [1, 2, 3]
     assert "contact" not in queue[0] and "note" not in queue[0]
 
@@ -337,7 +369,7 @@ def test_karaoke_admin_flow(client, app):
         headers=API_HEADERS,
     )
     assert reordered.status_code == 200
-    queue = client.get("/api/v1/public/karaoke/queue").get_json()["items"]
+    queue = client.get(f"/api/v1/public/karaoke/queue?event={event_slug}").get_json()["items"]
     assert queue[0]["displayName"] == "Singer 2"
 
     # Reordering with a stale id set is rejected.
@@ -410,10 +442,16 @@ def test_payment_mock_flow(client, app):
         },
         headers=API_HEADERS,
     ).get_json()
+    registration = register_for_event(client, post["slug"])
+    assert registration["status"] == "waiting_payment"
 
     checkout = client.post(
         "/api/v1/payments/checkout",
-        json={"postSlug": post["slug"], "amountCents": 1},
+        json={
+            "postSlug": post["slug"],
+            "registrationPublicId": registration["publicId"],
+            "amountCents": 1,
+        },
         headers=API_HEADERS,
     )
     assert checkout.status_code == 201
@@ -446,13 +484,19 @@ def test_payment_failure_and_webhook(client, app):
         json={
             "title": "Paid Dinner",
             "status": "published",
+            "startsAt": (get_configured_local_now() + timedelta(days=4)).isoformat(),
+            "registrationLimitEnabled": True,
+            "registrationLimit": 10,
             "registrationPriceCents": 800,
         },
         headers=API_HEADERS,
     ).get_json()
+    registration = register_for_event(client, post["slug"], "dinner@example.org")
 
     first = client.post(
-        "/api/v1/payments/checkout", json={"postSlug": post["slug"]}, headers=API_HEADERS
+        "/api/v1/payments/checkout",
+        json={"postSlug": post["slug"], "registrationPublicId": registration["publicId"]},
+        headers=API_HEADERS,
     ).get_json()
     failed = client.post(
         f"/api/v1/payments/{first['publicId']}/simulate",
@@ -462,7 +506,9 @@ def test_payment_failure_and_webhook(client, app):
     assert failed["status"] == "failed"
 
     second = client.post(
-        "/api/v1/payments/checkout", json={"postSlug": post["slug"]}, headers=API_HEADERS
+        "/api/v1/payments/checkout",
+        json={"postSlug": post["slug"], "registrationPublicId": registration["publicId"]},
+        headers=API_HEADERS,
     ).get_json()
     webhook = client.post(
         "/api/v1/payments/webhook",

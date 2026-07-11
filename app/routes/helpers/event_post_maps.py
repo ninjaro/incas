@@ -247,7 +247,7 @@ def build_country_evening_map_context(post):
         return None
 
     country_name = normalize_event_title_suffix(post.event_kind, post.title)
-    country_code = resolve_country_code(country_name)
+    country_code = (getattr(post, "country_code", "") or "").upper() or resolve_country_code(country_name)
     if not country_code:
         return None
 
@@ -293,7 +293,7 @@ def build_breakfast_map_context(post):
         }
 
     country_name = BREAKFAST_LABEL_ALIASES.get(lookup_key, raw_label)
-    country_code = resolve_country_code(country_name)
+    country_code = (getattr(post, "country_code", "") or "").upper() or resolve_country_code(country_name)
     if not country_code:
         return None
 
@@ -318,8 +318,25 @@ def build_trip_map_context(post):
     if post.event_kind != "trip":
         return None
 
-    destination_label = normalize_event_title_suffix(post.event_kind, post.title)
-    destination = TRIP_DESTINATIONS.get(normalize_lookup_key(destination_label))
+    destination_label = (
+        (getattr(post, "destination", "") or "").strip()
+        or normalize_event_title_suffix(post.event_kind, post.title)
+    )
+    destination = None
+    destination_latitude = getattr(post, "destination_latitude", None)
+    destination_longitude = getattr(post, "destination_longitude", None)
+    if destination_latitude is not None and destination_longitude is not None:
+        destination = {
+            "name": destination_label,
+            "coordinates": [destination_longitude, destination_latitude],
+            "center": [
+                (AACHEN_POINT["coordinates"][0] + destination_longitude) / 2,
+                (AACHEN_POINT["coordinates"][1] + destination_latitude) / 2,
+            ],
+            "zoom": 5.0,
+        }
+    if destination is None:
+        destination = TRIP_DESTINATIONS.get(normalize_lookup_key(destination_label))
     if destination is None:
         return None
 
@@ -344,7 +361,7 @@ def build_trip_map_context(post):
 
 def build_opening_ceremony_map_context(post):
     title = post.display_title or post.title or ""
-    if not OPENING_CEREMONY_RE.search(title):
+    if post.event_kind != "opening_ceremony" and not OPENING_CEREMONY_RE.search(title):
         return None
 
     return {
@@ -363,6 +380,29 @@ def build_opening_ceremony_map_context(post):
     }
 
 
+def build_venue_map_context(post):
+    latitude = getattr(post, "latitude", None)
+    longitude = getattr(post, "longitude", None)
+    if latitude is None or longitude is None:
+        return None
+
+    label = (getattr(post, "venue", "") or getattr(post, "city", "") or "Event location").strip()
+    return {
+        "provider_id": "amcharts-maps",
+        "provider_name": "amCharts 5 + geodata",
+        "title": "Event Location",
+        "description": label,
+        "note": "The venue is shown as a city marker with regional context.",
+        "target": {
+            "kind": "marker",
+            "label": label,
+            "center": [longitude, latitude],
+            "zoom": 13,
+            "marker": {"name": label, "coordinates": [longitude, latitude]},
+        },
+    }
+
+
 def build_event_post_map_context(post):
     if not getattr(post, "is_event", False):
         return None
@@ -372,4 +412,5 @@ def build_event_post_map_context(post):
         or build_breakfast_map_context(post)
         or build_country_evening_map_context(post)
         or build_opening_ceremony_map_context(post)
+        or build_venue_map_context(post)
     )

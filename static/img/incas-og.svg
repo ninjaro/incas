@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">INCAS Aachen</title>
+  <desc id="desc">Intercultural Centre of Aachen Students</desc>
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#ff6600" stroke-opacity=".08"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#1e1b18"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="1040" cy="-10" r="310" fill="#ff6600" opacity=".12"/>
+  <path d="M0 535C250 430 440 610 710 500s340-40 490-105v235H0Z" fill="#ff6600"/>
+  <text x="95" y="270" fill="#ff6600" font-family="Georgia,serif" font-size="172" font-style="italic">INCAS</text>
+  <text x="105" y="350" fill="#fff" font-family="sans-serif" font-size="33" letter-spacing="3">INTERCULTURAL CENTRE OF AACHEN STUDENTS</text>
+  <text x="105" y="425" fill="#d7cec4" font-family="sans-serif" font-size="29">Meet. Exchange. Belong.</text>
+</svg>

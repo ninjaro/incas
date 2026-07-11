@@ -6,6 +6,9 @@ import { Loading } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
 import { useAsync } from "../hooks/useAsync";
 import { useLocale, useT } from "../i18n/LocaleContext";
+import { assetUrl } from "../utils/assets";
+import { SuggestEventForm } from "./SuggestEventPage";
+import { TandemEmbeddedForm } from "./TandemFormPage";
 
 // The app is a HashRouter SPA (real URLs are `#/...`), but in-body content
 // HTML is authored against the legacy Jinja site's absolute paths (e.g.
@@ -90,13 +93,14 @@ export function ContentPage({ slug: fixedSlug }: { slug?: string }) {
     );
   }
   const page = state.data;
+  const imageUrl = assetUrl(page.image);
   return (
     <article className="content-page">
       <h1 className="content-page-title">{page.title}</h1>
-      {page.image ? (
+      {imageUrl ? (
         <img
           className="content-page-image"
-          src={`/static/${page.image}`}
+          src={imageUrl}
           alt=""
           loading="lazy"
           onError={(event) => {
@@ -109,6 +113,17 @@ export function ContentPage({ slug: fixedSlug }: { slug?: string }) {
         onClick={handleContentClick}
         dangerouslySetInnerHTML={{ __html: page.bodyHtml }}
       />
+      {page.form ? (
+        <section id="page-form" className="embedded-page-form" aria-label={`${page.title} form`}>
+          {page.form.type === "suggest_event" ? (
+            <SuggestEventForm
+              initialKind={page.form.preset?.kind === "breakfast" ? "breakfast" : "country_evening"}
+            />
+          ) : (
+            <TandemEmbeddedForm />
+          )}
+        </section>
+      ) : null}
     </article>
   );
 }

@@ -2,22 +2,23 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import { ApiError } from "../../api/client";
 import type { KaraokePublicEntry } from "../../api/types";
-import { EmptyState, Field, PageHeader, StatusBadge } from "../../components/ui";
+import { EmptyState, Field, StatusBadge } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { useAsync } from "../../hooks/useAsync";
+import { useLocale } from "../../i18n/LocaleContext";
 
 const TRACKING_STORAGE_KEY = "incas-karaoke-tracking";
 const QUEUE_POLL_MS = 10000;
 
 function loadTrackedIds(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(TRACKING_STORAGE_KEY) ?? "[]") as string[];
+    return JSON.parse(globalThis.localStorage?.getItem?.(TRACKING_STORAGE_KEY) ?? "[]") as string[];
   } catch {
     return [];
   }
 }
 
-function TrackedRequests({ refreshKey }: { refreshKey: number }) {
+function TrackedRequests({ refreshKey, de }: { refreshKey: number; de: boolean }) {
   const data = useData();
   const [entries, setEntries] = useState<KaraokePublicEntry[]>([]);
 
@@ -42,18 +43,18 @@ function TrackedRequests({ refreshKey }: { refreshKey: number }) {
 
   return (
     <div className="card">
-      <h3>Your requests</h3>
+      <h3>{de ? "Deine Wünsche" : "Your requests"}</h3>
       {entries.map((entry) => (
         <div key={entry.publicId} className="queue-row">
           <div className="queue-song">
             <strong>{entry.songTitle}</strong>
             <span>
-              {entry.artist ? `${entry.artist} · ` : ""}Tracking code: {entry.publicId}
+              {entry.artist ? `${entry.artist} · ` : ""}{de ? "Tracking-Code" : "Tracking code"}: {entry.publicId}
             </span>
           </div>
-          <StatusBadge status={entry.status} />
+          <StatusBadge status={entry.status} label={de ? ({ pending: "Ausstehend", approved: "Bestätigt", performing: "Auf der Bühne", completed: "Abgeschlossen", rejected: "Abgelehnt", cancelled: "Storniert" }[entry.status] ?? entry.status) : undefined} />
           {entry.queuePosition ? (
-            <span className="badge badge-brand">#{entry.queuePosition} in queue</span>
+            <span className="badge badge-brand">#{entry.queuePosition} {de ? "in der Warteschlange" : "in queue"}</span>
           ) : null}
         </div>
       ))}
@@ -61,15 +62,17 @@ function TrackedRequests({ refreshKey }: { refreshKey: number }) {
   );
 }
 
-export function KaraokePublicPage() {
+export function KaraokeEventFeature({ eventSlug, eventTitle }: { eventSlug: string; eventTitle: string }) {
   const data = useData();
+  const { locale } = useLocale();
+  const de = locale === "de";
   const [form, setForm] = useState({ displayName: "", songTitle: "", artist: "", note: "" });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  const queue = useAsync(() => data.getKaraokeQueue(), [refreshKey]);
+  const queue = useAsync(() => data.getKaraokeQueue(eventSlug), [eventSlug, refreshKey]);
 
   useEffect(() => {
     const timer = setInterval(() => setRefreshKey((value) => value + 1), QUEUE_POLL_MS);
@@ -81,7 +84,7 @@ export function KaraokePublicPage() {
     setBusy(true);
     setFieldErrors({});
     try {
-      const result = await data.submitKaraokeRequest(form);
+      const result = await data.submitKaraokeRequest({ ...form, eventSlug });
       const ids = loadTrackedIds();
       localStorage.setItem(TRACKING_STORAGE_KEY, JSON.stringify([...ids, result.publicId]));
       setSubmitted(result.publicId);
@@ -93,7 +96,7 @@ export function KaraokePublicPage() {
       } else if (error instanceof Error && "fields" in error) {
         setFieldErrors((error as { fields: Record<string, string> }).fields);
       } else {
-        setFieldErrors({ songTitle: "Could not submit your request. Try again." });
+        setFieldErrors({ songTitle: de ? "Der Wunsch konnte nicht gesendet werden. Versuch es erneut." : "Could not submit your request. Try again." });
       }
     } finally {
       setBusy(false);
@@ -103,20 +106,15 @@ export function KaraokePublicPage() {
   const items = queue.data?.items ?? [];
 
   return (
-    <>
-      <PageHeader
-        kicker="Karaoke"
-        title="Song Queue"
-        sub="Request a song and track your spot. Requests are reviewed by the karaoke team before they enter the live queue."
-      />
+    <section className="karaoke-event-feature" aria-labelledby="karaoke-event-title">
+      <header className="section-heading"><p className="page-kicker">Karaoke</p><h2 id="karaoke-event-title">{de ? `Song-Warteschlange für ${eventTitle}` : `Song queue for ${eventTitle}`}</h2><p>{de ? "Wünsche werden geprüft, bevor sie in der Live-Warteschlange dieses Events erscheinen." : "Requests are reviewed before they enter this event's live queue."}</p></header>
 
       <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <form className="card" onSubmit={submit} aria-label="Request a song">
-          <h3>Request a song</h3>
+        <form className="card" onSubmit={submit} aria-label={de ? "Song wünschen" : "Request a song"}>
+          <h3>{de ? "Song wünschen" : "Request a song"}</h3>
           {submitted ? (
             <p className="notice notice-ok">
-              Request received! Your tracking code is <strong>{submitted}</strong>. Follow its
-              status in{" "}
+              {de ? "Wunsch erhalten! Dein Tracking-Code ist" : "Request received! Your tracking code is"} <strong>{submitted}</strong>. {de ? "Verfolge den Status unten unter" : "Follow its status in"}{" "}
               <button
                 type="button"
                 className="link-button"
@@ -126,12 +124,12 @@ export function KaraokePublicPage() {
                     ?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }
               >
-                Your requests
+                {de ? "Deine Wünsche" : "Your requests"}
               </button>{" "}
-              below.
+              {de ? "." : " below."}
             </p>
           ) : null}
-          <Field label="Your name or nickname" error={fieldErrors.displayName}>
+          <Field label={de ? "Dein Name oder Spitzname" : "Your name or nickname"} error={fieldErrors.displayName}>
             <input
               value={form.displayName}
               onChange={(event) => setForm({ ...form, displayName: event.target.value })}
@@ -139,7 +137,7 @@ export function KaraokePublicPage() {
               required
             />
           </Field>
-          <Field label="Song title" error={fieldErrors.songTitle}>
+          <Field label={de ? "Songtitel" : "Song title"} error={fieldErrors.songTitle}>
             <input
               value={form.songTitle}
               onChange={(event) => setForm({ ...form, songTitle: event.target.value })}
@@ -147,14 +145,14 @@ export function KaraokePublicPage() {
               required
             />
           </Field>
-          <Field label="Artist (optional)">
+          <Field label={de ? "Interpret:in (optional)" : "Artist (optional)"}>
             <input
               value={form.artist}
               onChange={(event) => setForm({ ...form, artist: event.target.value })}
               maxLength={200}
             />
           </Field>
-          <Field label="Note for the host (optional)">
+          <Field label={de ? "Hinweis für die Moderation (optional)" : "Note for the host (optional)"}>
             <textarea
               value={form.note}
               onChange={(event) => setForm({ ...form, note: event.target.value })}
@@ -162,15 +160,15 @@ export function KaraokePublicPage() {
             />
           </Field>
           <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? "Submitting…" : "Submit request"}
+            {busy ? (de ? "Wird gesendet..." : "Submitting...") : (de ? "Wunsch senden" : "Submit request")}
           </button>
         </form>
 
         <div>
           <div className="card">
-            <h3>Live queue</h3>
+            <h3>{de ? "Live-Warteschlange" : "Live queue"}</h3>
             {items.length === 0 ? (
-              <EmptyState>The queue is empty — be the first to request a song!</EmptyState>
+              <EmptyState>{de ? "Die Warteschlange ist leer. Wünsche dir den ersten Song!" : "The queue is empty. Be the first to request a song!"}</EmptyState>
             ) : (
               items.map((entry) => (
                 <div
@@ -186,17 +184,17 @@ export function KaraokePublicPage() {
                     </span>
                   </div>
                   {entry.status === "performing" ? (
-                    <span className="badge badge-brand">On stage</span>
+                    <span className="badge badge-brand">{de ? "Auf der Bühne" : "On stage"}</span>
                   ) : null}
                 </div>
               ))
             )}
           </div>
           <div style={{ marginTop: 16 }} id="karaoke-tracked">
-            <TrackedRequests refreshKey={refreshKey} />
+            <TrackedRequests refreshKey={refreshKey} de={de} />
           </div>
         </div>
       </div>
-    </>
+    </section>
   );
 }

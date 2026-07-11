@@ -14,6 +14,11 @@ type AdminNavItem = {
 const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin", label: "Dashboard", capability: null },
   { to: "/admin/posts", label: "Posts & Events", capability: "posts" },
+  { to: "/admin/social", label: "Social Publications", capability: "posts" },
+  { to: "/admin/registrations", label: "Event Registrations", capability: "event_registrations" },
+  { to: "/admin/payments", label: "Payments", capability: "event_registrations" },
+  { to: "/admin/forms", label: "Forms Inbox", capability: "forms" },
+  { to: "/admin/access-keys", label: "Access Keys", capability: "access_keys" },
   { to: "/admin/themes", label: "Themes", capability: "theme_review" },
   { to: "/admin/karaoke", label: "Karaoke Queue", capability: "karaoke_queue" },
   { to: "/admin/tandem", label: "Language Tandem", capability: "language_tandem_blind" },

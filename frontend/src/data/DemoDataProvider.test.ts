@@ -88,7 +88,13 @@ describe("DemoDataProvider", () => {
   });
 
   it("simulates payments deterministically", async () => {
-    const checkout = await provider.startCheckout("international-breakfast");
+    const paidEvent = (await provider.getPublicPosts()).events.find((event) => event.registration?.priceCents);
+    expect(paidEvent).toBeDefined();
+    const registration = await provider.registerForEvent(paidEvent!.slug, {
+      firstName: "Demo", lastName: "Visitor", email: "demo.visitor@example.com",
+      occupation: "Student at RWTH Aachen", dietPreference: paidEvent!.eventKind === "breakfast" ? "vegetarian" : "", comment: "",
+    });
+    const checkout = await provider.startCheckout(paidEvent!.slug, registration.publicId);
     expect(checkout.status).toBe("pending");
     expect(checkout.isSimulated).toBe(true);
 
@@ -97,7 +103,9 @@ describe("DemoDataProvider", () => {
   });
 
   it("refuses checkout for free events", async () => {
-    await expect(provider.startCheckout("karaoke-night")).rejects.toMatchObject({
+    const freeEvent = (await provider.getPublicPosts()).events.find((event) => !event.registration?.priceCents);
+    expect(freeEvent).toBeDefined();
+    await expect(provider.startCheckout(freeEvent!.slug, "APP-NOT-USED")).rejects.toMatchObject({
       code: "payment_not_required",
     });
   });

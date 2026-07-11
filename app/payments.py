@@ -16,11 +16,13 @@ from abc import ABC, abstractmethod
 
 from app.models import (
     EVENT_REGISTRATION_STATUS_APPROVED,
+    EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
     PAYMENT_STATUS_FAILED,
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
     EventRegistration,
     PaymentTransaction,
+    Post,
     db,
 )
 
@@ -55,7 +57,7 @@ class MockPaymentProvider(PaymentProvider):
             return None
         if event == "checkout.completed":
             mark_paid(transaction)
-        elif event == "checkout.failed":
+        elif event == "checkout.failed" and transaction.status == PAYMENT_STATUS_PENDING:
             transaction.status = PAYMENT_STATUS_FAILED
             transaction.error_message = (payload or {}).get("message", "Simulated failure")
         return transaction
@@ -75,6 +77,8 @@ def new_payment_public_id():
 
 def create_transaction(post, registration=None):
     """Create a pending transaction; the amount always comes from the post."""
+    if post.has_registration_queue and registration is None:
+        raise ValueError("Registration payments require a registration.")
     amount_cents = post.registration_price_cents or 0
     transaction = PaymentTransaction(
         public_id=new_payment_public_id(),
@@ -88,12 +92,39 @@ def create_transaction(post, registration=None):
 
 
 def mark_paid(transaction):
+    """Confirm only the eligible registration linked to this transaction."""
+    if transaction.status == PAYMENT_STATUS_PAID:
+        return True
+    if transaction.status != PAYMENT_STATUS_PENDING:
+        return False
+    if transaction.registration_id is None:
+        transaction.status = PAYMENT_STATUS_FAILED
+        transaction.error_message = "Payment is not linked to a registration."
+        return False
+
+    registration = db.session.get(EventRegistration, transaction.registration_id)
+    if registration is None or registration.post_id != transaction.post_id:
+        transaction.status = PAYMENT_STATUS_FAILED
+        transaction.error_message = "Linked registration is invalid."
+        return False
+    if registration.status != EVENT_REGISTRATION_STATUS_WAITING_PAYMENT:
+        transaction.status = PAYMENT_STATUS_FAILED
+        transaction.error_message = "Registration is no longer eligible for payment."
+        return False
+    post = db.session.get(Post, registration.post_id)
+    if post is None or not post.has_registration_queue:
+        transaction.status = PAYMENT_STATUS_FAILED
+        transaction.error_message = "Event registration is no longer available."
+        return False
+    if post.registration_reserved_count > (post.registration_limit or 0):
+        transaction.status = PAYMENT_STATUS_FAILED
+        transaction.error_message = "Event capacity changed; contact the event team."
+        return False
+
     transaction.status = PAYMENT_STATUS_PAID
     transaction.error_message = ""
-    if transaction.registration_id:
-        registration = db.session.get(EventRegistration, transaction.registration_id)
-        if registration is not None:
-            registration.status = EVENT_REGISTRATION_STATUS_APPROVED
+    registration.status = EVENT_REGISTRATION_STATUS_APPROVED
+    return True
 
 
 def serialize_transaction(transaction):

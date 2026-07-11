@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, type ReactElement, type ReactNode } from "react";
 
 export function PageHeader({
   kicker,
@@ -40,8 +40,8 @@ const BADGE_TONES: Record<string, string> = {
   paid: "badge-ok",
 };
 
-export function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge ${BADGE_TONES[status] ?? "badge-neutral"}`}>{status}</span>;
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
+  return <span className={`badge ${BADGE_TONES[status] ?? "badge-neutral"}`}>{label ?? status}</span>;
 }
 
 export function Loading({ label = "Loading…" }: { label?: string }) {
@@ -88,15 +88,39 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
-    if (open) confirmRef.current?.focus();
+    if (open) {
+      previousFocus.current = document.activeElement as HTMLElement | null;
+      confirmRef.current?.focus();
+    }
+    return () => {
+      if (open) previousFocus.current?.focus();
+    };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCancel();
+      if (event.key === "Tab") {
+        const focusable = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])") ?? [],
+        ).filter((element) => !element.hasAttribute("disabled"));
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -107,13 +131,14 @@ export function ConfirmDialog({
   return (
     <div className="dialog-backdrop" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="dialog"
         role="alertdialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         {body ? <p>{body}</p> : null}
         <div className="dialog-actions">
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
@@ -142,13 +167,27 @@ export function Field({
   error?: string;
   children: ReactNode;
 }) {
+  const controlId = useId();
+  const errorId = useId();
+  type ControlProps = {
+    id?: string;
+    "aria-describedby"?: string;
+    "aria-invalid"?: boolean | "true" | "false";
+  };
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<ControlProps>, {
+        id: (children as ReactElement<ControlProps>).props.id ?? controlId,
+        "aria-describedby": error
+          ? [(children as ReactElement<ControlProps>).props["aria-describedby"], errorId].filter(Boolean).join(" ")
+          : (children as ReactElement<ControlProps>).props["aria-describedby"],
+        "aria-invalid": error ? "true" : (children as ReactElement<ControlProps>).props["aria-invalid"],
+      })
+    : children;
   return (
     <div className="field">
-      <label>
-        {label}
-        {children}
-      </label>
-      {error ? <p className="field-error">{error}</p> : null}
+      <label htmlFor={isValidElement(children) ? ((children as ReactElement<ControlProps>).props.id ?? controlId) : undefined}>{label}</label>
+      {control}
+      {error ? <p id={errorId} className="field-error">{error}</p> : null}
     </div>
   );
 }

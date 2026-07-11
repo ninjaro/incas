@@ -8,15 +8,21 @@
     "build:app": "vite build",
     "build:demo": "vite build --mode demo",
     "build:widget": "vite build --config vite.widget.config.ts",
+    "preview:demo": "vite preview --mode demo --host 127.0.0.1 --port 4173",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "npm run build:demo && playwright test",
+    "test:e2e:update": "npm run build:demo && playwright test --update-snapshots"
   },
   "dependencies": {
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

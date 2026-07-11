@@ -1,25 +1,33 @@
-import { createHashRouter } from "react-router-dom";
+import { Navigate, createHashRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 
 import type { Capability } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { Loading } from "../components/ui";
 import { AdminLayout } from "../features/admin/AdminLayout";
+import { AccessKeysPanel } from "../features/admin/AccessKeysPanel";
 import { DashboardPage } from "../features/admin/DashboardPage";
 import { KaraokePanel } from "../features/admin/KaraokePanel";
+import { EventRegistrationsPanel } from "../features/admin/EventRegistrationsPanel";
+import { FormsInboxPanel } from "../features/admin/FormsInboxPanel";
+import { PaymentsPanel } from "../features/admin/PaymentsPanel";
+import { SocialPublicationsPanel } from "../features/admin/SocialPublicationsPanel";
 import { PostsPanel } from "../features/admin/PostsPanel";
 import { TandemPanel } from "../features/admin/TandemPanel";
 import { ThemesPanel } from "../features/admin/ThemesPanel";
-import { KaraokePublicPage } from "../features/karaoke/KaraokePublicPage";
+import { UnlockRoute } from "../features/admin/UnlockRoute";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { CalendarPage } from "../pages/CalendarPage";
+import { AboutPage } from "../pages/AboutPage";
 import { ContactPage } from "../pages/ContactPage";
 import { ContentPage } from "../pages/ContentPage";
 import { EventDetailPage } from "../pages/EventDetailPage";
 import { LandingPage } from "../pages/LandingPage";
 import { OffersPage } from "../pages/OffersPage";
+import { RegistrationStatusPage } from "../pages/RegistrationStatusPage";
+import { SuggestEventPage } from "../pages/SuggestEventPage";
 import { TandemFormPage } from "../pages/TandemFormPage";
-import { TeamPage } from "../pages/TeamPage";
+import { useLocale } from "../i18n/LocaleContext";
 
 function RequireCapability({
   capability,
@@ -29,15 +37,17 @@ function RequireCapability({
   children: ReactNode;
 }) {
   const session = useSession();
+  const { locale } = useLocale();
+  const de = locale === "de";
   if (session.loading) return <Loading />;
   if (!session.hasCapability(capability)) {
     return (
       <div className="state-box">
         <p>
-          🔒 This panel requires the <strong>{session.capabilityLabels[capability] ?? capability}</strong>{" "}
-          capability.
+          {de ? "Dieser Bereich benötigt die Berechtigung" : "This panel requires the capability"}{" "}
+          <strong>{session.capabilityLabels[capability] ?? capability}</strong>.
         </p>
-        <p>Activate a matching access key in the sidebar — no logout needed.</p>
+        <p>{de ? "Aktiviere links einen passenden Zugangsschlüssel. Eine Abmeldung ist nicht nötig." : "Activate a matching access key in the sidebar. No logout is needed."}</p>
       </div>
     );
   }
@@ -45,10 +55,12 @@ function RequireCapability({
 }
 
 function NotFound() {
+  const { locale } = useLocale();
+  const de = locale === "de";
   return (
     <div className="state-box">
-      <h1>Page not found</h1>
-      <p>The page you are looking for does not exist.</p>
+      <h1>{de ? "Seite nicht gefunden" : "Page not found"}</h1>
+      <p>{de ? "Die gesuchte Seite existiert nicht." : "The page you are looking for does not exist."}</p>
     </div>
   );
 }
@@ -60,20 +72,23 @@ export const router = createHashRouter([
       { path: "/", element: <LandingPage /> },
       { path: "/calendar", element: <CalendarPage /> },
       { path: "/events/:slug", element: <EventDetailPage /> },
-      { path: "/team", element: <TeamPage /> },
-      { path: "/karaoke", element: <KaraokePublicPage /> },
+      { path: "/team", element: <Navigate to="/about?section=team" replace /> },
       { path: "/tandem", element: <TandemFormPage /> },
-      { path: "/about", element: <ContentPage slug="about" /> },
+      { path: "/about", element: <AboutPage /> },
+      { path: "/about/team", element: <AboutPage /> },
       { path: "/about/working-groups", element: <ContentPage slug="working-groups" /> },
       { path: "/about/team-meetings", element: <ContentPage slug="team-meetings" /> },
       { path: "/offers", element: <OffersPage /> },
       { path: "/offers/:slug", element: <ContentPage /> },
       { path: "/contact", element: <ContactPage /> },
+      { path: "/suggest-event", element: <SuggestEventPage /> },
+      { path: "/registrations/:publicId", element: <RegistrationStatusPage /> },
       {
         path: "/admin",
         element: <AdminLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
+          { path: "unlock/:key", element: <UnlockRoute /> },
           {
             path: "posts",
             element: (
@@ -81,6 +96,26 @@ export const router = createHashRouter([
                 <PostsPanel />
               </RequireCapability>
             ),
+          },
+          {
+            path: "registrations",
+            element: <RequireCapability capability="event_registrations"><EventRegistrationsPanel /></RequireCapability>,
+          },
+          {
+            path: "forms",
+            element: <RequireCapability capability="forms"><FormsInboxPanel /></RequireCapability>,
+          },
+          {
+            path: "access-keys",
+            element: <RequireCapability capability="access_keys"><AccessKeysPanel /></RequireCapability>,
+          },
+          {
+            path: "payments",
+            element: <RequireCapability capability="event_registrations"><PaymentsPanel /></RequireCapability>,
+          },
+          {
+            path: "social",
+            element: <RequireCapability capability="posts"><SocialPublicationsPanel /></RequireCapability>,
           },
           {
             path: "themes",

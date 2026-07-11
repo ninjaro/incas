@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import jsonify, request
 
 from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.event_kinds import get_event_kind
 from app.models import (
     POST_STATUS_DRAFT,
     POST_STATUS_PUBLISHED,
@@ -33,6 +34,8 @@ def serialize_admin_post(item):
         "body": item.body,
         "eventKind": item.event_kind,
         "startsAt": item.starts_at.isoformat() if item.starts_at else None,
+        "endsAt": item.ends_at_override.isoformat() if item.ends_at_override else None,
+        "durationMinutes": item.duration_minutes,
         "publishAt": item.publish_at.isoformat() if item.publish_at else None,
         "status": item.publication_status,
         "storedStatus": item.status,
@@ -43,6 +46,20 @@ def serialize_admin_post(item):
         "registrationLimit": item.registration_limit,
         "registrationPriceCents": item.registration_price_cents,
         "registrationIsDeposit": bool(item.registration_is_deposit),
+        "registrationMode": item.registration_mode,
+        "depositExplanation": item.deposit_explanation,
+        "venue": item.venue,
+        "address": item.address,
+        "city": item.city,
+        "meetingPoint": item.meeting_point,
+        "destination": item.destination,
+        "countryCode": item.country_code,
+        "latitude": item.latitude,
+        "longitude": item.longitude,
+        "destinationLatitude": item.destination_latitude,
+        "destinationLongitude": item.destination_longitude,
+        "mapConfig": item.map_config_dict,
+        "featureFlags": item.feature_flags_list,
         "createdAt": item.created_at.isoformat() if item.created_at else None,
         "updatedAt": item.updated_at.isoformat() if item.updated_at else None,
     }
@@ -76,10 +93,29 @@ def apply_post_fields(item, body, errors, *, creating=False):
             setattr(item, attr, (body.get(source) or "").strip())
 
     if "eventKind" in body:
-        item.event_kind = (body.get("eventKind") or "").strip() or None
+        event_kind = (body.get("eventKind") or "").strip() or None
+        if event_kind and get_event_kind(event_kind) is None:
+            errors["eventKind"] = "Unknown event kind."
+        else:
+            item.event_kind = event_kind
 
     if "startsAt" in body:
         item.starts_at = parse_datetime_field(body.get("startsAt"), "startsAt", errors)
+    if "endsAt" in body:
+        item.ends_at_override = parse_datetime_field(body.get("endsAt"), "endsAt", errors)
+
+    if "durationMinutes" in body:
+        raw_duration = body.get("durationMinutes")
+        if raw_duration in (None, ""):
+            item.duration_minutes = None
+        else:
+            try:
+                duration = int(raw_duration)
+                if duration <= 0:
+                    raise ValueError
+                item.duration_minutes = duration
+            except (TypeError, ValueError):
+                errors["durationMinutes"] = "Enter a positive duration in minutes."
 
     if "isPinned" in body:
         item.is_pinned = bool(body.get("isPinned"))
@@ -109,6 +145,81 @@ def apply_post_fields(item, body, errors, *, creating=False):
                 errors["registrationPriceCents"] = "Enter a non-negative amount in cents."
     if "registrationIsDeposit" in body:
         item.registration_is_deposit = bool(body.get("registrationIsDeposit"))
+
+    for source, attr in (
+        ("registrationMode", "registration_mode"),
+        ("depositExplanation", "deposit_explanation"),
+        ("venue", "venue"),
+        ("address", "address"),
+        ("city", "city"),
+        ("meetingPoint", "meeting_point"),
+        ("destination", "destination"),
+        ("countryCode", "country_code"),
+    ):
+        if source in body:
+            setattr(item, attr, (body.get(source) or "").strip())
+
+    for source, attr in (
+        ("latitude", "latitude"),
+        ("longitude", "longitude"),
+        ("destinationLatitude", "destination_latitude"),
+        ("destinationLongitude", "destination_longitude"),
+    ):
+        if source not in body:
+            continue
+        raw_value = body.get(source)
+        if raw_value in (None, ""):
+            setattr(item, attr, None)
+            continue
+        try:
+            setattr(item, attr, float(raw_value))
+        except (TypeError, ValueError):
+            errors[source] = "Enter a valid coordinate."
+
+    if "mapConfig" in body:
+        if not isinstance(body.get("mapConfig"), dict):
+            errors["mapConfig"] = "Map configuration must be an object."
+        else:
+            item.map_config = json.dumps(body["mapConfig"])
+    if "featureFlags" in body:
+        flags = body.get("featureFlags")
+        if not isinstance(flags, list) or not all(isinstance(flag, str) for flag in flags):
+            errors["featureFlags"] = "Feature flags must be a list of strings."
+        else:
+            item.feature_flags = json.dumps(list(dict.fromkeys(flags)))
+
+    if creating and item.event_kind:
+        kind = get_event_kind(item.event_kind) or {}
+        if "durationMinutes" not in body:
+            item.duration_minutes = kind.get("defaultDurationMinutes")
+        if "registrationMode" not in body:
+            item.registration_mode = kind.get("registrationMode", "none")
+        if kind.get("registrationDefault") and "registrationLimitEnabled" not in body:
+            item.registration_limit_enabled = True
+        if "registrationLimit" not in body:
+            item.registration_limit = kind.get("defaultCapacity")
+        if "registrationPriceCents" not in body:
+            item.registration_price_cents = kind.get("defaultPriceCents")
+        if "registrationIsDeposit" not in body:
+            item.registration_is_deposit = bool(kind.get("depositDefault"))
+
+    if item.ends_at_override and item.starts_at and item.ends_at_override <= item.starts_at:
+        errors["endsAt"] = "End time must be after the start time."
+    item.registration_mode = item.registration_mode or "none"
+    if item.registration_mode not in {"none", "queue", "karaoke"}:
+        errors["registrationMode"] = "Use none, queue, or karaoke."
+    if item.registration_limit_enabled and (item.registration_limit or 0) <= 0:
+        errors["registrationLimit"] = "A registration queue needs at least one place."
+    if item.registration_is_deposit and not item.registration_price_cents:
+        errors["registrationPriceCents"] = "A deposit event needs a positive amount."
+    if item.country_code:
+        item.country_code = item.country_code.upper()
+        if len(item.country_code) != 2:
+            errors["countryCode"] = "Use a two-letter country code."
+    if item.latitude is not None and not -90 <= item.latitude <= 90:
+        errors["latitude"] = "Latitude must be between -90 and 90."
+    if item.longitude is not None and not -180 <= item.longitude <= 180:
+        errors["longitude"] = "Longitude must be between -180 and 180."
 
 
 def apply_post_status(item, body, errors):
@@ -251,6 +362,25 @@ def api_admin_social_retry(publication_id):
 
     publications = publish_post_to_channels(item, [publication.provider])
     return jsonify({"results": [serialize_publication(entry) for entry in publications]})
+
+
+@api_bp.get("/admin/social")
+@require_capability("posts")
+def api_admin_social_publications():
+    query = SocialPublication.query
+    status = request.args.get("status", "").strip()
+    provider = request.args.get("provider", "").strip()
+    if status:
+        query = query.filter(SocialPublication.status == status)
+    if provider:
+        query = query.filter(SocialPublication.provider == provider)
+    items = []
+    for publication in query.order_by(SocialPublication.created_at.desc()).limit(500).all():
+        payload = serialize_publication(publication)
+        post = db.session.get(Post, publication.post_id)
+        payload.update({"postTitle": post.title if post else "", "postSlug": post.slug if post else ""})
+        items.append(payload)
+    return jsonify({"items": items})
 
 
 def serialize_template(template):

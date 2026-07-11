@@ -1,9 +1,19 @@
 import type {
   AdminPost,
+  AdminPayment,
+  AccessKeyInfo,
+  CreatedAccessKey,
   AdminPostsResponse,
   AdminThemesResponse,
   CalendarResponse,
+  ContactSubmission,
   ContentPageResponse,
+  EventQueueSummary,
+  EventRegistrationInput,
+  EventRegistrationStatus,
+  EventSuggestionSubmission,
+  FormInboxEntry,
+  FormOptions,
   KaraokeAction,
   KaraokeAdminEntry,
   KaraokeAuditEntry,
@@ -17,11 +27,18 @@ import type {
   PublicConfig,
   PublicPost,
   PublicPostsResponse,
+  RegistrationRecord,
   SessionInfo,
   SiteResponse,
   SocialPublication,
+  AdminSocialPublication,
   TandemListResponse,
+  TandemDuplicate,
+  TandemMatch,
   TandemMatchesResponse,
+  TandemRequest,
+  TandemReviewAction,
+  TandemSubmission,
   ThemeAuditEntry,
 } from "../api/types";
 
@@ -44,6 +61,12 @@ export interface DataProvider {
   getCalendar(year: number, month: number): Promise<CalendarResponse>;
   getSite(locale: Locale): Promise<SiteResponse>;
   getContent(slug: string, locale: Locale): Promise<ContentPageResponse>;
+  getFormOptions(): Promise<FormOptions>;
+  submitContact(input: ContactSubmission): Promise<{ submissionId: string }>;
+  submitEventSuggestion(input: EventSuggestionSubmission): Promise<{ submissionId: string }>;
+  submitTandem(input: TandemSubmission): Promise<{ submissionId: string }>;
+  registerForEvent(slug: string, input: EventRegistrationInput): Promise<RegistrationRecord>;
+  getRegistration(publicId: string): Promise<RegistrationRecord>;
 
   getAdminThemes(): Promise<AdminThemesResponse>;
   voteTheme(page: PageId, theme: string): Promise<{ myVote: string; votes: Record<string, number> }>;
@@ -66,19 +89,37 @@ export interface DataProvider {
   createPostFromTemplate(templateId: number): Promise<AdminPost>;
   publishSocial(postId: number, channels: string[]): Promise<{ results: SocialPublication[] }>;
   retrySocial(publicationId: number): Promise<{ results: SocialPublication[] }>;
+  getAdminSocial(params?: { status?: string; provider?: string }): Promise<{ items: AdminSocialPublication[] }>;
+  getFormInbox(params?: { type?: string; status?: string; q?: string }): Promise<{ items: FormInboxEntry[] }>;
+  updateFormInbox(type: string, id: number, input: { status?: string; isViewed?: boolean }): Promise<FormInboxEntry>;
+  getEventQueues(): Promise<{ events: EventQueueSummary[] }>;
+  getEventRegistrations(postId: number, params?: { status?: string; q?: string }): Promise<{ event: EventQueueSummary; items: RegistrationRecord[] }>;
+  updateEventRegistration(id: number, status: EventRegistrationStatus): Promise<{ item: RegistrationRecord; promoted: RegistrationRecord[]; event: EventQueueSummary }>;
+  getAccessKeys(): Promise<{ items: AccessKeyInfo[]; availableScopes: { value: string; label: string }[] }>;
+  createAccessKey(input: { label: string; scopes: string[]; expiresAt: string }): Promise<CreatedAccessKey>;
+  revokeAccessKey(id: number): Promise<AccessKeyInfo>;
+  expireAccessKey(id: number): Promise<AccessKeyInfo>;
+  getAdminPayments(status?: string): Promise<{ items: AdminPayment[] }>;
+  updateAdminPayment(id: number, status: "refund_pending" | "refunded" | "cancelled"): Promise<AdminPayment>;
 
-  getTandemRequests(): Promise<TandemListResponse>;
+  getTandemRequests(params?: { q?: string; viewed?: string }): Promise<TandemListResponse>;
   getTandemMatches(ref: string): Promise<TandemMatchesResponse>;
+  updateTandem(ref: string, input: Record<string, unknown>): Promise<TandemRequest>;
+  markTandemViewed(ref: string, isViewed: boolean): Promise<{ ref: string; isViewed: boolean }>;
+  reviewTandemMatch(sourceRef: string, candidateRef: string, action: TandemReviewAction): Promise<TandemMatch["review"]>;
+  getTandemDuplicates(): Promise<{ items: TandemDuplicate[] }>;
+  decideTandemDuplicate(leftRef: string, rightRef: string, decision: "ignore" | "different", note?: string): Promise<{ decision: string; note: string }>;
+  mergeTandemDuplicate(keepRef: string, removeRef: string, fields?: Record<string, string>): Promise<TandemRequest>;
 
   submitKaraokeRequest(input: KaraokeSubmission): Promise<{ publicId: string; status: string }>;
   trackKaraokeRequest(publicId: string): Promise<KaraokePublicEntry>;
   getKaraokeQueue(eventSlug?: string): Promise<{ items: KaraokePublicEntry[] }>;
-  getAdminKaraoke(status?: string): Promise<{ items: KaraokeAdminEntry[] }>;
+  getAdminKaraoke(status?: string, eventSlug?: string): Promise<{ items: KaraokeAdminEntry[]; events: { slug: string; title: string; startsAt: string | null }[] }>;
   karaokeAction(id: number, action: KaraokeAction): Promise<KaraokeAdminEntry>;
   reorderKaraoke(order: number[]): Promise<{ items: KaraokeAdminEntry[] }>;
   getKaraokeAudit(): Promise<{ entries: KaraokeAuditEntry[] }>;
 
-  startCheckout(postSlug: string, registrationPublicId?: string): Promise<PaymentInfo>;
+  startCheckout(postSlug: string, registrationPublicId: string): Promise<PaymentInfo>;
   simulatePayment(publicId: string, outcome: "success" | "failure" | "cancel"): Promise<PaymentInfo>;
   getPayment(publicId: string): Promise<PaymentInfo>;
 }

@@ -1,5 +1,9 @@
 {
   "board_games": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [
       "map"
@@ -11,9 +15,11 @@
       "de": "Brettspielabende",
       "en": "Board Games"
     },
+    "landingPresentation": "standard",
     "mapMode": "venue",
     "marker": "ok",
     "registrationDefault": false,
+    "registrationMode": "none",
     "schedule": {
       "time": "20:00",
       "weekday": 1
@@ -21,6 +27,10 @@
     "titlePrefix": null
   },
   "breakfast": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": 40,
+    "defaultDurationMinutes": 180,
+    "defaultPriceCents": 200,
     "depositDefault": true,
     "features": [
       "registration",
@@ -34,9 +44,11 @@
       "de": "Internationales Frühstück",
       "en": "International Breakfast"
     },
+    "landingPresentation": "featured",
     "mapMode": "venue",
     "marker": "muted",
     "registrationDefault": true,
+    "registrationMode": "queue",
     "schedule": {
       "time": "10:00",
       "weekday": 5
@@ -47,6 +59,10 @@
     }
   },
   "cafe_lingua": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [
       "map"
@@ -58,9 +74,11 @@
       "de": "Café Lingua",
       "en": "Café Lingua"
     },
+    "landingPresentation": "standard",
     "mapMode": "venue",
     "marker": "accent",
     "registrationDefault": false,
+    "registrationMode": "none",
     "schedule": {
       "time": "20:00",
       "weekday": 1
@@ -68,6 +86,10 @@
     "titlePrefix": null
   },
   "country_evening": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [
       "map"
@@ -79,9 +101,11 @@
       "de": "Länderabend",
       "en": "Country Evening"
     },
+    "landingPresentation": "featured",
     "mapMode": "country",
     "marker": "bad",
     "registrationDefault": false,
+    "registrationMode": "none",
     "schedule": {
       "time": "20:00",
       "weekday": 1
@@ -92,6 +116,10 @@
     }
   },
   "dance": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [
       "map"
@@ -103,9 +131,11 @@
       "de": "Tanzworkshops",
       "en": "Dance Workshops"
     },
+    "landingPresentation": "standard",
     "mapMode": "venue",
     "marker": "info",
     "registrationDefault": false,
+    "registrationMode": "none",
     "schedule": {
       "time": "20:00",
       "weekday": 1
@@ -113,6 +143,10 @@
     "titlePrefix": null
   },
   "housing": {
+    "calendarPresentation": "standard",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 120,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [],
     "highlightTitle": false,
@@ -122,13 +156,70 @@
       "de": "Wohnen",
       "en": "Housing"
     },
+    "landingPresentation": "standard",
     "mapMode": "none",
     "marker": "muted",
     "registrationDefault": false,
+    "registrationMode": "none",
     "schedule": null,
     "titlePrefix": null
   },
+  "incas_active": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 180,
+    "defaultPriceCents": null,
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "activity",
+    "id": "incas_active",
+    "label": {
+      "de": "INCAS Aktiv",
+      "en": "INCAS Active"
+    },
+    "landingPresentation": "standard",
+    "mapMode": "venue",
+    "marker": "ok",
+    "registrationDefault": false,
+    "registrationMode": "none",
+    "schedule": null,
+    "titlePrefix": null
+  },
+  "international_tuesday": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "people",
+    "id": "international_tuesday",
+    "label": {
+      "de": "Internationaler Dienstag",
+      "en": "International Tuesday"
+    },
+    "landingPresentation": "standard",
+    "mapMode": "venue",
+    "marker": "accent",
+    "registrationDefault": false,
+    "registrationMode": "none",
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": null
+  },
   "karaoke": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 240,
+    "defaultPriceCents": null,
     "depositDefault": false,
     "features": [
       "karaoke_queue",
@@ -141,16 +232,46 @@
       "de": "Karaoke",
       "en": "Karaoke"
     },
+    "landingPresentation": "featured",
     "mapMode": "venue",
     "marker": "warn",
     "registrationDefault": false,
+    "registrationMode": "karaoke",
     "schedule": {
       "time": "20:00",
       "weekday": 1
     },
     "titlePrefix": null
   },
+  "opening_ceremony": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": null,
+    "defaultDurationMinutes": 180,
+    "defaultPriceCents": null,
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "sparkles",
+    "id": "opening_ceremony",
+    "label": {
+      "de": "Eröffnungsfeier",
+      "en": "Opening Ceremony"
+    },
+    "landingPresentation": "featured",
+    "mapMode": "venue",
+    "marker": "accent",
+    "registrationDefault": false,
+    "registrationMode": "none",
+    "schedule": null,
+    "titlePrefix": null
+  },
   "trip": {
+    "calendarPresentation": "highlight",
+    "defaultCapacity": 80,
+    "defaultDurationMinutes": 600,
+    "defaultPriceCents": 2500,
     "depositDefault": false,
     "features": [
       "registration",
@@ -163,9 +284,11 @@
       "de": "Internationales Wochenende",
       "en": "International Weekend"
     },
+    "landingPresentation": "featured",
     "mapMode": "destination",
     "marker": "ink",
     "registrationDefault": true,
+    "registrationMode": "queue",
     "schedule": {
       "time": "09:00",
       "weekday": 5

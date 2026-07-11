@@ -1,0 +1,163 @@
+{
+  "breakfasts": [
+    {
+      "description": "Menemen, breads, spreads and plenty of tea.",
+      "label": "Turkey"
+    },
+    {
+      "description": "Sweet breakfast classics with coffee and fruit.",
+      "label": "North American culture"
+    },
+    {
+      "description": "Warm dishes, juices and a relaxed Saturday start.",
+      "label": "Latin American culture"
+    },
+    {
+      "description": "Fresh rolls, cheese, jam and easy conversation.",
+      "label": "European culture"
+    },
+    {
+      "description": "Homemade waffles, toppings and coffee refills.",
+      "label": "Belgium"
+    },
+    {
+      "description": "A mixed buffet with dishes from several countries.",
+      "label": "Around the World"
+    },
+    {
+      "description": "Light breakfast plates, dates and seasonal fruit.",
+      "label": "Arab culture"
+    }
+  ],
+  "countryEvenings": [
+    {
+      "description": "Tapas stories, regional playlists and a short culture quiz.",
+      "label": "Spain"
+    },
+    {
+      "description": "Festivals, daily life and student tips between cities and campus.",
+      "label": "Japan"
+    },
+    {
+      "description": "Music, language basics and stories from local celebrations.",
+      "label": "Brazil"
+    },
+    {
+      "description": "Tea, food traditions and city life from different regions.",
+      "label": "Turkey"
+    },
+    {
+      "description": "Regional food, travel routes and a guide to everyday phrases.",
+      "label": "Italy"
+    },
+    {
+      "description": "Street food, celebrations and photo impressions from home.",
+      "label": "Mexico"
+    },
+    {
+      "description": "Music, comfort food and snapshots of student life.",
+      "label": "Poland"
+    }
+  ],
+  "openingCeremony": {
+    "body": "The opening ceremony introduces this semester's programme and working groups. Registration is free but places are limited.",
+    "event_kind": "opening_ceremony",
+    "image_url": "/static/img/site/about-team.webp",
+    "slug": "incas-opening-ceremony",
+    "summary": "Meet the INCAS teams, discover the semester programme and stay for an open welcome reception.",
+    "title": "INCAS Opening Ceremony"
+  },
+  "paymentDefaults": {
+    "breakfast": {
+      "capacity": 40,
+      "isDeposit": true,
+      "priceCents": 200
+    },
+    "openingCeremony": {
+      "capacity": 120,
+      "isDeposit": false,
+      "priceCents": null
+    },
+    "trip": {
+      "capacityMax": 120,
+      "capacityMin": 60,
+      "isDeposit": false,
+      "priceCentsMax": 4000,
+      "priceCentsMin": 1500
+    }
+  },
+  "rules": {
+    "breakfastSaturdayIndex": 0,
+    "monthsAfter": 3,
+    "monthsBefore": 3,
+    "saturdayWeekday": 5,
+    "tripSaturdayIndex": 2,
+    "tuesdayWeekday": 1
+  },
+  "schemaVersion": 1,
+  "timezone": "Europe/Berlin",
+  "trips": [
+    {
+      "description": "Old-town walk, riverside break and time in the centre.",
+      "label": "Maastricht, Netherlands"
+    },
+    {
+      "description": "Train trip, museum stop and time for food in the city.",
+      "label": "Cologne, Germany"
+    },
+    {
+      "description": "Architecture walk, coffee stop and small-group exploring.",
+      "label": "Mons, Belgium"
+    },
+    {
+      "description": "Museum Mile options and a long walk by the Rhine.",
+      "label": "Bonn, Germany"
+    },
+    {
+      "description": "Local snacks, markets and an easy day schedule.",
+      "label": "Liège, Belgium"
+    },
+    {
+      "description": "A beginner-friendly outing with views and a group picnic.",
+      "label": "Drachenfels, Germany"
+    },
+    {
+      "description": "Viewpoints, cafés and an evening return.",
+      "label": "Luxembourg City, Luxembourg"
+    }
+  ],
+  "tuesdaySpecials": [
+    {
+      "body": "Join our Tuesday evening from 20:00 for relaxed rounds of party and strategy games. New people can arrive at any time.",
+      "event_kind": "board_games",
+      "image_url": "/static/img/site/international-tuesday.webp",
+      "slug": "board-game-night",
+      "summary": "Easy-to-join games, mixed tables and snacks from 20:00 until around midnight.",
+      "title": "Board Games"
+    },
+    {
+      "body": "Submit a song from this event page, join a duet or simply cheer on the room.",
+      "event_kind": "karaoke",
+      "image_url": "/static/img/site/international-tuesday.webp",
+      "slug": "karaoke-night",
+      "summary": "International karaoke, group songs and open-mic energy from 20:00 onward.",
+      "title": "Karaoke Night"
+    },
+    {
+      "body": "We start with a short beginner-friendly workshop at 20:00 and keep the room open for practice afterwards.",
+      "event_kind": "dance",
+      "image_url": "/static/img/site/international-tuesday.webp",
+      "slug": "dance-workshops",
+      "summary": "Beginner-friendly partner-dance basics followed by an open social floor.",
+      "title": "Dance Workshops"
+    },
+    {
+      "body": "This Tuesday evening combines simple mixer activities and open tables from 20:00 until around midnight.",
+      "event_kind": "international_tuesday",
+      "image_url": "/static/img/site/international-tuesday.webp",
+      "slug": "international-tuesday-mixer",
+      "summary": "Conversation rounds and an easy first stop for students who are new to Aachen.",
+      "title": "International Tuesday Mixer"
+    }
+  ]
+}

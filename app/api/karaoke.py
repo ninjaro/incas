@@ -70,6 +70,7 @@ def queue_position(item):
 
 
 def serialize_public(item):
+    event = db.session.get(Post, item.post_id) if item.post_id else None
     return {
         "publicId": item.public_id,
         "displayName": item.display_name,
@@ -77,6 +78,8 @@ def serialize_public(item):
         "artist": item.artist,
         "status": item.status,
         "queuePosition": queue_position(item),
+        "eventSlug": event.slug if event else None,
+        "eventTitle": event.display_title if event else None,
     }
 
 
@@ -115,11 +118,13 @@ def next_queue_position(post_id):
     return (current_max or 0) + 1
 
 
-def resolve_event(slug_or_none):
+def resolve_event(slug_or_none, *, required=False):
     if not slug_or_none:
+        if required:
+            return None, api_error("event_required", "Select a karaoke event.", status=422)
         return None, None
     event = Post.query.filter_by(slug=slug_or_none).first()
-    if event is None or not event.is_publicly_accessible:
+    if event is None or not event.is_publicly_accessible or event.event_kind != "karaoke":
         return None, api_error("event_unknown", "Unknown karaoke event.", status=422)
     return event, None
 
@@ -141,7 +146,7 @@ def api_karaoke_submit():
     if errors:
         return validation_error(errors)
 
-    event, error = resolve_event((body.get("eventSlug") or "").strip())
+    event, error = resolve_event((body.get("eventSlug") or "").strip(), required=True)
     if error:
         return error
 
@@ -172,7 +177,7 @@ def api_karaoke_track(public_id):
 
 @api_bp.get("/public/karaoke/queue")
 def api_karaoke_public_queue():
-    event, error = resolve_event(request.args.get("event", "").strip())
+    event, error = resolve_event(request.args.get("event", "").strip(), required=True)
     if error:
         return error
 
@@ -194,12 +199,27 @@ def api_admin_karaoke_list():
         if status not in KARAOKE_STATUSES:
             return api_error("status_unknown", "Unknown status.", status=422)
         query = query.filter(KaraokeSongRequest.status == status)
+    event_slug = request.args.get("event", "").strip()
+    if event_slug:
+        event = Post.query.filter_by(slug=event_slug, event_kind="karaoke").first()
+        if event is None:
+            return api_error("event_unknown", "Unknown karaoke event.", status=422)
+        query = query.filter(KaraokeSongRequest.post_id == event.id)
 
     items = query.order_by(
         KaraokeSongRequest.position.asc().nullslast(),
         KaraokeSongRequest.created_at.asc(),
     ).all()
-    return jsonify({"items": [serialize_admin(item) for item in items]})
+    events = Post.query.filter_by(event_kind="karaoke").order_by(Post.starts_at.desc()).all()
+    return jsonify(
+        {
+            "items": [serialize_admin(item) for item in items],
+            "events": [
+                {"slug": event.slug, "title": event.display_title, "startsAt": event.starts_at.isoformat() if event.starts_at else None}
+                for event in events
+            ],
+        }
+    )
 
 
 @api_bp.post("/admin/karaoke/<int:request_id>/<action>")
@@ -253,6 +273,14 @@ def api_admin_karaoke_reorder():
         return api_error(
             "queue_changed",
             "The queue changed while reordering. Reload and try again.",
+            status=409,
+        )
+
+    event_ids = {item.post_id for item in items}
+    if len(event_ids) != 1 or None in event_ids:
+        return api_error(
+            "event_scope_required",
+            "Reordering must contain requests from exactly one karaoke event.",
             status=409,
         )
 

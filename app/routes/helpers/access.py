@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app.models import AccessKey, get_configured_local_now
+from app.models import AccessKey, db, get_configured_local_now
 
 ACCESS_TARGETS = {
     "posts": "main.admin_posts",
@@ -60,6 +60,7 @@ def get_access_scopes():
 def prune_expired_scopes():
     scopes = list(session.get("access_scopes", []))
     expires_by_scope = dict(session.get("access_scope_expires", {}))
+    key_ids_by_scope = dict(session.get("access_scope_key_ids", {}))
 
     if not scopes or not expires_by_scope:
         return
@@ -70,6 +71,12 @@ def prune_expired_scopes():
     changed = False
 
     for scope in scopes:
+        key_id = key_ids_by_scope.get(scope)
+        if key_id:
+            item = db.session.get(AccessKey, key_id)
+            if item is None or item.revoked_at is not None or item.expires_at <= now_local:
+                changed = True
+                continue
         raw_expires_at = expires_by_scope.get(scope)
         if not raw_expires_at:
             active_scopes.append(scope)
@@ -95,6 +102,11 @@ def prune_expired_scopes():
         session["access_scope_expires"] = active_expires
     else:
         session.pop("access_scope_expires", None)
+    session["access_scope_key_ids"] = {
+        scope: key_ids_by_scope[scope]
+        for scope in active_scopes
+        if scope in key_ids_by_scope
+    }
 
 
 def has_any_access():
@@ -135,9 +147,10 @@ def get_session_audit_id():
 def grant_scope(scope):
     grant_scopes([scope])
 
-def grant_scopes(scopes, expires_at=None):
+def grant_scopes(scopes, expires_at=None, key_id=None):
     current = list(get_access_scopes())
     scope_expires = dict(session.get("access_scope_expires", {}))
+    key_ids_by_scope = dict(session.get("access_scope_key_ids", {}))
     expires_value = expires_at.isoformat(timespec="minutes") if expires_at else None
 
     for scope in scopes:
@@ -147,12 +160,17 @@ def grant_scopes(scopes, expires_at=None):
             scope_expires[scope] = expires_value
         else:
             scope_expires.pop(scope, None)
+        if key_id:
+            key_ids_by_scope[scope] = key_id
+        else:
+            key_ids_by_scope.pop(scope, None)
 
     session["access_scopes"] = current
     if scope_expires:
         session["access_scope_expires"] = scope_expires
     else:
         session.pop("access_scope_expires", None)
+    session["access_scope_key_ids"] = key_ids_by_scope
 
 def get_scope_target(scope):
     endpoint = ACCESS_TARGETS.get(scope)
@@ -168,31 +186,39 @@ def resolve_scopes_by_phrase(phrase):
 def resolve_access_grant_by_phrase(phrase):
     phrase = (phrase or "").strip()
     if not phrase:
-        return {"scopes": [], "expires_at": None}
+        return {"scopes": [], "expires_at": None, "key_id": None}
 
     digest = hashlib.sha256(phrase.encode("utf-8")).hexdigest()
 
     for scope, expected_digest in current_app.config["ACCESS_HASHES"].items():
         if hmac.compare_digest(digest, expected_digest):
-            return {"scopes": [scope], "expires_at": None}
+            return {"scopes": [scope], "expires_at": None, "key_id": None}
 
     now_local = get_configured_local_now()
 
     items = (
         AccessKey.query
-        .filter(AccessKey.expires_at >= now_local)
+        .filter(AccessKey.expires_at > now_local)
+        .filter(AccessKey.revoked_at.is_(None))
         .order_by(AccessKey.created_at.desc())
         .all()
     )
 
     for item in items:
-        if hmac.compare_digest(phrase, item.key):
+        stored = item.key or ""
+        matches = (
+            hmac.compare_digest(f"sha256:{digest}", stored)
+            if stored.startswith("sha256:")
+            else hmac.compare_digest(phrase, stored)
+        )
+        if matches:
             return {
                 "scopes": [scope for scope in item.scopes_list if scope in ACCESS_LABELS],
                 "expires_at": item.expires_at,
+                "key_id": item.id,
             }
 
-    return {"scopes": [], "expires_at": None}
+    return {"scopes": [], "expires_at": None, "key_id": None}
 
 
 def resolve_scope_by_phrase(phrase):

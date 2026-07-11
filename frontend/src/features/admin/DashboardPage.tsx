@@ -14,9 +14,39 @@ type DashboardEntry = {
 
 const ENTRIES: DashboardEntry[] = [
   {
+    to: "/admin/registrations",
+    title: "Event Registrations",
+    description: "Capacity, payment states, waiting lists, and promotions.",
+    capability: "event_registrations",
+  },
+  {
+    to: "/admin/payments",
+    title: "Payments",
+    description: "Review registration payments and refund states.",
+    capability: "event_registrations",
+  },
+  {
+    to: "/admin/forms",
+    title: "Forms Inbox",
+    description: "Review contact requests and event suggestions.",
+    capability: "forms",
+  },
+  {
+    to: "/admin/access-keys",
+    title: "Access Keys",
+    description: "Create scoped temporary keys and revoke them safely.",
+    capability: "access_keys",
+  },
+  {
     to: "/admin/posts",
     title: "Posts & Events",
     description: "Drafts, templates, scheduling, and social publishing.",
+    capability: "posts",
+  },
+  {
+    to: "/admin/social",
+    title: "Social Publications",
+    description: "Review scheduled, published, simulated, and failed posts.",
     capability: "posts",
   },
   {

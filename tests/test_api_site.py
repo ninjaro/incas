@@ -6,7 +6,7 @@ def test_public_site_en(client):
     assert "Home" in labels and "About Us" in labels
     about = next(item for item in payload["nav"] if item["label"] == "About Us")
     assert {c["to"] for c in about["children"]} == {
-        "/about", "/about/working-groups", "/about/team-meetings"
+        "/about", "/about/working-groups", "/about/team-meetings", "/about/team"
     }
     # No nav/offers/footer link points at a legacy Flask path.
     urls = [i.get("to") for i in payload["nav"]]

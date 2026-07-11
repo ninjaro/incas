@@ -3,6 +3,7 @@ import snapshot from "../content/event-kinds.generated.json";
 export type EventKindMarker = "accent" | "info" | "ok" | "warn" | "bad" | "muted" | "ink";
 export type EventKindMapMode = "none" | "venue" | "country" | "destination";
 export type EventKindFeature = "registration" | "deposit" | "map" | "karaoke_queue";
+export type EventRegistrationMode = "none" | "queue" | "karaoke";
 
 export interface EventKind {
   id: string;
@@ -16,6 +17,12 @@ export interface EventKind {
   features: EventKindFeature[];
   registrationDefault: boolean;
   depositDefault: boolean;
+  defaultCapacity: number | null;
+  defaultPriceCents: number | null;
+  defaultDurationMinutes: number;
+  registrationMode: EventRegistrationMode;
+  calendarPresentation: "standard" | "highlight";
+  landingPresentation: "standard" | "featured";
 }
 
 export const EVENT_KINDS = snapshot as unknown as Record<string, EventKind>;

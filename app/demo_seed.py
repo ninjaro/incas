@@ -3,6 +3,15 @@ import json
 import random
 from datetime import datetime, time, timedelta
 
+from app.demo_events import (
+    DEMO_BREAKFAST_THEMES,
+    DEMO_COUNTRY_EVENING_THEMES,
+    DEMO_PAYMENT_DEFAULTS,
+    DEMO_OPENING_CEREMONY,
+    DEMO_TRIP_DESTINATIONS,
+    DEMO_TUESDAY_SPECIAL_EVENTS,
+)
+from app.event_kinds import get_event_kind
 from app.models import LanguageTandemRequest, Post, db, get_configured_local_now
 
 DEMO_FIRST_NAMES = [
@@ -74,71 +83,6 @@ DEMO_COMMENTS = [
 DEMO_LANGUAGE_LEVELS = {"1", "2", "3", "4", "5"}
 DEMO_EVENT_MONTHS_BEFORE = 3
 DEMO_EVENT_MONTHS_AFTER = 3
-
-DEMO_TUESDAY_SPECIAL_EVENTS = [
-    {
-        "slug": "board-game-tuesday",
-        "title": "Board Game",
-        "summary": "Easy-to-join games, mixed tables and snacks from 20:00 until around midnight.",
-        "body": "Join our Tuesday evening from 20:00 for relaxed rounds of party games and strategy games. New people can drop in at any time and usually stay until around midnight.",
-        "event_kind": "board_games",
-        "image_url": "/static/img/site/international-tuesday.webp",
-    },
-    {
-        "slug": "karaoke-night",
-        "title": "Karaoke Night",
-        "summary": "International karaoke, group songs and open mic energy from 20:00 onward.",
-        "body": "Our Tuesday karaoke evening starts at 20:00 and usually runs until around midnight. Bring a song, join a duet or just cheer on the room.",
-        "event_kind": "karaoke",
-        "image_url": "/static/img/site/international-tuesday.webp",
-    },
-    {
-        "slug": "dance-social",
-        "title": "Dance Workshops",
-        "summary": "Simple partner-dance basics, playlist requests and a social floor until late.",
-        "body": "We start with a short beginner-friendly dance warm-up at 20:00 and keep the room open as a social until around midnight.",
-        "event_kind": "dance",
-        "image_url": "/static/img/site/international-tuesday.webp",
-    },
-    {
-        "slug": "games-and-mixer",
-        "title": "Games & Mixer Night",
-        "summary": "Conversation rounds, team games and an easy first stop for new students.",
-        "body": "This Tuesday evening combines simple mixer games and open tables from 20:00 until around midnight, making it easy to meet people even if you come alone.",
-        "event_kind": "board_games",
-        "image_url": "/static/img/site/international-tuesday.webp",
-    },
-]
-
-DEMO_COUNTRY_EVENING_THEMES = [
-    ("Spain", "Tapas stories, regional playlists and a short culture quiz."),
-    ("Japan", "Festivals, daily life and student tips between cities and campus."),
-    ("Brazil", "Music, language basics and stories from local celebrations."),
-    ("Turkey", "Tea, food traditions and city life from different regions."),
-    ("Italy", "Regional food, travel routes and a quick guide to everyday phrases."),
-    ("Mexico", "Street food, celebrations and photo impressions from home."),
-    ("Poland", "Music, comfort food and snapshots of student life."),
-]
-
-DEMO_BREAKFAST_THEMES = [
-    ("Turkey", "Menemen, breads, spreads and plenty of tea."),
-    ("North American culture", "Sweet breakfast classics with coffee and fruit."),
-    ("Latin American culture", "Warm dishes, juices and a relaxed Saturday start."),
-    ("European culture", "Fresh rolls, cheese, jam and easy conversation."),
-    ("Belgium", "Homemade waffles, toppings and coffee refills."),
-    ("Around the World", "A mixed buffet with dishes from several countries."),
-    ("Arab culture", "Light breakfast plates, dates and seasonal fruit."),
-]
-
-DEMO_TRIP_DESTINATIONS = [
-    ("Maastricht, Netherlands", "Old town walk, riverside break and a relaxed afternoon in the center."),
-    ("Cologne, Germany", "Train trip, museum stop and time for food in the city."),
-    ("Mons, Belgium", "Architecture walk, coffee stop and small-group exploring."),
-    ("Bonn, Germany", "Museum mile options and a long walk by the Rhine."),
-    ("Liège, Belgium", "Local snacks, markets and an easy day schedule."),
-    ("Drachenfels, Germany", "A beginner-friendly outing with views and a group picnic."),
-    ("Luxembourg City, Luxembourg", "A full Saturday with viewpoints, cafés and an evening return."),
-]
 
 def build_demo_offered_language_levels(country_code, offered_languages):
     native_languages = set(DEMO_COUNTRY_LANGUAGES.get(country_code, []))
@@ -604,6 +548,16 @@ def create_demo_post(
     registration_limit=None,
     registration_price_cents=None,
     registration_is_deposit=False,
+    registration_mode="none",
+    deposit_explanation="",
+    duration_minutes=None,
+    venue="",
+    address="",
+    city="",
+    meeting_point="",
+    destination="",
+    latitude=None,
+    longitude=None,
 ):
     return Post(
         slug=slug,
@@ -619,9 +573,20 @@ def create_demo_post(
         registration_limit=registration_limit,
         registration_price_cents=registration_price_cents,
         registration_is_deposit=registration_is_deposit,
+        registration_mode=registration_mode,
+        deposit_explanation=deposit_explanation,
+        duration_minutes=duration_minutes,
+        venue=venue,
+        address=address,
+        city=city,
+        meeting_point=meeting_point,
+        destination=destination,
+        latitude=latitude,
+        longitude=longitude,
     )
 
 def create_dated_demo_event(template, event_date, starts_at_time):
+    kind = get_event_kind(template["event_kind"]) or {}
     return create_demo_post(
         slug=f"{template['slug']}-{event_date.isoformat()}",
         title=template["title"],
@@ -630,9 +595,16 @@ def create_dated_demo_event(template, event_date, starts_at_time):
         starts_at=datetime.combine(event_date, starts_at_time),
         event_kind=template["event_kind"],
         image_url=template["image_url"],
+        duration_minutes=kind.get("defaultDurationMinutes"),
+        venue="Humboldt-Haus",
+        address="Pontstraße 41",
+        city="Aachen",
+        latitude=50.7753,
+        longitude=6.0839,
     )
 
 def create_cafe_lingua_event(event_date):
+    kind = get_event_kind("cafe_lingua")
     return create_demo_post(
         slug=f"cafe-lingua-{event_date.isoformat()}",
         title="Café Lingua",
@@ -641,9 +613,16 @@ def create_cafe_lingua_event(event_date):
         starts_at=datetime.combine(event_date, time(20, 0, 0)),
         event_kind="cafe_lingua",
         image_url="/static/img/site/cafe-lingua.webp",
+        duration_minutes=kind["defaultDurationMinutes"],
+        venue="Humboldt-Haus",
+        address="Pontstraße 41",
+        city="Aachen",
+        latitude=50.7753,
+        longitude=6.0839,
     )
 
 def create_country_evening_event(event_date, country_name, description):
+    kind = get_event_kind("country_evening")
     return create_demo_post(
         slug=f"country-evening-{country_name.lower().replace(' ', '-')}-{event_date.isoformat()}",
         title=f"Country Evening: {country_name}",
@@ -652,43 +631,124 @@ def create_country_evening_event(event_date, country_name, description):
         starts_at=datetime.combine(event_date, time(20, 0, 0)),
         event_kind="country_evening",
         image_url="/static/img/site/country-evening.webp",
+        duration_minutes=kind["defaultDurationMinutes"],
+        venue="Humboldt-Haus",
+        address="Pontstraße 41",
+        city="Aachen",
+        latitude=50.7753,
+        longitude=6.0839,
     )
 
 def create_breakfast_event(event_date, theme_title, description):
+    kind = get_event_kind("breakfast")
+    defaults = DEMO_PAYMENT_DEFAULTS["breakfast"]
     return create_demo_post(
         slug=f"international-breakfast-{event_date.isoformat()}",
         title=f"International Breakfast: {theme_title}",
         summary=f"{description} One Saturday breakfast this month, starting at 10:00.",
         body=f"Start the Saturday slowly with our monthly breakfast from 10:00. {description} The event is designed as an easy social start to the weekend.",
-        starts_at=datetime.combine(event_date, time(10, 0, 0)),
+        starts_at=datetime.combine(event_date, time.fromisoformat(kind["schedule"]["time"])),
         event_kind="breakfast",
         image_url="/static/img/site/international-breakfast.webp",
         registration_limit_enabled=True,
-        registration_limit=40,
-        registration_price_cents=200,
-        registration_is_deposit=True,
+        registration_limit=defaults["capacity"],
+        registration_price_cents=defaults["priceCents"],
+        registration_is_deposit=defaults["isDeposit"],
+        registration_mode="queue",
+        deposit_explanation="The €2 deposit is returned after participation.",
+        duration_minutes=kind["defaultDurationMinutes"],
+        venue="Humboldt-Haus",
+        address="Pontstraße 41",
+        city="Aachen",
+        latitude=50.7753,
+        longitude=6.0839,
     )
 
 def create_trip_event(event_date, trip_title, description):
     rng = random.Random(f"trip:{event_date.isoformat()}:{trip_title}")
+    kind = get_event_kind("trip")
+    defaults = DEMO_PAYMENT_DEFAULTS["trip"]
     return create_demo_post(
         slug=f"international-weekend-{event_date.isoformat()}",
         title=f"International Weekend: {trip_title}",
         summary=f"{description} Monthly Saturday day trip with morning departure and evening return.",
         body=f"This is our monthly Saturday day out. We meet in the morning, travel together and return in the evening. {description}",
-        starts_at=datetime.combine(event_date, time(9, 30, 0)),
+        starts_at=datetime.combine(event_date, time.fromisoformat(kind["schedule"]["time"])),
         event_kind="trip",
         image_url="/static/img/site/international-weekend.webp",
         registration_limit_enabled=True,
-        registration_limit=rng.randint(60, 120),
-        registration_price_cents=rng.randint(15, 40) * 100,
-        registration_is_deposit=False,
+        registration_limit=rng.randint(defaults["capacityMin"], defaults["capacityMax"]),
+        registration_price_cents=rng.randrange(
+            defaults["priceCentsMin"], defaults["priceCentsMax"] + 100, 100
+        ),
+        registration_is_deposit=defaults["isDeposit"],
+        registration_mode="queue",
+        duration_minutes=kind["defaultDurationMinutes"],
+        meeting_point="Aachen Hauptbahnhof",
+        destination=trip_title,
     )
 
-def seed_posts_demo_data():
-    if Post.query.count() > 0:
-        return
 
+def create_opening_ceremony_event(event_date):
+    kind = get_event_kind("opening_ceremony")
+    defaults = DEMO_PAYMENT_DEFAULTS["openingCeremony"]
+    return create_demo_post(
+        slug=f"{DEMO_OPENING_CEREMONY['slug']}-{event_date.isoformat()}",
+        title=DEMO_OPENING_CEREMONY["title"],
+        summary=DEMO_OPENING_CEREMONY["summary"],
+        body=DEMO_OPENING_CEREMONY["body"],
+        starts_at=datetime.combine(event_date, time(18, 0, 0)),
+        event_kind="opening_ceremony",
+        image_url=DEMO_OPENING_CEREMONY["image_url"],
+        registration_limit_enabled=True,
+        registration_limit=defaults["capacity"],
+        registration_price_cents=defaults["priceCents"],
+        registration_is_deposit=defaults["isDeposit"],
+        registration_mode="queue",
+        duration_minutes=kind["defaultDurationMinutes"],
+        venue="SuperC",
+        address="Templergraben 57",
+        city="Aachen",
+        latitude=50.7787,
+        longitude=6.0778,
+    )
+
+
+DEMO_POST_SYNC_FIELDS = (
+    "title",
+    "summary",
+    "body",
+    "starts_at",
+    "is_active",
+    "is_pinned",
+    "event_kind",
+    "image_url",
+    "registration_limit_enabled",
+    "registration_limit",
+    "registration_price_cents",
+    "registration_is_deposit",
+    "registration_mode",
+    "deposit_explanation",
+    "duration_minutes",
+    "venue",
+    "address",
+    "city",
+    "meeting_point",
+    "destination",
+    "latitude",
+    "longitude",
+)
+
+
+def upsert_demo_post(candidate):
+    existing = Post.query.filter_by(slug=candidate.slug).first()
+    if existing is None:
+        db.session.add(candidate)
+        return
+    for field in DEMO_POST_SYNC_FIELDS:
+        setattr(existing, field, getattr(candidate, field))
+
+def seed_posts_demo_data():
     now = get_configured_local_now()
     items = [
         create_demo_post(
@@ -703,6 +763,8 @@ def seed_posts_demo_data():
     country_evening_index = 0
     breakfast_index = 0
     trip_index = 0
+    next_month_index = now.year * 12 + now.month
+    next_month = (next_month_index // 12, next_month_index % 12 + 1)
 
     for year, month in iter_demo_months(now.date()):
         tuesdays = month_weekdays(year, month, 1)
@@ -713,7 +775,11 @@ def seed_posts_demo_data():
                 create_dated_demo_event(
                     DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)],
                     tuesdays[0],
-                    time(20, 0, 0),
+                    time.fromisoformat(
+                        get_event_kind(
+                            DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)]["event_kind"]
+                        )["schedule"]["time"]
+                    ),
                 )
             )
             tuesday_special_index += 1
@@ -733,7 +799,11 @@ def seed_posts_demo_data():
                 create_dated_demo_event(
                     DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)],
                     event_date,
-                    time(20, 0, 0),
+                    time.fromisoformat(
+                        get_event_kind(
+                            DEMO_TUESDAY_SPECIAL_EVENTS[tuesday_special_index % len(DEMO_TUESDAY_SPECIAL_EVENTS)]["event_kind"]
+                        )["schedule"]["time"]
+                    ),
                 )
             )
             tuesday_special_index += 1
@@ -754,8 +824,11 @@ def seed_posts_demo_data():
             items.append(create_trip_event(trip_slot, trip_title, description))
             trip_index += 1
 
+        if (year, month) == next_month and tuesdays:
+            items.append(create_opening_ceremony_event(tuesdays[0]))
+
     for item in items:
-        db.session.add(item)
+        upsert_demo_post(item)
 
     db.session.commit()
 

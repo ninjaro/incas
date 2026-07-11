@@ -1,0 +1,232 @@
+{
+  "pages": [
+    {
+      "pageId": "landing",
+      "name": "Landing Page",
+      "defaultTheme": "hero",
+      "themes": [
+        {
+          "themeId": "hero",
+          "name": "Hero",
+          "description": "Full-bleed hero with event cards, the current production look.",
+          "enabled": true,
+          "isDefault": true,
+          "legacyVariants": [
+            "poster",
+            "showcase",
+            "scroll"
+          ],
+          "decision": "merged"
+        },
+        {
+          "themeId": "editorial",
+          "name": "Editorial",
+          "description": "Magazine-style layout that leads with the story and reads top to bottom.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "magazine",
+            "studio"
+          ],
+          "decision": "merged"
+        },
+        {
+          "themeId": "event-first",
+          "name": "Event First",
+          "description": "Puts the next events above the fold with a compact intro.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "board",
+            "timeline"
+          ],
+          "decision": "merged"
+        },
+        {
+          "themeId": "portal",
+          "name": "Portal",
+          "description": "Offer-led landing page with concise navigation and upcoming events.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "portal",
+            "classic"
+          ],
+          "decision": "migrated"
+        }
+      ]
+    },
+    {
+      "pageId": "calendar",
+      "name": "Calendar",
+      "defaultTheme": "month",
+      "themes": [
+        {
+          "themeId": "month",
+          "name": "Month Grid",
+          "description": "Classic month grid with event chips.",
+          "enabled": true,
+          "isDefault": true,
+          "legacyVariants": [
+            "classic"
+          ],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "public-grid",
+          "name": "Public Month Grid",
+          "description": "Large highlighted day cells with accessible event popovers.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "grid"
+          ],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "agenda",
+          "name": "Agenda",
+          "description": "Chronological agenda list, optimized for mobile.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "agenda",
+            "bulletin"
+          ],
+          "decision": "merged"
+        },
+        {
+          "themeId": "timeline",
+          "name": "Timeline",
+          "description": "Vertical timeline grouped by week.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "timeline"
+          ],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "board",
+          "name": "Board",
+          "description": "Editorial event board using the shared event timeline treatment.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "board"
+          ],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "cards",
+          "name": "Cards",
+          "description": "Responsive event cards with payment and availability information.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "cards"
+          ],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "table",
+          "name": "Table",
+          "description": "Compact accessible event table.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [
+            "table",
+            "hardcore"
+          ],
+          "decision": "merged"
+        },
+        {
+          "themeId": "mini",
+          "name": "Mini (retired)",
+          "description": "Retired because the compact grid duplicated the full month view with weaker mobile behavior.",
+          "enabled": false,
+          "isDefault": false,
+          "legacyVariants": [
+            "mini"
+          ],
+          "decision": "retired"
+        }
+      ]
+    },
+    {
+      "pageId": "language_tandem",
+      "name": "Language Tandem Form",
+      "defaultTheme": "steps",
+      "themes": [
+        {
+          "themeId": "steps",
+          "name": "Guided Steps",
+          "description": "Multi-step wizard with progress indicator.",
+          "enabled": true,
+          "isDefault": true,
+          "legacyVariants": [],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "classic",
+          "name": "Single Page",
+          "description": "One long accessible form, no steps.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [],
+          "decision": "migrated"
+        }
+      ]
+    },
+    {
+      "pageId": "team",
+      "name": "Team Page",
+      "defaultTheme": "grid",
+      "themes": [
+        {
+          "themeId": "grid",
+          "name": "Card Grid",
+          "description": "Responsive card grid with photos and roles.",
+          "enabled": true,
+          "isDefault": true,
+          "legacyVariants": [],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "spotlight",
+          "name": "Spotlight",
+          "description": "Large alternating rows, one member in focus at a time.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [],
+          "decision": "migrated"
+        }
+      ]
+    },
+    {
+      "pageId": "admin_dashboard",
+      "name": "Admin Dashboard",
+      "defaultTheme": "cards",
+      "themes": [
+        {
+          "themeId": "cards",
+          "name": "Cards",
+          "description": "Capability cards with quick stats.",
+          "enabled": true,
+          "isDefault": true,
+          "legacyVariants": [],
+          "decision": "migrated"
+        },
+        {
+          "themeId": "compact",
+          "name": "Compact",
+          "description": "Dense utility list for small screens.",
+          "enabled": true,
+          "isDefault": false,
+          "legacyVariants": [],
+          "decision": "migrated"
+        }
+      ]
+    }
+  ]
+}

@@ -7,6 +7,7 @@ from app.routes.helpers.access import (
     get_capabilities,
     get_session_audit_id,
     grant_scopes,
+    has_any_access_key,
     resolve_access_grant_by_phrase,
 )
 
@@ -16,6 +17,7 @@ def serialize_session():
         "capabilities": sorted(get_capabilities()),
         "capabilityLabels": ACCESS_LABELS,
         "sessionAuditId": get_session_audit_id(),
+        "hasAccessKeys": has_any_access_key(),
     }
 
 
@@ -36,7 +38,14 @@ def api_access_unlock():
         return api_error("key_invalid", "This access key is not valid.", status=403)
 
     new_scopes = [scope for scope in grant["scopes"] if scope not in get_access_scopes()]
-    grant_scopes(grant["scopes"], expires_at=grant["expires_at"])
+    grant_scopes(grant["scopes"], expires_at=grant["expires_at"], key_id=grant.get("key_id"))
+    if grant.get("key_id"):
+        from app.models import AccessKey, db, get_configured_local_now
+
+        item = db.session.get(AccessKey, grant["key_id"])
+        if item is not None:
+            item.last_used_at = get_configured_local_now()
+            db.session.commit()
 
     payload = serialize_session()
     payload["unlockedScopes"] = grant["scopes"]

@@ -85,7 +85,7 @@ def get_json_body():
 
 
 # Import endpoint modules for their route side effects.
-from app.api import karaoke, payments, posts, public, session, tandem, themes  # noqa: E402,F401
+from app.api import access_keys, forms, karaoke, payments, posts, public, registrations, session, tandem, themes  # noqa: E402,F401
 
 __all__ = [
     "api_bp",

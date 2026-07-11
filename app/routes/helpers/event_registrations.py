@@ -105,11 +105,11 @@ def should_collect_diet_preference(post):
 
 
 def determine_initial_registration_status(post):
-    return (
-        EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
-        if post.has_registration_space
-        else EVENT_REGISTRATION_STATUS_WAITING_LIST
-    )
+    if not post.has_registration_space:
+        return EVENT_REGISTRATION_STATUS_WAITING_LIST
+    if post.registration_price_cents:
+        return EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
+    return EVENT_REGISTRATION_STATUS_APPROVED
 
 
 def promote_waiting_list_for_post(post):
@@ -129,7 +129,11 @@ def promote_waiting_list_for_post(post):
         if candidate is None:
             break
 
-        candidate.status = EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
+        candidate.status = (
+            EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
+            if post.registration_price_cents
+            else EVENT_REGISTRATION_STATUS_APPROVED
+        )
         promoted.append(candidate)
 
     return promoted

@@ -1,12 +1,30 @@
 import os
 
 
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
     APP_NAME = "INCAS"
     LOCAL_TIMEZONE = os.getenv("LOCAL_TIMEZONE", "Europe/Berlin")
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///incas.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+    _IS_EPHEMERAL_TEST_DB = SQLALCHEMY_DATABASE_URI == "sqlite://"
+    AUTO_CREATE_SCHEMA = _env_bool(
+        "AUTO_CREATE_SCHEMA",
+        APP_ENV in {"test", "demo"} or _IS_EPHEMERAL_TEST_DB,
+    )
+    SEED_DEMO_DATA = _env_bool(
+        "SEED_DEMO_DATA",
+        APP_ENV == "demo" or _IS_EPHEMERAL_TEST_DB,
+    )
+    REACT_PRIMARY_FRONTEND = _env_bool("REACT_PRIMARY_FRONTEND", True)
     ACCESS_HASHES = {
         "access_keys": "9e27c273f5901114167b759edaeb402f290980fe723d1b05f8afc82f0c874d8e",
     }

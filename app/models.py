@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 
-from app.event_kinds import EVENT_KINDS
+from app.event_kinds import EVENT_KINDS, get_event_kind
 
 db = SQLAlchemy()
 
@@ -190,6 +190,8 @@ class Post(db.Model):
     summary = db.Column(db.String(256), nullable=False, default="")
     body = db.Column(db.Text, nullable=False, default="")
     starts_at = db.Column(db.DateTime, nullable=True, index=True)
+    ends_at_override = db.Column("ends_at", db.DateTime, nullable=True)
+    duration_minutes = db.Column(db.Integer, nullable=True)
     publish_at = db.Column(db.DateTime, nullable=True, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     is_pinned = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -198,6 +200,20 @@ class Post(db.Model):
     registration_limit = db.Column(db.Integer, nullable=True)
     registration_price_cents = db.Column(db.Integer, nullable=True)
     registration_is_deposit = db.Column(db.Boolean, nullable=False, default=False)
+    registration_mode = db.Column(db.String(32), nullable=False, default="none")
+    deposit_explanation = db.Column(db.String(500), nullable=False, default="")
+    venue = db.Column(db.String(200), nullable=False, default="")
+    address = db.Column(db.String(300), nullable=False, default="")
+    city = db.Column(db.String(120), nullable=False, default="")
+    meeting_point = db.Column(db.String(300), nullable=False, default="")
+    destination = db.Column(db.String(200), nullable=False, default="")
+    country_code = db.Column(db.String(2), nullable=False, default="")
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    destination_latitude = db.Column(db.Float, nullable=True)
+    destination_longitude = db.Column(db.Float, nullable=True)
+    map_config = db.Column(db.Text, nullable=False, default="{}")
+    feature_flags = db.Column(db.Text, nullable=False, default="[]")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     image_url = db.Column(db.String(500), nullable=False, default="")
@@ -221,8 +237,43 @@ class Post(db.Model):
     def ends_at(self):
         if self.starts_at is None:
             return None
+        if self.ends_at_override is not None:
+            return self.ends_at_override
+        if self.duration_minutes:
+            return self.starts_at + timedelta(minutes=self.duration_minutes)
         next_day = (self.starts_at + timedelta(days=1)).date()
         return datetime.combine(next_day, time(6, 0, 0))
+
+    @property
+    def event_kind_config(self):
+        return get_event_kind(self.event_kind) or {}
+
+    @property
+    def map_config_dict(self):
+        try:
+            value = json.loads(self.map_config or "{}")
+            return value if isinstance(value, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+
+    @property
+    def feature_flags_list(self):
+        try:
+            value = json.loads(self.feature_flags or "[]")
+            return value if isinstance(value, list) else []
+        except (TypeError, ValueError):
+            return []
+
+    @property
+    def effective_features(self):
+        configured = self.event_kind_config.get("features", [])
+        return list(dict.fromkeys([*configured, *self.feature_flags_list]))
+
+    @property
+    def effective_registration_mode(self):
+        if self.has_registration_queue:
+            return "queue"
+        return self.registration_mode or self.event_kind_config.get("registrationMode", "none")
 
     @property
     def is_published(self):
@@ -365,7 +416,10 @@ class ContactRequest(db.Model):
     email = db.Column(db.String(255), nullable=False, index=True)
     subject = db.Column(db.String(200), nullable=False, default="")
     message = db.Column(db.Text, nullable=False, default="")
+    is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    status = db.Column(db.String(32), nullable=False, default="new", index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class EventSuggestion(db.Model):
     __tablename__ = "event_suggestions"
@@ -377,7 +431,10 @@ class EventSuggestion(db.Model):
     contact_email = db.Column(db.String(255), nullable=False, default="", index=True)
     contact_phone = db.Column(db.String(80), nullable=False, default="")
     comment = db.Column(db.Text, nullable=False, default="")
+    is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    status = db.Column(db.String(32), nullable=False, default="new", index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 
@@ -541,11 +598,19 @@ class AccessKey(db.Model):
     key = db.Column(db.String(255), nullable=False, unique=True, index=True)
     scopes = db.Column(db.Text, nullable=False, default="[]")
     expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    label = db.Column(db.String(160), nullable=False, default="")
+    key_prefix = db.Column(db.String(16), nullable=False, default="")
+    revoked_at = db.Column(db.DateTime, nullable=True, index=True)
+    last_used_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     @property
     def scopes_list(self):
         return json.loads(self.scopes or "[]")
+
+    @property
+    def is_active(self):
+        return self.revoked_at is None and self.expires_at > get_configured_local_now()
 
 
 POST_STATUS_DRAFT = "draft"

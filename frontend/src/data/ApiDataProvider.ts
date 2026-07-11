@@ -1,10 +1,20 @@
 import { http } from "../api/client";
 import type {
   AdminPost,
+  AdminPayment,
+  AccessKeyInfo,
+  CreatedAccessKey,
   AdminPostsResponse,
   AdminThemesResponse,
   CalendarResponse,
+  ContactSubmission,
   ContentPageResponse,
+  EventQueueSummary,
+  EventRegistrationInput,
+  EventRegistrationStatus,
+  EventSuggestionSubmission,
+  FormInboxEntry,
+  FormOptions,
   KaraokeAction,
   KaraokeAdminEntry,
   KaraokeAuditEntry,
@@ -18,11 +28,18 @@ import type {
   PublicConfig,
   PublicPost,
   PublicPostsResponse,
+  RegistrationRecord,
   SessionInfo,
   SiteResponse,
   SocialPublication,
+  AdminSocialPublication,
   TandemListResponse,
+  TandemDuplicate,
+  TandemMatch,
   TandemMatchesResponse,
+  TandemRequest,
+  TandemReviewAction,
+  TandemSubmission,
   ThemeAuditEntry,
 } from "../api/types";
 import type { DataProvider } from "./DataProvider";
@@ -62,6 +79,30 @@ export class ApiDataProvider implements DataProvider {
     return http.get<ContentPageResponse>(
       `/public/content/${encodeURIComponent(slug)}?locale=${locale}`,
     );
+  }
+
+  getFormOptions() {
+    return http.get<FormOptions>("/public/forms/options");
+  }
+
+  submitContact(input: ContactSubmission) {
+    return http.post<{ submissionId: string }>("/public/contact", input);
+  }
+
+  submitEventSuggestion(input: EventSuggestionSubmission) {
+    return http.post<{ submissionId: string }>("/public/event-suggestions", input);
+  }
+
+  submitTandem(input: TandemSubmission) {
+    return http.post<{ submissionId: string }>("/public/language-tandem", input);
+  }
+
+  registerForEvent(slug: string, input: EventRegistrationInput) {
+    return http.post<RegistrationRecord>(`/public/events/${encodeURIComponent(slug)}/registrations`, input);
+  }
+
+  getRegistration(publicId: string) {
+    return http.get<RegistrationRecord>(`/public/registrations/${encodeURIComponent(publicId)}`);
   }
 
   getAdminThemes() {
@@ -141,14 +182,116 @@ export class ApiDataProvider implements DataProvider {
     return http.post<{ results: SocialPublication[] }>(`/admin/social/${publicationId}/retry`);
   }
 
-  getTandemRequests() {
-    return http.get<TandemListResponse>("/admin/language-tandem");
+  getAdminSocial(params?: { status?: string; provider?: string }) {
+    const search = new URLSearchParams();
+    if (params?.status) search.set("status", params.status);
+    if (params?.provider) search.set("provider", params.provider);
+    return http.get<{ items: AdminSocialPublication[] }>(`/admin/social${search.size ? `?${search}` : ""}`);
+  }
+
+  getFormInbox(params?: { type?: string; status?: string; q?: string }) {
+    const search = new URLSearchParams();
+    if (params?.type) search.set("type", params.type);
+    if (params?.status) search.set("status", params.status);
+    if (params?.q) search.set("q", params.q);
+    return http.get<{ items: FormInboxEntry[] }>(`/admin/forms${search.size ? `?${search}` : ""}`);
+  }
+
+  updateFormInbox(type: string, id: number, input: { status?: string; isViewed?: boolean }) {
+    return http.patch<FormInboxEntry>(`/admin/forms/${encodeURIComponent(type)}/${id}`, input);
+  }
+
+  getEventQueues() {
+    return http.get<{ events: EventQueueSummary[] }>("/admin/event-registrations");
+  }
+
+  getEventRegistrations(postId: number, params?: { status?: string; q?: string }) {
+    const search = new URLSearchParams();
+    if (params?.status) search.set("status", params.status);
+    if (params?.q) search.set("q", params.q);
+    return http.get<{ event: EventQueueSummary; items: RegistrationRecord[] }>(
+      `/admin/events/${postId}/registrations${search.size ? `?${search}` : ""}`,
+    );
+  }
+
+  updateEventRegistration(id: number, status: EventRegistrationStatus) {
+    return http.patch<{ item: RegistrationRecord; promoted: RegistrationRecord[]; event: EventQueueSummary }>(
+      `/admin/event-registrations/${id}`,
+      { status },
+    );
+  }
+
+  getAccessKeys() {
+    return http.get<{ items: AccessKeyInfo[]; availableScopes: { value: string; label: string }[] }>(
+      "/admin/access-keys",
+    );
+  }
+
+  createAccessKey(input: { label: string; scopes: string[]; expiresAt: string }) {
+    return http.post<CreatedAccessKey>("/admin/access-keys", input);
+  }
+
+  revokeAccessKey(id: number) {
+    return http.post<AccessKeyInfo>(`/admin/access-keys/${id}/revoke`);
+  }
+
+  expireAccessKey(id: number) {
+    return http.post<AccessKeyInfo>(`/admin/access-keys/${id}/expire`);
+  }
+
+  getAdminPayments(status?: string) {
+    return http.get<{ items: AdminPayment[] }>(`/admin/payments${status ? `?status=${encodeURIComponent(status)}` : ""}`);
+  }
+
+  updateAdminPayment(id: number, status: "refund_pending" | "refunded" | "cancelled") {
+    return http.patch<AdminPayment>(`/admin/payments/${id}`, { status });
+  }
+
+  getTandemRequests(params?: { q?: string; viewed?: string }) {
+    const search = new URLSearchParams();
+    if (params?.q) search.set("q", params.q);
+    if (params?.viewed) search.set("viewed", params.viewed);
+    return http.get<TandemListResponse>(`/admin/language-tandem${search.size ? `?${search}` : ""}`);
   }
 
   getTandemMatches(ref: string) {
     return http.get<TandemMatchesResponse>(
       `/admin/language-tandem/${encodeURIComponent(ref)}/matches`,
     );
+  }
+
+  updateTandem(ref: string, input: Record<string, unknown>) {
+    return http.put<TandemRequest>(`/admin/language-tandem/${encodeURIComponent(ref)}`, input);
+  }
+
+  markTandemViewed(ref: string, isViewed: boolean) {
+    return http.post<{ ref: string; isViewed: boolean }>(
+      `/admin/language-tandem/${encodeURIComponent(ref)}/viewed`,
+      { isViewed },
+    );
+  }
+
+  reviewTandemMatch(sourceRef: string, candidateRef: string, action: TandemReviewAction) {
+    return http.post<TandemMatch["review"]>(
+      `/admin/language-tandem/${encodeURIComponent(sourceRef)}/matches/${encodeURIComponent(candidateRef)}/review`,
+      { action },
+    );
+  }
+
+  getTandemDuplicates() {
+    return http.get<{ items: TandemDuplicate[] }>("/admin/language-tandem/duplicates");
+  }
+
+  decideTandemDuplicate(leftRef: string, rightRef: string, decision: "ignore" | "different", note?: string) {
+    return http.post<{ decision: string; note: string }>("/admin/language-tandem/duplicates/decision", {
+      leftRef, rightRef, decision, note,
+    });
+  }
+
+  mergeTandemDuplicate(keepRef: string, removeRef: string, fields?: Record<string, string>) {
+    return http.post<TandemRequest>("/admin/language-tandem/duplicates/merge", {
+      keepRef, removeRef, fields,
+    });
   }
 
   submitKaraokeRequest(input: KaraokeSubmission) {
@@ -166,9 +309,13 @@ export class ApiDataProvider implements DataProvider {
     return http.get<{ items: KaraokePublicEntry[] }>(`/public/karaoke/queue${query}`);
   }
 
-  getAdminKaraoke(status?: string) {
-    const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    return http.get<{ items: KaraokeAdminEntry[] }>(`/admin/karaoke${query}`);
+  getAdminKaraoke(status?: string, eventSlug?: string) {
+    const search = new URLSearchParams();
+    if (status) search.set("status", status);
+    if (eventSlug) search.set("event", eventSlug);
+    return http.get<{ items: KaraokeAdminEntry[]; events: { slug: string; title: string; startsAt: string | null }[] }>(
+      `/admin/karaoke${search.size ? `?${search}` : ""}`,
+    );
   }
 
   karaokeAction(id: number, action: KaraokeAction) {
@@ -183,7 +330,7 @@ export class ApiDataProvider implements DataProvider {
     return http.get<{ entries: KaraokeAuditEntry[] }>("/admin/karaoke/audit");
   }
 
-  startCheckout(postSlug: string, registrationPublicId?: string) {
+  startCheckout(postSlug: string, registrationPublicId: string) {
     return http.post<PaymentInfo>("/payments/checkout", { postSlug, registrationPublicId });
   }
 
