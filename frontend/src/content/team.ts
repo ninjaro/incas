@@ -23,6 +23,11 @@ export type TeamMember = {
 export const DEFAULT_MEMBER_DESCRIPTION =
   "Part of the INCAS team, helping international and local students meet in Aachen.";
 
+// TODO(maintainer): replace with real team roster. No real member names,
+// roles, or bios were available in this repository (the legacy site never
+// stored team members in the DB or templates), so the entries below are
+// clearly-marked sample placeholders. Swap them for actual INCAS board/team
+// members before this page ships to real visitors.
 export const teamMembers: TeamMember[] = [
   {
     id: "board-chair",
