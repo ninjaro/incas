@@ -60,3 +60,17 @@ def test_title_prefix_parity():
         "trip": "International Weekend",
     }
     assert TITLE_HIGHLIGHT_KINDS == {"country_evening", "breakfast"}
+
+
+def test_committed_snapshot_is_in_sync():
+    import json
+    import os
+
+    from app.export_event_kinds import OUTPUT_PATH, build_event_kinds_snapshot
+
+    assert os.path.exists(OUTPUT_PATH), "run: python -m app.export_event_kinds"
+    with open(OUTPUT_PATH, encoding="utf-8") as fh:
+        on_disk = json.load(fh)
+    assert on_disk == build_event_kinds_snapshot(), (
+        "event-kinds.generated.json is stale; run python -m app.export_event_kinds"
+    )

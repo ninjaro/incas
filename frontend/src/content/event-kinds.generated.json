@@ -1,0 +1,178 @@
+{
+  "board_games": {
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "dice",
+    "id": "board_games",
+    "label": {
+      "de": "Brettspielabende",
+      "en": "Board Games"
+    },
+    "mapMode": "venue",
+    "marker": "ok",
+    "registrationDefault": false,
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": null
+  },
+  "breakfast": {
+    "depositDefault": true,
+    "features": [
+      "registration",
+      "deposit",
+      "map"
+    ],
+    "highlightTitle": true,
+    "icon": "egg",
+    "id": "breakfast",
+    "label": {
+      "de": "Internationales Frühstück",
+      "en": "International Breakfast"
+    },
+    "mapMode": "venue",
+    "marker": "muted",
+    "registrationDefault": true,
+    "schedule": {
+      "time": "10:00",
+      "weekday": 5
+    },
+    "titlePrefix": {
+      "de": "Internationales Frühstück",
+      "en": "International Breakfast"
+    }
+  },
+  "cafe_lingua": {
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "chat",
+    "id": "cafe_lingua",
+    "label": {
+      "de": "Café Lingua",
+      "en": "Café Lingua"
+    },
+    "mapMode": "venue",
+    "marker": "accent",
+    "registrationDefault": false,
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": null
+  },
+  "country_evening": {
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": true,
+    "icon": "globe",
+    "id": "country_evening",
+    "label": {
+      "de": "Länderabend",
+      "en": "Country Evening"
+    },
+    "mapMode": "country",
+    "marker": "bad",
+    "registrationDefault": false,
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": {
+      "de": "Länderabend",
+      "en": "Country Evening"
+    }
+  },
+  "dance": {
+    "depositDefault": false,
+    "features": [
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "music",
+    "id": "dance",
+    "label": {
+      "de": "Tanzworkshops",
+      "en": "Dance Workshops"
+    },
+    "mapMode": "venue",
+    "marker": "info",
+    "registrationDefault": false,
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": null
+  },
+  "housing": {
+    "depositDefault": false,
+    "features": [],
+    "highlightTitle": false,
+    "icon": "house",
+    "id": "housing",
+    "label": {
+      "de": "Wohnen",
+      "en": "Housing"
+    },
+    "mapMode": "none",
+    "marker": "muted",
+    "registrationDefault": false,
+    "schedule": null,
+    "titlePrefix": null
+  },
+  "karaoke": {
+    "depositDefault": false,
+    "features": [
+      "karaoke_queue",
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "mic",
+    "id": "karaoke",
+    "label": {
+      "de": "Karaoke",
+      "en": "Karaoke"
+    },
+    "mapMode": "venue",
+    "marker": "warn",
+    "registrationDefault": false,
+    "schedule": {
+      "time": "20:00",
+      "weekday": 1
+    },
+    "titlePrefix": null
+  },
+  "trip": {
+    "depositDefault": false,
+    "features": [
+      "registration",
+      "map"
+    ],
+    "highlightTitle": false,
+    "icon": "signpost",
+    "id": "trip",
+    "label": {
+      "de": "Internationales Wochenende",
+      "en": "International Weekend"
+    },
+    "mapMode": "destination",
+    "marker": "ink",
+    "registrationDefault": true,
+    "schedule": {
+      "time": "09:00",
+      "weekday": 5
+    },
+    "titlePrefix": {
+      "de": "Internationales Wochenende",
+      "en": "International Weekend"
+    }
+  }
+}
