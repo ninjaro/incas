@@ -1,1 +1,327 @@
-/* Placeholder for Task 8: rendered content-page styles (offer pages, etc). */
+/*
+ * Scoped Bootstrap-subset for authored content pages (ContentPage /
+ * OffersPage bodyHtml). Every rule here MUST stay prefixed with
+ * `.site-content ` so legacy authored markup can never leak styles into
+ * app chrome. Covers exactly the classes the 13 migrated content pages use
+ * (see: grep -oE 'class="[^"]+"' against frontend/src/content/site.generated.json).
+ *
+ * No Bootstrap runtime/CSS is loaded; this file hand-rolls just enough of
+ * the utilities in use, mapped onto the app's existing design tokens.
+ */
+
+/* ---------- layout: stacks & grid ---------- */
+
+.site-content .vstack {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+.site-content .hstack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  align-self: stretch;
+}
+
+.site-content .gap-1 { gap: 0.25rem; }
+.site-content .gap-2 { gap: 0.5rem; }
+.site-content .gap-3 { gap: 1rem; }
+.site-content .gap-4 { gap: 1.5rem; }
+.site-content .gap-5 { gap: 3rem; }
+
+.site-content .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -0.75rem;
+}
+
+.site-content .row > * {
+  padding: 0 0.75rem;
+  box-sizing: border-box;
+}
+
+.site-content .col-12 { flex: 0 0 100%; max-width: 100%; }
+
+@media (min-width: 576px) {
+  .site-content .col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+}
+
+@media (min-width: 1200px) {
+  .site-content .col-xl-4 { flex: 0 0 33.3333%; max-width: 33.3333%; }
+}
+
+.site-content .g-4 { row-gap: 1.5rem; }
+.site-content .h-100 { height: 100%; }
+.site-content .overflow-hidden { overflow: hidden; }
+
+/* ---------- typography ---------- */
+
+.site-content .lead {
+  font-size: 1.15rem;
+  color: var(--ink-soft);
+}
+
+.site-content .fw-bold { font-weight: 700; }
+.site-content .fw-semibold { font-weight: 600; }
+
+.site-content .h3,
+.site-content .h4,
+.site-content .h5 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  margin: 0;
+}
+
+.site-content .h3 { font-size: 1.5rem; }
+.site-content .h4 { font-size: 1.25rem; }
+.site-content .h5 { font-size: 1.1rem; }
+
+.site-content .text-primary,
+.site-content .text-primary-emphasis {
+  color: var(--incas-orange-deep);
+}
+
+.site-content .text-body-emphasis {
+  color: var(--ink);
+}
+
+.site-content .text-body-secondary {
+  color: var(--ink-soft);
+}
+
+.site-content .link-primary {
+  color: var(--incas-orange-deep);
+  text-decoration: underline;
+}
+
+/* ---------- spacing ---------- */
+
+.site-content .mb-0 { margin-bottom: 0; }
+.site-content .mb-1 { margin-bottom: 0.25rem; }
+.site-content .mb-2 { margin-bottom: 0.5rem; }
+.site-content .mb-3 { margin-bottom: 1rem; }
+.site-content .mb-4 { margin-bottom: 1.5rem; }
+.site-content .mb-5 { margin-bottom: 3rem; }
+
+.site-content .mt-0 { margin-top: 0; }
+.site-content .mt-1 { margin-top: 0.25rem; }
+.site-content .mt-2 { margin-top: 0.5rem; }
+.site-content .mt-3 { margin-top: 1rem; }
+.site-content .mt-4 { margin-top: 1.5rem; }
+.site-content .mt-5 { margin-top: 3rem; }
+
+.site-content .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+
+.site-content .p-0 { padding: 0; }
+.site-content .p-1 { padding: 0.25rem; }
+.site-content .p-2 { padding: 0.5rem; }
+.site-content .p-3 { padding: 1rem; }
+.site-content .p-4 { padding: 1.5rem; }
+
+.site-content .py-0 { padding-top: 0; padding-bottom: 0; }
+.site-content .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.site-content .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.site-content .py-3 { padding-top: 1rem; padding-bottom: 1rem; }
+
+/* ---------- surfaces: borders, backgrounds ---------- */
+
+.site-content .border {
+  border: 1px solid var(--line);
+}
+
+.site-content .border-start {
+  border-left: 1px solid var(--line);
+}
+
+.site-content .border-4 {
+  border-width: 4px;
+}
+
+.site-content .border-primary {
+  border-color: var(--incas-orange-deep);
+}
+
+.site-content .rounded-2 {
+  border-radius: var(--radius);
+}
+
+.site-content .bg-body-tertiary {
+  background: var(--paper-warm);
+}
+
+.site-content hr {
+  border: none;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- lists ---------- */
+
+.site-content .list-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-content .list-group-flush {
+  border-radius: 0;
+}
+
+.site-content .list-group-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.site-content .list-group-item:last-child {
+  border-bottom: none;
+}
+
+.site-content ol.list-group,
+.site-content ol.list-group-numbered {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+
+.site-content ol.list-group .list-group-item,
+.site-content ol.list-group-numbered .list-group-item {
+  display: list-item;
+}
+
+/* ---------- buttons & links ---------- */
+/*
+ * `.btn` / `.btn-primary` / `.btn-sm` are already defined, unscoped, in
+ * global.css and apply the same visual treatment everywhere in the app —
+ * intentionally reused here rather than duplicated. `.btn-outline-primary`
+ * has no app-chrome equivalent (the app uses `.btn-outline`), so it gets a
+ * scoped rule below. `.offer-card-action` only adjusts spacing on top of
+ * that combo.
+ */
+
+.site-content .offer-card-action {
+  margin-top: 0.25rem;
+}
+
+.site-content .btn-outline-primary {
+  background: transparent;
+  border-color: var(--incas-orange);
+  color: var(--incas-orange-deep);
+}
+
+.site-content .btn-outline-primary:hover {
+  background: var(--incas-orange-soft);
+}
+
+/* ---------- offer cards (used inline in the "offers" content page) ---------- */
+
+.site-content .offers-grid {
+  width: 100%;
+}
+
+.site-content .offer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.site-content .offer-card.is-linked {
+  cursor: pointer;
+}
+
+.site-content .offer-card-icon {
+  font-size: 1.5rem;
+  color: var(--incas-orange-deep);
+}
+
+.site-content .offer-card-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.site-content .offer-card-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-content .offer-card-text,
+.site-content .offer-card-meta {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.site-content .offer-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.site-content .offer-card-more {
+  color: var(--incas-orange-deep);
+  font-weight: 600;
+}
+
+/* Bootstrap Icons glyphs aren't loaded (no new runtime dependency); size the
+   placeholder inline element so layout doesn't jump if a glyph is missing. */
+.site-content .bi {
+  display: inline-block;
+  width: 1em;
+}
+
+/* ---------- accordion (rendered statically expanded) ---------- */
+/*
+ * These pages are static content, not an interactive app surface — we keep
+ * full-content parity by force-expanding every accordion panel and turning
+ * the toggle button into inert, non-interactive markup rather than wiring
+ * up collapse behaviour. This is a deliberate, approved simplification.
+ */
+
+.site-content .accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.site-content .accordion-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.site-content .accordion-header {
+  margin: 0;
+}
+
+.site-content .accordion-button {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: var(--paper-warm);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: default;
+  pointer-events: none;
+}
+
+.site-content .accordion-button::after {
+  display: none;
+}
+
+.site-content .accordion-collapse {
+  display: block !important;
+  height: auto !important;
+}
+
+.site-content .accordion-body {
+  padding: 0.75rem 1rem;
+  color: var(--ink-soft);
+}
