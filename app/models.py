@@ -6,12 +6,14 @@ from zoneinfo import ZoneInfo
 from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 
+from app.event_kinds import EVENT_KINDS
+
 db = SQLAlchemy()
 
 EVENT_TITLE_PREFIXES = {
-    "country_evening": "Country Evening",
-    "breakfast": "International Breakfast",
-    "trip": "International Weekend",
+    kind_id: kind["titlePrefix"]["en"]
+    for kind_id, kind in EVENT_KINDS.items()
+    if kind["titlePrefix"] is not None
 }
 
 EVENT_TITLE_SUFFIX_OVERRIDES = {
@@ -43,7 +45,9 @@ DANCE_TITLE_ALIASES = {
     "dance workshops",
 }
 
-TITLE_HIGHLIGHT_KINDS = {"country_evening", "breakfast"}
+TITLE_HIGHLIGHT_KINDS = {
+    kind_id for kind_id, kind in EVENT_KINDS.items() if kind["highlightTitle"]
+}
 EVENT_REGISTRATION_STATUS_APPROVED = "approved"
 EVENT_REGISTRATION_STATUS_CANCELLED = "cancelled"
 EVENT_REGISTRATION_STATUS_WAITING_PAYMENT = "waiting_payment"

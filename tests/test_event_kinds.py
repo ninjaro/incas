@@ -31,3 +31,32 @@ def test_every_kind_has_valid_shape():
 def test_get_event_kind_unknown_returns_none():
     assert get_event_kind("does_not_exist") is None
     assert get_event_kind("breakfast")["label"]["de"] == "Internationales Frühstück"
+
+
+def test_event_kind_meta_parity():
+    from app import event_kind_meta
+
+    expected = {
+        "karaoke": {"label": "Karaoke", "badge": "text-bg-warning", "color": "warning"},
+        "country_evening": {"label": "Country Evening", "badge": "text-bg-danger", "color": "danger"},
+        "board_games": {"label": "Board Games", "badge": "text-bg-success", "color": "success"},
+        "cafe_lingua": {"label": "Café Lingua", "badge": "text-bg-primary", "color": "primary"},
+        "dance": {"label": "Dance Workshops", "badge": "text-bg-info", "color": "info"},
+        "breakfast": {"label": "International Breakfast", "badge": "text-bg-secondary", "color": "secondary"},
+        "trip": {"label": "International Weekend", "badge": "text-bg-dark", "color": "dark"},
+        "housing": {"label": "Housing", "badge": "text-bg-light", "color": "secondary"},
+    }
+    for kind, meta in expected.items():
+        assert event_kind_meta(kind) == meta, kind
+    assert event_kind_meta("nope") is None
+
+
+def test_title_prefix_parity():
+    from app.models import EVENT_TITLE_PREFIXES, TITLE_HIGHLIGHT_KINDS
+
+    assert EVENT_TITLE_PREFIXES == {
+        "country_evening": "Country Evening",
+        "breakfast": "International Breakfast",
+        "trip": "International Weekend",
+    }
+    assert TITLE_HIGHLIGHT_KINDS == {"country_evening", "breakfast"}

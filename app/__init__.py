@@ -16,20 +16,32 @@ from app.models import (
 )
 from app.routes.helpers.access import has_any_access, has_any_access_key
 from config import Config
+from app.event_kinds import get_event_kind
+
+# Transitional Bootstrap display values for the legacy Jinja UI. badge/color
+# are not a clean function of the registry `marker` (housing is text-bg-light
+# but color secondary), so they are kept here, in the one legacy consumer, and
+# deleted when the Jinja UI is removed (Phase D). The canonical registry stays
+# clean with only `marker`.
+_LEGACY_BADGE = {
+    "karaoke": ("text-bg-warning", "warning"),
+    "country_evening": ("text-bg-danger", "danger"),
+    "board_games": ("text-bg-success", "success"),
+    "cafe_lingua": ("text-bg-primary", "primary"),
+    "dance": ("text-bg-info", "info"),
+    "breakfast": ("text-bg-secondary", "secondary"),
+    "trip": ("text-bg-dark", "dark"),
+    "housing": ("text-bg-light", "secondary"),
+}
 
 
 def event_kind_meta(kind):
-    mapping = {
-        "karaoke": {"label": "Karaoke", "badge": "text-bg-warning", "color": "warning"},
-        "country_evening": {"label": "Country Evening", "badge": "text-bg-danger", "color": "danger"},
-        "board_games": {"label": "Board Games", "badge": "text-bg-success", "color": "success"},
-        "cafe_lingua": {"label": "Café Lingua", "badge": "text-bg-primary", "color": "primary"},
-        "dance": {"label": "Dance Workshops", "badge": "text-bg-info", "color": "info"},
-        "breakfast": {"label": "International Breakfast", "badge": "text-bg-secondary", "color": "secondary"},
-        "trip": {"label": "International Weekend", "badge": "text-bg-dark", "color": "dark"},
-        "housing": {"label": "Housing", "badge": "text-bg-light", "color": "secondary"},
-    }
-    return mapping.get(kind)
+    ek = get_event_kind(kind)
+    badge_color = _LEGACY_BADGE.get(kind)
+    if ek is None or badge_color is None:
+        return None
+    badge, color = badge_color
+    return {"label": ek["label"]["en"], "badge": badge, "color": color}
 
 
 def should_show_event_label(item):
