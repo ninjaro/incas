@@ -1,13 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { ApiError } from "../../api/client";
 import type { EventRegistrationInput, PublicPost } from "../../api/types";
 import { EventAvailability, EventPaymentNotice } from "../../components/events";
 import { Field } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
+import { usePublicFormErrors } from "../../forms/usePublicFormErrors";
 import { useLocale } from "../../i18n/LocaleContext";
-import { localizeFieldErrors } from "../../i18n/errors";
 
 const EMPTY: EventRegistrationInput = {
   firstName: "", lastName: "", email: "", occupation: "", dietPreference: "", comment: "",
@@ -19,21 +18,25 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
   const { locale } = useLocale();
   const de = locale === "de";
   const [form, setForm] = useState(EMPTY);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const formErrors = usePublicFormErrors(locale);
   const [busy, setBusy] = useState(false);
   const registration = event.registration;
   if (!registration) return null;
 
+  const change = <K extends keyof EventRegistrationInput>(field: K, value: EventRegistrationInput[K]) => {
+    formErrors.clearField(field);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
   const submit = async (submitEvent: FormEvent) => {
     submitEvent.preventDefault();
     setBusy(true);
-    setErrors({});
+    formErrors.clear();
     try {
       const result = await data.registerForEvent(event.slug, form);
       navigate(`/registrations/${result.publicId}`);
     } catch (error) {
-      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
-      else setErrors({ form: de ? "Die Anmeldung konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Registration failed.") });
+      formErrors.report(error);
     } finally {
       setBusy(false);
     }
@@ -50,16 +53,16 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
       </div>
       <EventPaymentNotice registration={registration} locale={locale} />
       {registration.availability === "waiting_list" ? <p className="notice notice-info">{de ? "Die Plätze sind reserviert. Neue Anmeldungen kommen auf die Warteliste." : "All places are reserved. New registrations join the waiting list."}</p> : null}
-      {errors.form ? <p className="notice notice-bad" role="alert">{errors.form}</p> : null}
-      <form className="card public-form" onSubmit={submit} noValidate>
+      {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
+      <form ref={formErrors.formRef} className="card public-form" onSubmit={submit} noValidate>
         <div className="form-grid">
-          <Field label={de ? "Vorname" : "First name"} error={errors.firstName}><input required autoComplete="given-name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></Field>
-          <Field label={de ? "Nachname" : "Last name"} error={errors.lastName}><input required autoComplete="family-name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></Field>
-          <Field label="Email" error={errors.email}><input required type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
-          <Field label={de ? "Tätigkeit" : "Occupation"} error={errors.occupation}><input required value={form.occupation} placeholder={de ? "z. B. Student:in an der RWTH" : "e.g. Student at RWTH Aachen"} onChange={(e) => setForm({ ...form, occupation: e.target.value })} /></Field>
+          <Field label={de ? "Vorname" : "First name"} error={formErrors.errors.firstName}><input name="firstName" required autoComplete="given-name" value={form.firstName} onChange={(e) => change("firstName", e.target.value)} /></Field>
+          <Field label={de ? "Nachname" : "Last name"} error={formErrors.errors.lastName}><input name="lastName" required autoComplete="family-name" value={form.lastName} onChange={(e) => change("lastName", e.target.value)} /></Field>
+          <Field label="Email" error={formErrors.errors.email}><input name="email" required type="email" autoComplete="email" value={form.email} onChange={(e) => change("email", e.target.value)} /></Field>
+          <Field label={de ? "Tätigkeit" : "Occupation"} error={formErrors.errors.occupation}><input name="occupation" required value={form.occupation} placeholder={de ? "z. B. Student:in an der RWTH" : "e.g. Student at RWTH Aachen"} onChange={(e) => change("occupation", e.target.value)} /></Field>
         </div>
-        {event.eventKind === "breakfast" ? <Field label={de ? "Ernährung" : "Meal preference"} error={errors.dietPreference}><select value={form.dietPreference} onChange={(e) => setForm({ ...form, dietPreference: e.target.value as EventRegistrationInput["dietPreference"] })}><option value="">-</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option><option value="omnivore">{de ? "Omnivor" : "Omnivore"}</option></select></Field> : null}
-        <Field label={de ? "Kommentar" : "Comments"} error={errors.comment}><textarea rows={5} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} /></Field>
+        {event.eventKind === "breakfast" ? <Field label={de ? "Ernährung" : "Meal preference"} error={formErrors.errors.dietPreference}><select name="dietPreference" value={form.dietPreference} onChange={(e) => change("dietPreference", e.target.value as EventRegistrationInput["dietPreference"])}><option value="">-</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option><option value="omnivore">{de ? "Omnivor" : "Omnivore"}</option></select></Field> : null}
+        <Field label={de ? "Kommentar" : "Comments"} error={formErrors.errors.comment}><textarea name="comment" rows={5} value={form.comment} onChange={(e) => change("comment", e.target.value)} /></Field>
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : registration.availability === "waiting_list" ? (de ? "Warteliste beitreten" : "Join waiting list") : (de ? "Anmeldung senden" : "Submit registration")}</button>
       </form>
     </section>

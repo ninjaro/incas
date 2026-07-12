@@ -21,11 +21,28 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("primary public and admin surfaces pass automated WCAG checks", async ({ page }) => {
-  for (const route of ["/", "/#/offers", "/#/calendar", "/#/contact"]) {
+  for (const route of [
+    "/", "/#/offers", "/#/offers/international-weekend", "/#/calendar", "/#/contact",
+    "/#/about", "/#/about/working-groups", "/#/about/team-meetings", "/#/about/team", "/#/tandem",
+  ]) {
     await page.goto(route);
     await page.locator(".shell-main").waitFor();
     await expectNoA11yViolations(page);
   }
+
+  await page.goto("/#/about");
+  await page.getByRole("button", { name: "Open submenu: About Us" }).click();
+  await expectNoA11yViolations(page);
+
+  await page.goto("/#/contact?form=general");
+  await expectNoA11yViolations(page);
+  await page.goto("/#/contact?form=suggest-event");
+  await expectNoA11yViolations(page);
+
+  await unlockDemoAdmin(page, "demo-review");
+  await page.goto("/#/about/team?previewTheme=spotlight");
+  await expect(page.locator(".team-spotlight-row").first()).toBeVisible();
+  await expectNoA11yViolations(page);
 
   await unlockDemoAdmin(page);
   await expectNoA11yViolations(page);
@@ -48,11 +65,19 @@ test("calendar dialog is keyboard operable and restores focus", async ({ page })
 });
 
 test("field errors are associated with their controls", async ({ page }) => {
-  await page.goto("/#/contact");
+  await page.goto("/#/contact?form=general");
   await page.getByRole("button", { name: "Send message" }).click();
   const email = page.getByLabel("Email");
   await expect(email).toHaveAttribute("aria-invalid", "true");
   const describedBy = await email.getAttribute("aria-describedby");
   expect(describedBy).toBeTruthy();
   await expect(page.locator(`#${describedBy}`)).toContainText("valid email");
+});
+
+test("Tandem step validation keeps the first error visible and focused", async ({ page }) => {
+  await page.goto("/#/tandem");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Step 1 of 3")).toBeVisible();
+  await expect(page.getByLabel("First name")).toBeFocused();
+  await expect(page.getByLabel("First name")).toHaveAttribute("aria-invalid", "true");
 });

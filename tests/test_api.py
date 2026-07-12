@@ -350,6 +350,15 @@ def test_karaoke_public_flow(client, app):
     assert tracked["status"] == "pending"
     assert tracked["queuePosition"] is None
 
+    batch = client.post(
+        "/api/v1/public/karaoke/requests/track",
+        json={"publicIds": [public_id, public_id, "KRQ-missing"]},
+        headers=API_HEADERS,
+    )
+    assert batch.status_code == 200
+    assert [item["publicId"] for item in batch.get_json()["items"]] == [public_id]
+    assert batch.get_json()["missing"] == ["KRQ-missing"]
+
     # Pending requests are not in the public queue.
     queue = client.get(f"/api/v1/public/karaoke/queue?event={event_slug}").get_json()
     assert all(entry["publicId"] != public_id for entry in queue["items"])

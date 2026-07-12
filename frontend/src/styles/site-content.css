@@ -275,13 +275,7 @@
   width: 1em;
 }
 
-/* ---------- accordion (rendered statically expanded) ---------- */
-/*
- * These pages are static content, not an interactive app surface — we keep
- * full-content parity by force-expanding every accordion panel and turning
- * the toggle button into inert, non-interactive markup rather than wiring
- * up collapse behaviour. This is a deliberate, approved simplification.
- */
+/* ---------- static expanded FAQ ---------- */
 
 .site-content .accordion {
   display: flex;
@@ -299,7 +293,8 @@
   margin: 0;
 }
 
-.site-content .accordion-button {
+.site-content .accordion-question {
+  display: block;
   width: 100%;
   text-align: left;
   padding: 0.75rem 1rem;
@@ -308,17 +303,10 @@
   color: var(--ink);
   font: inherit;
   font-weight: 600;
-  cursor: default;
-  pointer-events: none;
 }
 
-.site-content .accordion-button::after {
-  display: none;
-}
-
-.site-content .accordion-collapse {
-  display: block !important;
-  height: auto !important;
+.site-content .accordion-answer {
+  display: block;
 }
 
 .site-content .accordion-body {

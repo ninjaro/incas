@@ -17,7 +17,7 @@ from app.models import Post, db, get_configured_local_now
         ("/contacts", "/contact"),
         ("/suggest-event", "/suggest-event"),
         ("/language-tandem", "/tandem"),
-        ("/team", "/about?section=team"),
+        ("/team", "/about/team"),
         ("/event-registrations/EVT-123", "/registrations/EVT-123"),
         ("/admin/forms", "/admin/forms"),
         ("/admin/event-registrations/4", "/admin/registrations"),

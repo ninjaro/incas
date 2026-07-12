@@ -78,6 +78,9 @@ describe("DemoDataProvider", () => {
     const tracked = await provider.trackKaraokeRequest(submitted.publicId);
     expect(tracked.status).toBe("pending");
     expect(tracked.queuePosition).toBeNull();
+    const batch = await provider.trackKaraokeRequests([submitted.publicId, submitted.publicId, "missing"]);
+    expect(batch.items.map((item) => item.publicId)).toEqual([submitted.publicId]);
+    expect(batch.missing).toEqual(["missing"]);
 
     await provider.unlock("demo-karaoke");
     const admin = await provider.getAdminKaraoke("pending");

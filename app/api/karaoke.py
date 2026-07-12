@@ -154,6 +154,26 @@ def api_karaoke_track(public_id):
     return jsonify(serialize_public(item))
 
 
+@api_bp.post("/public/karaoke/requests/track")
+@rate_limited("karaoke.track.batch", limit=60)
+def api_karaoke_track_batch():
+    body = get_json_body()
+    raw_ids = body.get("publicIds")
+    if not isinstance(raw_ids, list):
+        return validation_error({"publicIds": "Provide a list of tracking codes."})
+    public_ids = list(dict.fromkeys(
+        str(public_id).strip() for public_id in raw_ids if str(public_id).strip()
+    ))
+    if not public_ids or len(public_ids) > 20:
+        return validation_error({"publicIds": "Provide between 1 and 20 tracking codes."})
+    items = KaraokeSongRequest.query.filter(KaraokeSongRequest.public_id.in_(public_ids)).all()
+    by_id = {item.public_id: item for item in items}
+    return jsonify({
+        "items": [serialize_public(by_id[public_id]) for public_id in public_ids if public_id in by_id],
+        "missing": [public_id for public_id in public_ids if public_id not in by_id],
+    })
+
+
 @api_bp.get("/public/karaoke/queue")
 def api_karaoke_public_queue():
     event, error = resolve_event(request.args.get("event", "").strip(), required=True)

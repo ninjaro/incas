@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from flask import jsonify, request
@@ -267,13 +268,8 @@ def _serialize_nav(locale):
         {"label": t(locale, "nav.calendar"), "to": "/calendar"},
         {
             "label": t(locale, "nav.about"),
-            "to": None,
-            "children": [
-                {"label": t(locale, "nav.about_us"), "to": "/about"},
-                {"label": t(locale, "nav.working_groups"), "to": "/about/working-groups"},
-                {"label": t(locale, "nav.team_meetings"), "to": "/about/team-meetings"},
-                {"label": t(locale, "nav.team"), "to": "/about/team"},
-            ],
+            "to": "/about",
+            "section": "about",
         },
         {"label": t(locale, "nav.forms"), "to": "/offers"},
         {"label": t(locale, "nav.language_tandem"), "to": "/tandem"},
@@ -292,6 +288,16 @@ def _serialize_offers(locale):
                 "to": _app_route(p["url"]),
                 "icon": p["icon"],
                 "description": p.get("description", ""),
+                "eventKind": p.get("event_kind"),
+                "featured": bool(p.get("featured")),
+                "secondaryAction": (
+                    {
+                        "title": p["secondary_action"]["title"],
+                        "to": _app_route(p["secondary_action"]["url"]),
+                    }
+                    if p.get("secondary_action")
+                    else None
+                ),
             }
             for p in offers["pages"]
         ],
@@ -337,23 +343,55 @@ def _content_key(slug):
     return slug.replace("-", "_")
 
 
-def serialize_content(slug, locale):
+def _normalize_authored_html(body_html):
+    """Convert legacy Bootstrap accordions into honest expanded content."""
+    body_html = re.sub(
+        r'<button class="accordion-button(?: collapsed)?"[^>]*>(.*?)</button>',
+        r'<span class="accordion-question">\1</span>',
+        body_html,
+        flags=re.DOTALL,
+    )
+    body_html = re.sub(
+        r' class="accordion-collapse collapse(?: show)?"(?: data-bs-parent="[^"]+")?',
+        ' class="accordion-answer"',
+        body_html,
+    )
+    return body_html
+
+
+def serialize_content(slug, locale, section=None):
     key = _content_key(slug)
     if key not in SITE_PAGES["en"]:
         return None
     page = get_site_page(key, _coerce_locale(locale))
+    if section and page.get("section") != section:
+        return None
     return {
         "slug": slug,
         "title": page["title"],
+        "section": page["section"],
         "image": page.get("image"),
-        "bodyHtml": page["body_html"],
+        "imageAlt": page.get("image_alt", ""),
+        "imageWidth": page.get("image_width"),
+        "imageHeight": page.get("image_height"),
+        "imageAspectRatio": page.get("image_aspect_ratio"),
+        "imageObjectPosition": page.get("image_object_position"),
+        "imagePriority": page.get("image_priority", False),
+        "bodyHtml": _normalize_authored_html(page["body_html"]),
         "form": page.get("form"),
     }
 
 
 @api_bp.get("/public/content/<slug>")
 def api_public_content(slug):
-    payload = serialize_content(slug, request.args.get("locale", DEFAULT_LOCALE))
+    section = request.args.get("section")
+    if section not in {None, "about", "offers"}:
+        return api_error("not_found", "Page not found.", status=404)
+    payload = serialize_content(
+        slug,
+        request.args.get("locale", DEFAULT_LOCALE),
+        section=section,
+    )
     if payload is None:
         return api_error("not_found", "Page not found.", status=404)
     return jsonify(payload)

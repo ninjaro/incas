@@ -17,7 +17,7 @@ const PREVIEW_ROUTES: Partial<Record<PageId, string>> = {
   landing: "/",
   calendar: "/calendar",
   language_tandem: "/tandem",
-  team: "/team",
+  team: "/about/team",
   admin_dashboard: "/admin",
 };
 

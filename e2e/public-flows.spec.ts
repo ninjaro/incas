@@ -28,6 +28,72 @@ test("landing, calendar, event detail, locale, and appearance remain in the SPA"
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
+test("About navigation, route focus, and section boundaries are canonical", async ({ page }) => {
+  await page.goto("/#/about/team");
+  const disclosure = page.locator(".site-nav-group-disclosure");
+  await disclosure.click();
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator('.site-nav-links [aria-current="page"]')).toHaveCount(1);
+  await expect(page.locator('.site-nav-links [aria-current="page"]')).toHaveText("Team");
+  await page.keyboard.press("Escape");
+  await expect(disclosure).toBeFocused();
+  await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+
+  await page.getByRole("link", { name: "About Us", exact: true }).click();
+  await expect(page).toHaveURL(/#\/about$/);
+  await expect(page.locator("#main-content")).toBeFocused();
+  await expect(page.locator(".about-topic-preview .section-card")).toHaveCount(3);
+
+  const workingGroupsCardLink = page
+    .locator(".about-topic-preview .section-card")
+    .filter({ has: page.getByRole("heading", { name: "Working Groups" }) })
+    .getByRole("link", { name: "Read more" });
+  await workingGroupsCardLink.scrollIntoViewIfNeeded();
+  const savedScrollPosition = await page.evaluate(() => window.scrollY);
+  expect(savedScrollPosition).toBeGreaterThan(400);
+  await workingGroupsCardLink.click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/about$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(savedScrollPosition - 50);
+
+  await page.goto("/#/team");
+  await expect(page).toHaveURL(/#\/about\/team$/);
+  await unlockDemoAdmin(page, "demo-review");
+  await page.goto("/#/about/team?previewTheme=spotlight");
+  await expect(page.locator(".team-spotlight-row").first()).toBeVisible();
+
+  for (const [route, title] of [
+    ["/about", "About us"],
+    ["/about/working-groups", "Working Groups"],
+    ["/about/team-meetings", "Team Meetings"],
+    ["/about/team", "The INCAS Team"],
+    ["/offers/language-tandem", "Language Tandem"],
+    ["/offers/international-tuesday", "International Tuesday"],
+    ["/offers/country-evening", "Country Evening"],
+    ["/offers/cafe-lingua", "Café Lingua"],
+    ["/offers/international-breakfast", "International Breakfast"],
+    ["/offers/international-weekend", "International Weekend"],
+    ["/offers/incas-active", "INCAS Active"],
+    ["/offers/board-game-nights", "Board Game Nights"],
+    ["/offers/dance-workshops", "Dance Workshops"],
+  ]) {
+    await page.goto(`/#${route}`);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  }
+
+  for (const route of ["/offers/about", "/offers/working-groups", "/about/international-weekend", "/offers/offers"]) {
+    await page.goto(`/#${route}`);
+    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  }
+
+  await page.goto("/");
+  await page.getByRole("link", { name: "Skip to content" }).focus();
+  await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#main-content")).toBeFocused();
+});
+
 test("event details and registration remain usable when map rendering fails", async ({ page }) => {
   await page.addInitScript(() => {
     (window as Window & { __INCAS_FORCE_EVENT_MAP_FAILURE__?: boolean })
@@ -55,6 +121,7 @@ test("bundled OpenLayers and amCharts event maps render", async ({ page }) => {
 
 test("contact and event suggestion forms submit natively in React", async ({ page }) => {
   await page.goto("/#/contact");
+  await page.getByRole("link", { name: /General message/ }).click();
   await page.getByLabel("Name").fill("Demo Visitor");
   await page.getByLabel("Email").fill("visitor@example.org");
   await page.getByLabel("Message").fill("A browser-level contact test.");

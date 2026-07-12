@@ -101,6 +101,28 @@ a {
   padding: 24px 20px 64px;
 }
 
+.shell-main:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .site-nav {
   background: var(--paper);
   border-bottom: 1px solid var(--line);
@@ -177,28 +199,48 @@ a {
   position: relative;
 }
 
-.site-nav-group-label {
-  display: inline-block;
+.site-nav-group-primary {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 999px;
+}
+
+.site-nav-links .site-nav-group-link {
+  padding-right: 0.35rem;
+  border-radius: 999px 0 0 999px;
+}
+
+.site-nav-group-disclosure {
+  display: inline-grid;
+  place-items: center;
   border: 0;
   background: transparent;
   font: inherit;
   color: var(--ink-soft);
-  padding: 6px 12px;
-  border-radius: 999px;
+  width: 1.9rem;
+  padding: 0 0.4rem 0 0.1rem;
+  border-radius: 0 999px 999px 0;
   font-weight: 500;
   cursor: pointer;
 }
 
-/* Menu visibility is click-driven (`.is-open`, mirrored 1:1 by React's
-   `aria-expanded`) plus `:focus-within` for keyboard tabbing. There is
-   deliberately no `:hover` reveal here: combined with a click-to-toggle
-   trigger, a CSS hover-open would let the pointer resting on the trigger
-   reopen the menu the instant a click closes it, and would desync
-   `aria-expanded` from what's visually shown. */
-.site-nav-group:focus-within .site-nav-group-label,
-.site-nav-group.is-open .site-nav-group-label {
+/* React owns every visible disclosure state. Pointer hover updates the same
+   state instead of using an independent CSS-only reveal. */
+.site-nav-group.is-open .site-nav-group-primary,
+.site-nav-group.is-section-active .site-nav-group-primary {
   background: var(--incas-orange-soft);
+}
+
+.site-nav-group.is-open .site-nav-group-link,
+.site-nav-group.is-open .site-nav-group-disclosure,
+.site-nav-group.is-section-active .site-nav-group-link,
+.site-nav-group.is-section-active .site-nav-group-disclosure {
   color: var(--incas-orange-deep);
+}
+
+.site-nav-group.is-section-active .site-nav-group-link[aria-current="page"] {
+  background: var(--incas-orange);
+  color: var(--on-orange);
 }
 
 .site-nav-group-menu {
@@ -217,15 +259,8 @@ a {
   z-index: 30;
 }
 
-.site-nav-group:focus-within .site-nav-group-menu,
 .site-nav-group.is-open .site-nav-group-menu {
   display: flex;
-}
-
-@media (hover: hover) and (min-width: 801px) {
-  .site-nav-group:hover .site-nav-group-menu {
-    display: flex;
-  }
 }
 
 .site-nav-group-menu a {
@@ -384,7 +419,7 @@ a {
   margin: 0 0 4px;
 }
 
-.page-header .page-kicker {
+.page-kicker {
   color: var(--incas-orange-deep);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -405,6 +440,286 @@ a {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* ---------- public sections and content ---------- */
+
+.content-page,
+.content-page > *,
+.section-layout {
+  min-width: 0;
+}
+
+.content-page-title {
+  margin: 0 0 1.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.6rem);
+}
+
+.content-page-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 1.75rem;
+  border-radius: var(--radius-lg);
+  object-fit: contain;
+  background: var(--paper-warm);
+}
+
+.section-context {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 2rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-home-link {
+  width: fit-content;
+  color: var(--incas-orange-deep);
+  font-weight: 800;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+}
+
+.section-local-nav {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.15rem 0;
+  scrollbar-width: thin;
+}
+
+.section-local-nav a {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.section-local-nav a:hover,
+.section-local-nav a[aria-current="page"] {
+  background: var(--incas-orange-soft);
+  color: var(--incas-orange-deep);
+}
+
+.section-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+}
+
+.about-topic-preview,
+.section-related {
+  margin-top: 3rem;
+}
+
+.section-card,
+.section-related a {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.section-card h3,
+.section-related h2 {
+  margin-top: 0;
+}
+
+.section-card p,
+.section-related span {
+  color: var(--ink-soft);
+}
+
+.section-card a {
+  margin-top: auto;
+  color: var(--incas-orange-deep);
+  font-weight: 700;
+}
+
+.section-related > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 0.8rem;
+}
+
+.section-related a {
+  gap: 0.35rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.section-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.section-pager a {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.section-pager a:last-child {
+  text-align: right;
+}
+
+.section-pager a span {
+  color: var(--incas-orange-deep);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Offers catalog ---------- */
+
+.offers-page .offers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.offers-page .offers-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  gap: 1rem;
+  padding: 1.35rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  box-shadow: 0 8px 24px rgb(17 24 39 / 5%);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.offers-page .offers-card.is-featured {
+  border-top: 4px solid var(--incas-orange);
+}
+
+.offers-page .offers-card:hover,
+.offers-page .offers-card:focus-within {
+  transform: translateY(-3px);
+  border-color: var(--incas-orange);
+  box-shadow: 0 14px 32px rgb(17 24 39 / 10%);
+}
+
+.offers-card-copy {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.offers-card-copy h2,
+.offers-card-copy p {
+  margin: 0;
+}
+
+.offers-card-copy h2 {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+}
+
+.offers-card-copy h2 a,
+.offers-card-more {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.offers-card-copy h2 a:focus-visible,
+.offers-card-more:focus-visible {
+  outline: 3px solid var(--incas-orange);
+  outline-offset: 4px;
+}
+
+.offers-card-copy > p {
+  color: var(--ink-soft);
+}
+
+.offers-card-copy .offers-card-meta {
+  color: var(--incas-orange-deep);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.offers-card-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.offers-card-more {
+  color: var(--incas-orange-deep);
+  font-weight: 700;
+}
+
+.offers-actions {
+  margin-top: 2.5rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--paper-warm);
+}
+
+/* ---------- contact hub ---------- */
+
+.contact-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.contact-options a {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.contact-options a span {
+  color: var(--ink-soft);
+}
+
+.contact-options a:hover,
+.contact-options a:focus-visible,
+.contact-options a.is-active {
+  border-color: var(--incas-orange);
+  background: var(--incas-orange-soft);
+  outline: none;
+}
+
+.contact-form-panel {
+  max-width: 760px;
+  scroll-margin-top: 6rem;
+}
+
+.contact-hub-hint {
+  padding: 1rem 1.2rem;
+  border-left: 4px solid var(--incas-orange);
+  background: var(--paper-warm);
+  color: var(--ink-soft);
 }
 
 /* ---------- buttons ---------- */
@@ -1267,9 +1582,17 @@ a {
   margin-bottom: -2px;
 }
 
-.tabs button[aria-selected="true"] {
+.tabs button[aria-selected="true"],
+.tabs button[aria-current="step"] {
   color: var(--incas-orange-deep);
   border-bottom-color: var(--incas-orange);
+}
+
+.form-progress {
+  margin: 0 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 /* ---------- migration-complete shared event UI ---------- */
@@ -2065,11 +2388,21 @@ a {
   }
 
   .site-nav-links > a,
-  .site-nav-group-label {
+  .site-nav-group-primary {
     width: 100%;
     text-align: left;
     border-radius: var(--radius);
+  }
+
+  .site-nav-links .site-nav-group-link {
+    flex: 1;
     padding: 0.7rem;
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+
+  .site-nav-group-disclosure {
+    width: 2.75rem;
+    border-radius: 0 var(--radius) var(--radius) 0;
   }
 
   .site-nav-group-menu {
@@ -2093,6 +2426,14 @@ a {
   .event-detail-grid,
   .registration-status-layout {
     grid-template-columns: 1fr;
+  }
+
+  .contact-options {
+    grid-template-columns: 1fr;
+  }
+
+  .offers-page .offers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .event-detail-aside {
@@ -2150,6 +2491,12 @@ a {
 
   .admin-sidenav a {
     white-space: nowrap;
+  }
+}
+
+@media (max-width: 560px) {
+  .offers-page .offers-grid {
+    grid-template-columns: 1fr;
   }
 }
 

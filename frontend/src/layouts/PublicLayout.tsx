@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useId, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigationType } from "react-router-dom";
 
 import type { Locale, SiteNavItem } from "../api/types";
 import { useSession } from "../auth/SessionContext";
 import { useData } from "../data/DataProviderContext";
+import { localizedAboutItems } from "../domain/publicSections";
 import { useLocale, useT } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
 const APPEARANCE_KEY = "incas.appearance";
+const routeScrollPositions = new Map<string, number>();
 
 function initialAppearance(): "light" | "dark" {
   const stored = globalThis.localStorage?.getItem?.(APPEARANCE_KEY);
@@ -36,39 +38,98 @@ function SocialIcon({ platform }: { platform: string }) {
 function NavItem({
   item,
   isOpen,
+  locale,
+  onOpen,
   onToggle,
+  onCloseGroup,
   onClose,
 }: {
   item: SiteNavItem;
   isOpen: boolean;
+  locale: Locale;
+  onOpen: (label: string) => void;
   onToggle: (label: string) => void;
+  onCloseGroup: () => void;
   onClose: () => void;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
+  const hoverTimerRef = useRef<number | null>(null);
+  const menuId = `site-nav-submenu-${useId().replaceAll(":", "")}`;
+  const location = useLocation();
+  const configuredChildren = item.section === "about"
+    ? localizedAboutItems(locale).slice(1).map((child) => ({ label: child.title, to: child.path }))
+    : item.children ?? [];
+  const isSectionActive = Boolean(
+    item.to && (location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)),
+  );
 
-  if (item.children?.length) {
+  useEffect(() => () => {
+    if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
+  }, []);
+
+  if (configuredChildren.length && item.to) {
     return (
-      <div className={`site-nav-group${isOpen ? " is-open" : ""}`}>
-        <button
-          ref={triggerRef}
-          type="button"
-          className="site-nav-group-label"
-          aria-haspopup="true"
-          aria-expanded={isOpen}
-          data-nav-group={item.label}
-          onClick={() => onToggle(item.label)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && isOpen) {
-              onClose();
-              triggerRef.current?.focus();
-            }
-          }}
-        >
-          {item.label}
-        </button>
-        <div className="site-nav-group-menu">
-          {item.children.map((child) => (
-            <NavLink key={child.to} to={child.to ?? "#"} onClick={onClose}>
+      <div
+        ref={groupRef}
+        className={`site-nav-group${isOpen ? " is-open" : ""}${isSectionActive ? " is-section-active" : ""}`}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") {
+            hoverTimerRef.current = window.setTimeout(() => onOpen(item.label), 120);
+          }
+        }}
+        onPointerLeave={(event) => {
+          if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
+          hoverTimerRef.current = null;
+          if (event.pointerType === "mouse" && !groupRef.current?.contains(document.activeElement)) {
+            onCloseGroup();
+          }
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onCloseGroup();
+        }}
+      >
+        <div className="site-nav-group-primary">
+          <NavLink className="site-nav-group-link" to={item.to} end onClick={onClose}>
+            {item.label}
+          </NavLink>
+          <button
+            ref={triggerRef}
+            type="button"
+            className="site-nav-group-disclosure"
+            aria-haspopup="true"
+            aria-expanded={isOpen}
+            aria-controls={menuId}
+            aria-label={isOpen
+              ? `${locale === "de" ? "Untermenü schließen" : "Close submenu"}: ${item.label}`
+              : `${locale === "de" ? "Untermenü öffnen" : "Open submenu"}: ${item.label}`}
+            data-nav-group={item.label}
+            onClick={() => {
+              if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
+              hoverTimerRef.current = null;
+              onToggle(item.label);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                onOpen(item.label);
+                window.requestAnimationFrame(() => {
+                  document.querySelector<HTMLAnchorElement>(`#${menuId} a`)?.focus();
+                });
+              }
+              if (event.key === "Escape" && isOpen) {
+                event.stopPropagation();
+                onCloseGroup();
+                triggerRef.current?.focus();
+              }
+            }}
+          >
+            <span aria-hidden="true">⌄</span>
+          </button>
+        </div>
+        <div id={menuId} className="site-nav-group-menu" hidden={!isOpen}>
+          {configuredChildren.map((child) => (
+            <NavLink key={child.to} to={child.to ?? "#"} end onClick={onClose}>
               {child.label}
             </NavLink>
           ))}
@@ -92,12 +153,54 @@ export function PublicLayout() {
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const linkNavigationPendingRef = useRef(false);
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const routePathKey = `path:${location.pathname}${location.search}`;
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", appearance);
     globalThis.localStorage?.setItem?.(APPEARANCE_KEY, appearance);
   }, [appearance]);
+
+  useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    linkNavigationPendingRef.current = true;
+    const savePosition = () => {
+      routeScrollPositions.set(`entry:${location.key}`, window.scrollY);
+      routeScrollPositions.set(routePathKey, window.scrollY);
+    };
+    const savePositionOnScroll = () => {
+      if (!linkNavigationPendingRef.current) savePosition();
+    };
+    const saveBeforeLinkNavigation = (event: MouseEvent) => {
+      const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]");
+      if (!anchor || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      savePosition();
+      const href = anchor.getAttribute("href") ?? "";
+      const isSamePageFragment = href.startsWith("#") && !href.startsWith("#/");
+      if (anchor.target !== "_blank" && !isSamePageFragment) {
+        linkNavigationPendingRef.current = true;
+      }
+    };
+
+    window.addEventListener("scroll", savePositionOnScroll, { passive: true });
+    document.addEventListener("click", saveBeforeLinkNavigation, true);
+    return () => {
+      window.removeEventListener("scroll", savePositionOnScroll);
+      document.removeEventListener("click", saveBeforeLinkNavigation, true);
+    };
+  }, [location.key, routePathKey]);
 
   // Close any open dropdown whenever the route changes.
   useEffect(() => {
@@ -134,6 +237,51 @@ export function PublicLayout() {
     };
   }, [openGroup, mobileOpen]);
 
+  useEffect(() => {
+    let frame = 0;
+    let attempts = 0;
+    const finishRestoration = () => {
+      linkNavigationPendingRef.current = false;
+    };
+    const restorePosition = () => {
+      if (attempts === 0) mainRef.current?.focus({ preventScroll: true });
+
+      if (location.hash) {
+        const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        if (target) {
+          target.scrollIntoView();
+          finishRestoration();
+          return;
+        }
+      } else if (navigationType === "POP") {
+        const savedPosition = routeScrollPositions.get(`entry:${location.key}`)
+          ?? routeScrollPositions.get(routePathKey)
+          ?? 0;
+        window.scrollTo(0, savedPosition);
+        if (Math.abs(window.scrollY - savedPosition) <= 1) {
+          finishRestoration();
+          return;
+        }
+      } else {
+        window.scrollTo(0, 0);
+        finishRestoration();
+        return;
+      }
+
+      attempts += 1;
+      if (attempts < 120) {
+        frame = window.requestAnimationFrame(restorePosition);
+      } else {
+        finishRestoration();
+      }
+    };
+
+    frame = window.requestAnimationFrame(restorePosition);
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [location.hash, location.key, navigationType, routePathKey]);
+
   const closeGroup = () => {
     setOpenGroup(null);
     setMobileOpen(false);
@@ -146,6 +294,17 @@ export function PublicLayout() {
 
   return (
     <div className="shell">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          mainRef.current?.scrollIntoView();
+          mainRef.current?.focus();
+        }}
+      >
+        {locale === "de" ? "Zum Inhalt springen" : "Skip to content"}
+      </a>
       {data.isDemo ? (
         <div className="demo-banner" role="note">
           <strong>{t("demo.banner_label")}</strong> — {t("demo.banner_body")}
@@ -175,7 +334,10 @@ export function PublicLayout() {
                   key={item.label}
                   item={item}
                   isOpen={openGroup === item.label}
+                  locale={locale}
+                  onOpen={setOpenGroup}
                   onToggle={toggleGroup}
+                  onCloseGroup={() => setOpenGroup(null)}
                   onClose={closeGroup}
                 />
               ))}
@@ -211,7 +373,7 @@ export function PublicLayout() {
           </div>
         </div>
       </nav>
-      <main className="shell-main">
+      <main id="main-content" ref={mainRef} className="shell-main" tabIndex={-1}>
         <Outlet />
       </main>
       {footer ? (

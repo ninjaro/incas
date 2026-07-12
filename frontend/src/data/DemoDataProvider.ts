@@ -7,6 +7,7 @@ import type {
   Capability,
   ContactSubmission,
   ContentPageResponse,
+  ContentSection,
   EventQueueSummary,
   EventRegistrationInput,
   EventRegistrationStatus,
@@ -712,6 +713,16 @@ export class DemoDataProvider implements DataProvider {
     return this.publicEntry(entry);
   }
 
+  async trackKaraokeRequests(publicIds: string[]) {
+    const unique = [...new Set(publicIds)];
+    const items = unique
+      .map((publicId) => this.karaoke.find((entry) => entry.publicId === publicId))
+      .filter((entry): entry is KaraokeAdminEntry => Boolean(entry))
+      .map((entry) => this.publicEntry(entry));
+    const found = new Set(items.map((entry) => entry.publicId));
+    return { items, missing: unique.filter((publicId) => !found.has(publicId)) };
+  }
+
   private publicEntry(entry: KaraokeAdminEntry) {
     const queue = this.karaoke
       .filter((item) => (item.status === "approved" || item.status === "performing")
@@ -901,13 +912,16 @@ export class DemoDataProvider implements DataProvider {
     } as SiteResponse;
   }
 
-  async getContent(slug: string, locale: Locale): Promise<ContentPageResponse> {
+  async getContent(slug: string, locale: Locale, section?: ContentSection): Promise<ContentPageResponse> {
     const key = slug.replace(/-/g, "_");
     const localeSnap =
       (siteSnapshot as Record<string, { pages: Record<string, ContentPageResponse | null> }>)[locale] ??
       (siteSnapshot as Record<string, { pages: Record<string, ContentPageResponse | null> }>)["en"];
     const page = localeSnap.pages[key];
     if (!page) {
+      throw new DemoError("not_found", "Page not found.", 404);
+    }
+    if (section && page.section !== section) {
       throw new DemoError("not_found", "Page not found.", 404);
     }
     return page;

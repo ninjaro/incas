@@ -8,6 +8,7 @@ import type {
   CalendarResponse,
   ContactSubmission,
   ContentPageResponse,
+  ContentSection,
   EventQueueSummary,
   EventRegistrationInput,
   EventRegistrationStatus,
@@ -60,7 +61,7 @@ export interface DataProvider {
   getPublicPost(slug: string): Promise<PublicPost>;
   getCalendar(year: number, month: number): Promise<CalendarResponse>;
   getSite(locale: Locale): Promise<SiteResponse>;
-  getContent(slug: string, locale: Locale): Promise<ContentPageResponse>;
+  getContent(slug: string, locale: Locale, section?: ContentSection): Promise<ContentPageResponse>;
   getFormOptions(): Promise<FormOptions>;
   submitContact(input: ContactSubmission): Promise<{ submissionId: string }>;
   submitEventSuggestion(input: EventSuggestionSubmission): Promise<{ submissionId: string }>;
@@ -113,6 +114,7 @@ export interface DataProvider {
 
   submitKaraokeRequest(input: KaraokeSubmission): Promise<{ publicId: string; status: string }>;
   trackKaraokeRequest(publicId: string): Promise<KaraokePublicEntry>;
+  trackKaraokeRequests(publicIds: string[]): Promise<{ items: KaraokePublicEntry[]; missing: string[] }>;
   getKaraokeQueue(eventSlug?: string): Promise<{ items: KaraokePublicEntry[] }>;
   getAdminKaraoke(status?: string, eventSlug?: string): Promise<{ items: KaraokeAdminEntry[]; events: { slug: string; title: string; startsAt: string | null }[] }>;
   karaokeAction(id: number, action: KaraokeAction): Promise<KaraokeAdminEntry>;

@@ -20,6 +20,7 @@ afterEach(() => {
 // jsdom does not implement matchMedia; PublicLayout reads it to pick an
 // initial appearance, so stub it before every test.
 beforeEach(() => {
+  window.scrollTo = () => {};
   window.matchMedia =
     window.matchMedia ??
     ((query: string) => ({
@@ -46,6 +47,7 @@ function renderLayout(initialPath = "/") {
                 <Route path="about" element={<div>About content</div>} />
                 <Route path="about/working-groups" element={<div>Working groups content</div>} />
                 <Route path="about/team-meetings" element={<div>Team meetings content</div>} />
+                <Route path="about/team" element={<div>Team content</div>} />
                 <Route path="calendar" element={<div>Calendar content</div>} />
                 <Route path="*" element={<div>Fallback content</div>} />
               </Route>
@@ -57,20 +59,21 @@ function renderLayout(initialPath = "/") {
   );
 }
 
-describe("PublicLayout nav dropdown", () => {
-  it("opens a group on click and closes it when a menu link is clicked (navigating away)", async () => {
+describe("PublicLayout About navigation", () => {
+  it("keeps overview navigation separate from submenu disclosure", async () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const trigger = await screen.findByRole("button", { name: "About Us" });
+    const overview = await screen.findByRole("link", { name: "About Us" });
+    const trigger = screen.getByRole("button", { name: "Open submenu: About Us" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
-    const aboutLink = screen.getByRole("link", { name: "About us" });
-    expect(aboutLink).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "About us" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Working Groups" })).toBeInTheDocument();
 
-    await user.click(aboutLink);
+    await user.click(overview);
 
     await waitFor(() => expect(screen.getByText("About content")).toBeInTheDocument());
     expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -80,20 +83,21 @@ describe("PublicLayout nav dropdown", () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const trigger = await screen.findByRole("button", { name: "About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
     await user.keyboard("{Escape}");
 
     await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "false"));
+    expect(trigger).toHaveFocus();
   });
 
   it("closes the open group when clicking outside the nav", async () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const trigger = await screen.findByRole("button", { name: "About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
@@ -107,11 +111,36 @@ describe("PublicLayout nav dropdown", () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const aboutTrigger = await screen.findByRole("button", { name: "About Us" });
+    const aboutTrigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
     await user.click(aboutTrigger);
     expect(aboutTrigger).toHaveAttribute("aria-expanded", "true");
 
     await user.click(aboutTrigger);
     expect(aboutTrigger).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it.each([
+    ["/about", "About Us"],
+    ["/about/working-groups", "Working Groups"],
+    ["/about/team-meetings", "Team Meetings"],
+    ["/about/team", "Team"],
+  ])("marks exactly one current destination on %s", async (path, currentName) => {
+    const user = userEvent.setup();
+    renderLayout(path);
+    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    await user.click(trigger);
+    const current = document.querySelectorAll('.site-nav-links [aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent(currentName);
+  });
+
+  it("keeps pointer hover and aria-expanded synchronized", async () => {
+    const user = userEvent.setup();
+    renderLayout("/");
+    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    await user.hover(trigger);
+    await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "true"));
+    await user.unhover(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });

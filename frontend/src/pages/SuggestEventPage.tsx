@@ -1,12 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { ApiError } from "../api/client";
 import type { EventSuggestionSubmission } from "../api/types";
 import { Field, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
+import { usePublicFormErrors } from "../forms/usePublicFormErrors";
 import { useLocale } from "../i18n/LocaleContext";
-import { localizeFieldErrors } from "../i18n/errors";
 
 export function SuggestEventPage() {
   const [params] = useSearchParams();
@@ -25,21 +24,31 @@ export function SuggestEventForm({ initialKind = "country_evening" }: { initialK
   const data = useData();
   const { locale } = useLocale();
   const [form, setForm] = useState<EventSuggestionSubmission>({ kind: initialKind, country: "", contactName: "", contactEmail: "", contactPhone: "", comment: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dirty, setDirty] = useState(false);
+  const formErrors = usePublicFormErrors(locale);
   const [result, setResult] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const de = locale === "de";
 
+  useEffect(() => {
+    if (!dirty) setForm((current) => ({ ...current, kind: initialKind }));
+  }, [dirty, initialKind]);
+
+  const change = <K extends keyof EventSuggestionSubmission>(field: K, value: EventSuggestionSubmission[K]) => {
+    setDirty(true);
+    formErrors.clearField(field);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
-    setErrors({});
+    formErrors.clear();
     try {
       const response = await data.submitEventSuggestion(form);
       setResult(response.submissionId);
     } catch (error) {
-      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
-      else setErrors({ form: de ? "Der Vorschlag konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Submission failed.") });
+      formErrors.report(error);
     } finally {
       setBusy(false);
     }
@@ -48,32 +57,32 @@ export function SuggestEventForm({ initialKind = "country_evening" }: { initialK
   return (
     <>
       {result ? <p className="notice notice-ok" role="status">{de ? "Vorschlag gesendet" : "Suggestion submitted"}: <strong>{result}</strong></p> : null}
-      {errors.form ? <p className="notice notice-bad" role="alert">{errors.form}</p> : null}
-      <form className="card public-form" onSubmit={submit}>
+      {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
+      <form ref={formErrors.formRef} className="card public-form" onSubmit={submit} noValidate>
         <div className="form-grid">
-          <Field label={de ? "Eventtyp" : "Event type"} error={errors.kind}>
-            <select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value as EventSuggestionSubmission["kind"] })}>
+          <Field label={de ? "Eventtyp" : "Event type"} error={formErrors.errors.kind}>
+            <select name="kind" value={form.kind} onChange={(event) => change("kind", event.target.value as EventSuggestionSubmission["kind"])}>
               <option value="country_evening">{de ? "Länderabend" : "Country Evening"}</option>
               <option value="breakfast">{de ? "Internationales Frühstück" : "International Breakfast"}</option>
             </select>
           </Field>
-          <Field label={de ? "Land oder Kultur" : "Country or culture"} error={errors.country}>
-            <input value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} />
+          <Field label={de ? "Land oder Kultur" : "Country or culture"} error={formErrors.errors.country}>
+            <input name="country" value={form.country} onChange={(event) => change("country", event.target.value)} />
           </Field>
         </div>
-        <Field label={de ? "Kontaktname" : "Contact name"} error={errors.contactName}>
-          <input autoComplete="name" value={form.contactName} onChange={(event) => setForm({ ...form, contactName: event.target.value })} />
+        <Field label={de ? "Kontaktname" : "Contact name"} error={formErrors.errors.contactName}>
+          <input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => change("contactName", event.target.value)} />
         </Field>
         <div className="form-grid">
-          <Field label="Email" error={errors.contactEmail}>
-            <input type="email" autoComplete="email" value={form.contactEmail} onChange={(event) => setForm({ ...form, contactEmail: event.target.value })} />
+          <Field label="Email" error={formErrors.errors.contactEmail}>
+            <input name="contactEmail" type="email" autoComplete="email" value={form.contactEmail} onChange={(event) => change("contactEmail", event.target.value)} />
           </Field>
-          <Field label={de ? "Telefon" : "Phone"} error={errors.contactPhone}>
-            <input type="tel" autoComplete="tel" value={form.contactPhone} onChange={(event) => setForm({ ...form, contactPhone: event.target.value })} />
+          <Field label={de ? "Telefon" : "Phone"} error={formErrors.errors.contactPhone}>
+            <input name="contactPhone" type="tel" autoComplete="tel" value={form.contactPhone} onChange={(event) => change("contactPhone", event.target.value)} />
           </Field>
         </div>
-        <Field label={de ? "Kommentar" : "Comment"} error={errors.comment}>
-          <textarea rows={6} value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} />
+        <Field label={de ? "Kommentar" : "Comment"} error={formErrors.errors.comment}>
+          <textarea name="comment" rows={6} value={form.comment} onChange={(event) => change("comment", event.target.value)} />
         </Field>
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : de ? "Vorschlag senden" : "Submit suggestion"}</button>
       </form>

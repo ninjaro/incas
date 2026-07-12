@@ -17,6 +17,7 @@ import { TandemPanel } from "../features/admin/TandemPanel";
 import { ThemesPanel } from "../features/admin/ThemesPanel";
 import { UnlockRoute } from "../features/admin/UnlockRoute";
 import { PublicLayout } from "../layouts/PublicLayout";
+import { AboutLayout, OffersLayout } from "../layouts/SectionLayouts";
 import { CalendarPage } from "../pages/CalendarPage";
 import { AboutPage } from "../pages/AboutPage";
 import { ContactPage } from "../pages/ContactPage";
@@ -27,6 +28,7 @@ import { OffersPage } from "../pages/OffersPage";
 import { RegistrationStatusPage } from "../pages/RegistrationStatusPage";
 import { SuggestEventPage } from "../pages/SuggestEventPage";
 import { TandemFormPage } from "../pages/TandemFormPage";
+import { TeamPage } from "../pages/TeamPage";
 import { useLocale } from "../i18n/LocaleContext";
 
 function RequireCapability({
@@ -72,14 +74,27 @@ const routes = [
       { path: "/", element: <LandingPage /> },
       { path: "/calendar", element: <CalendarPage /> },
       { path: "/events/:slug", element: <EventDetailPage /> },
-      { path: "/team", element: <Navigate to="/about?section=team" replace /> },
+      { path: "/team", element: <Navigate to="/about/team" replace /> },
       { path: "/tandem", element: <TandemFormPage /> },
-      { path: "/about", element: <AboutPage /> },
-      { path: "/about/team", element: <AboutPage /> },
-      { path: "/about/working-groups", element: <ContentPage slug="working-groups" /> },
-      { path: "/about/team-meetings", element: <ContentPage slug="team-meetings" /> },
-      { path: "/offers", element: <OffersPage /> },
-      { path: "/offers/:slug", element: <ContentPage /> },
+      {
+        path: "/about",
+        element: <AboutLayout />,
+        children: [
+          { index: true, element: <AboutPage /> },
+          { path: "working-groups", element: <ContentPage slug="working-groups" section="about" /> },
+          { path: "team-meetings", element: <ContentPage slug="team-meetings" section="about" /> },
+          { path: "team", element: <TeamPage /> },
+          { path: "*", element: <NotFound /> },
+        ],
+      },
+      {
+        path: "/offers",
+        element: <OffersLayout />,
+        children: [
+          { index: true, element: <OffersPage /> },
+          { path: ":slug", element: <ContentPage section="offers" /> },
+        ],
+      },
       { path: "/contact", element: <ContactPage /> },
       { path: "/suggest-event", element: <SuggestEventPage /> },
       { path: "/registrations/:publicId", element: <RegistrationStatusPage /> },

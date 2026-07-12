@@ -39,6 +39,38 @@ describe("ContentPage", () => {
     await waitFor(() => expect(screen.getByText(/not found/i)).toBeTruthy());
   });
 
+  it("rejects a valid slug requested through the wrong section", async () => {
+    render(
+      <DataProviderProvider provider={new DemoDataProvider()}>
+        <LocaleProvider>
+          <MemoryRouter>
+            <ContentPage slug="about" section="offers" />
+          </MemoryRouter>
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+    await waitFor(() => expect(screen.getByText(/not found/i)).toBeInTheDocument());
+  });
+
+  it("renders meaningful image metadata and static FAQ headings", async () => {
+    const { rerender } = renderPage("about");
+    const image = await screen.findByRole("img", { name: /INCAS volunteers/i });
+    expect(image).toHaveAttribute("width", "1600");
+    expect(image).toHaveAttribute("height", "1200");
+
+    rerender(
+      <DataProviderProvider provider={new DemoDataProvider()}>
+        <LocaleProvider>
+          <MemoryRouter>
+            <ContentPage slug="international-weekend" section="offers" />
+          </MemoryRouter>
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+    await waitFor(() => expect(screen.getByText("When are the trips?")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "When are the trips?" })).not.toBeInTheDocument();
+  });
+
   it("shows a generic error state (not the not-found copy) for non-404 failures", async () => {
     const provider = new DemoDataProvider();
     provider.getContent = () => Promise.reject(new Error("network down"));
@@ -85,5 +117,18 @@ describe("ContentPage", () => {
     // navigation and the SPA would stay stuck on the content page, so
     // "Calendar route reached" only appears because navigate() was called.
     await waitFor(() => expect(screen.getByText("Calendar route reached")).toBeInTheDocument());
+  });
+
+  it("keeps authored fragment navigation inside the current HashRouter route", async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = HTMLElement.prototype.scrollIntoView;
+    let scrolled = false;
+    HTMLElement.prototype.scrollIntoView = () => { scrolled = true; };
+    renderPage("language-tandem");
+    const link = await screen.findByRole("link", { name: /Go to Sprachtandem form/i });
+    await waitFor(() => expect(document.getElementById("page-form")).toBeInTheDocument());
+    await user.click(link);
+    expect(scrolled).toBe(true);
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
   });
 });

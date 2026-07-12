@@ -51,7 +51,7 @@ def legacy_react_target(path):
         "/contact-form": "/contact",
         "/suggest-event": "/suggest-event",
         "/language-tandem": "/tandem",
-        "/team": "/about?section=team",
+        "/team": "/about/team",
         "/about": "/about",
         "/about/working-groups": "/about/working-groups",
         "/about/team-meetings": "/about/team-meetings",

@@ -1,15 +1,31 @@
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
+import { localizedAboutItems } from "../domain/publicSections";
+import { useLocale } from "../i18n/LocaleContext";
 import { ContentPage } from "./ContentPage";
-import { TeamSection } from "./TeamPage";
 
 export function AboutPage() {
-  const [params] = useSearchParams();
-  useEffect(() => {
-    if (params.get("section") === "team") {
-      window.requestAnimationFrame(() => document.getElementById("team")?.scrollIntoView());
-    }
-  }, [params]);
-  return <><ContentPage slug="about" /><TeamSection /></>;
+  const { locale } = useLocale();
+  const de = locale === "de";
+  const topics = localizedAboutItems(locale).slice(1);
+  return (
+    <>
+      <ContentPage slug="about" section="about" />
+      <section className="about-topic-preview" aria-labelledby="about-topics-title">
+        <header className="section-heading">
+          <p className="page-kicker">{de ? "Mehr über INCAS" : "Explore INCAS"}</p>
+          <h2 id="about-topics-title">{de ? "Team und Arbeitsweise" : "Our team and how we work"}</h2>
+        </header>
+        <div className="section-card-grid">
+          {topics.map((topic) => (
+            <article key={topic.path} className="section-card">
+              <h3>{topic.title}</h3>
+              <p>{topic.summary}</p>
+              <Link to={topic.path}>{de ? "Mehr lesen" : "Read more"} <span aria-hidden="true">-&gt;</span></Link>
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
+  );
 }

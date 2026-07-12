@@ -99,18 +99,3 @@ export function TeamPage() {
     </>
   );
 }
-
-export function TeamSection() {
-  const { locale } = useLocale();
-  const de = locale === "de";
-  return (
-    <section id="team" className="about-team-section" aria-labelledby="about-team-title">
-      <header className="section-heading">
-        <p className="page-kicker">{de ? "Wer wir sind" : "Who we are"}</p>
-        <h2 id="about-team-title">{de ? "Das INCAS Team" : "The INCAS team"}</h2>
-        <p>{de ? "Ehrenamtliche Arbeitsgruppen organisieren das Programm und freuen sich über neue Mitwirkende." : "Volunteer working groups organize the programme and keep INCAS open to new contributors."}</p>
-      </header>
-      <TeamGrid locale={locale} />
-    </section>
-  );
-}

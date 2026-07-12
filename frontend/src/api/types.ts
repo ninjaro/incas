@@ -576,10 +576,12 @@ export type ApiErrorPayload = {
 };
 
 export type Locale = "en" | "de";
+export type ContentSection = "about" | "offers";
 
 export interface SiteNavItem {
   label: string;
   to: string | null;
+  section?: "about";
   children?: SiteNavItem[];
 }
 
@@ -588,6 +590,9 @@ export interface SiteOfferPage {
   to: string;
   icon: string;
   description: string;
+  eventKind: string | null;
+  featured: boolean;
+  secondaryAction: { title: string; to: string } | null;
 }
 
 export interface SiteOfferForm {
@@ -625,7 +630,14 @@ export interface SiteResponse {
 export interface ContentPageResponse {
   slug: string;
   title: string;
+  section: ContentSection;
   image: string | null;
+  imageAlt: string;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  imageAspectRatio: string | null;
+  imageObjectPosition: string | null;
+  imagePriority: boolean;
   bodyHtml: string;
   form: {
     type: "suggest_event" | "language_tandem";

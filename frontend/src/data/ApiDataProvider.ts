@@ -9,6 +9,7 @@ import type {
   CalendarResponse,
   ContactSubmission,
   ContentPageResponse,
+  ContentSection,
   EventQueueSummary,
   EventRegistrationInput,
   EventRegistrationStatus,
@@ -75,9 +76,10 @@ export class ApiDataProvider implements DataProvider {
     return http.get<SiteResponse>(`/public/site?locale=${locale}`);
   }
 
-  getContent(slug: string, locale: Locale) {
+  getContent(slug: string, locale: Locale, section?: ContentSection) {
+    const sectionQuery = section ? `&section=${encodeURIComponent(section)}` : "";
     return http.get<ContentPageResponse>(
-      `/public/content/${encodeURIComponent(slug)}?locale=${locale}`,
+      `/public/content/${encodeURIComponent(slug)}?locale=${locale}${sectionQuery}`,
     );
   }
 
@@ -301,6 +303,13 @@ export class ApiDataProvider implements DataProvider {
   trackKaraokeRequest(publicId: string) {
     return http.get<KaraokePublicEntry>(
       `/public/karaoke/requests/${encodeURIComponent(publicId)}`,
+    );
+  }
+
+  trackKaraokeRequests(publicIds: string[]) {
+    return http.post<{ items: KaraokePublicEntry[]; missing: string[] }>(
+      "/public/karaoke/requests/track",
+      { publicIds },
     );
   }
 
