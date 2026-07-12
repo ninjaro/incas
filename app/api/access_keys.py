@@ -82,7 +82,7 @@ def api_admin_access_key_create():
     payload.update(
         {
             "secret": secret,
-            "unlockFragment": f"/app/#/admin/unlock/{secret}",
+            "unlockFragment": f"/admin/unlock/{secret}",
             "secretVisibleOnce": True,
         }
     )

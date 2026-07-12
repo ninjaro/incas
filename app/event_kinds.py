@@ -112,7 +112,7 @@ EVENT_KINDS = {
         "titlePrefix": {"en": "International Breakfast", "de": "Internationales Frühstück"},
         "highlightTitle": True,
         "schedule": {"weekday": 5, "time": "10:00"},
-        "mapMode": "venue",
+        "mapMode": "country_or_region",
         "features": ["registration", "deposit", "map"],
         "registrationDefault": True,
         "depositDefault": True,

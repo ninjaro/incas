@@ -72,7 +72,7 @@ def get_payment_provider() -> PaymentProvider:
 
 
 def new_payment_public_id():
-    return f"PAY-{secrets.token_hex(6).upper()}"
+    return f"PAY-{secrets.token_urlsafe(16)}"
 
 
 def create_transaction(post, registration=None):
@@ -111,10 +111,10 @@ def mark_paid(transaction):
         transaction.status = PAYMENT_STATUS_FAILED
         transaction.error_message = "Registration is no longer eligible for payment."
         return False
-    post = db.session.get(Post, registration.post_id)
-    if post is None or not post.has_registration_queue:
+    post = Post.query.filter_by(id=registration.post_id).with_for_update().first()
+    if post is None or not post.has_registration_queue or not post.is_live:
         transaction.status = PAYMENT_STATUS_FAILED
-        transaction.error_message = "Event registration is no longer available."
+        transaction.error_message = "Event registration is closed or no longer available."
         return False
     if post.registration_reserved_count > (post.registration_limit or 0):
         transaction.status = PAYMENT_STATUS_FAILED
@@ -130,8 +130,6 @@ def mark_paid(transaction):
 def serialize_transaction(transaction):
     return {
         "publicId": transaction.public_id,
-        "postId": transaction.post_id,
-        "registrationId": transaction.registration_id,
         "amountCents": transaction.amount_cents,
         "currency": transaction.currency,
         "status": transaction.status,

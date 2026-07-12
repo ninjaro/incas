@@ -500,7 +500,7 @@ class EventRegistration(db.Model):
     __tablename__ = "event_registrations"
 
     id = db.Column(db.Integer, primary_key=True)
-    public_id = db.Column(db.String(24), nullable=False, unique=True, index=True)
+    public_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
     first_name = db.Column(db.String(120), nullable=False)
     last_name = db.Column(db.String(120), nullable=False)
@@ -716,7 +716,7 @@ class KaraokeSongRequest(db.Model):
     __tablename__ = "karaoke_song_requests"
 
     id = db.Column(db.Integer, primary_key=True)
-    public_id = db.Column(db.String(24), nullable=False, unique=True, index=True)
+    public_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=True, index=True)
     display_name = db.Column(db.String(120), nullable=False)
     song_title = db.Column(db.String(200), nullable=False)
@@ -747,6 +747,9 @@ SOCIAL_STATUS_FAILED = "failed"
 
 class SocialPublication(db.Model):
     __tablename__ = "social_publications"
+    __table_args__ = (
+        db.UniqueConstraint("post_id", "provider", name="uq_social_publication_post_provider"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
@@ -800,3 +803,28 @@ class PaymentTransaction(db.Model):
     error_message = db.Column(db.Text, nullable=False, default="")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PaymentStatusAudit(db.Model):
+    __tablename__ = "payment_status_audits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    payment_id = db.Column(
+        db.Integer,
+        db.ForeignKey("payment_transactions.id"),
+        nullable=False,
+        index=True,
+    )
+    previous_status = db.Column(db.String(32), nullable=False)
+    new_status = db.Column(db.String(32), nullable=False)
+    actor = db.Column(db.String(64), nullable=False, default="")
+    note = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+class RateLimitBucket(db.Model):
+    __tablename__ = "rate_limit_buckets"
+
+    key = db.Column(db.String(64), primary_key=True)
+    count = db.Column(db.Integer, nullable=False, default=0)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)

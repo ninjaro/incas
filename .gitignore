@@ -25,3 +25,9 @@ instance/
 # Frontend build output
 static/app/
 dist-demo/
+
+# Browser-test output. Reviewed visual baselines under e2e/ stay tracked.
+test-results/
+playwright-report/
+blob-report/
+*.trace.zip

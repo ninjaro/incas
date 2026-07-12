@@ -20,11 +20,37 @@ test("landing, calendar, event detail, locale, and appearance remain in the SPA"
 
   await page.getByRole("button", { name: "DE" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "de");
+  await expect(page.getByRole("link", { name: "Zurück zum Kalender" })).toBeVisible();
   await page.getByRole("button", { name: "Helles oder dunkles Design umschalten" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "de");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("event details and registration remain usable when map rendering fails", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as Window & { __INCAS_FORCE_EVENT_MAP_FAILURE__?: boolean })
+      .__INCAS_FORCE_EVENT_MAP_FAILURE__ = true;
+  });
+  await page.goto("/#/calendar");
+  await page.locator(".cal-chip").filter({ hasText: "International Weekend" }).first().click();
+  await expect(page.getByText("The map is currently unavailable.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Submit registration" })).toBeVisible();
+  await expect(page.getByText(/Price:/).first()).toBeVisible();
+});
+
+test("bundled OpenLayers and amCharts event maps render", async ({ page }) => {
+  await page.goto("/#/calendar");
+  await page.locator(".cal-chip").filter({ hasText: "Country Evening" }).first().click();
+  await expect(page.locator(".event-map-canvas canvas.am5-layer-0")).toBeVisible();
+  await expect(page.locator(".event-map-fallback")).toHaveCount(0);
+
+  await page.goto("/#/calendar");
+  await page.locator(".cal-chip").filter({ hasText: "International Weekend" }).first().click();
+  await expect(page.locator(".event-map-canvas .ol-viewport")).toBeVisible();
+  await expect(page.locator(".event-map-canvas .ol-attribution")).toBeVisible();
+  await expect(page.locator(".event-map-fallback")).toHaveCount(0);
 });
 
 test("contact and event suggestion forms submit natively in React", async ({ page }) => {

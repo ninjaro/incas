@@ -17,7 +17,7 @@ import { useAsync } from "../../hooks/useAsync";
 
 const STATUS_FILTERS: (PostStatus | "all")[] = ["all", "draft", "scheduled", "published", "archived"];
 
-type EditorState = {
+export type EditorState = {
   title: string;
   summary: string;
   body: string;
@@ -50,7 +50,7 @@ type EditorState = {
   socialInstagram: boolean;
 };
 
-const EMPTY_EDITOR: EditorState = {
+export const EMPTY_EDITOR: EditorState = {
   title: "",
   summary: "",
   body: "",
@@ -118,16 +118,16 @@ function editorFromPost(post: AdminPost): EditorState {
   };
 }
 
-function editorToInput(editor: EditorState): PostInput {
+export function editorToInput(editor: EditorState): PostInput {
   return {
     title: editor.title,
     summary: editor.summary,
     body: editor.body,
-    eventKind: editor.eventKind || undefined,
-    startsAt: editor.startsAt || undefined,
-    endsAt: editor.endsAt || undefined,
+    eventKind: editor.eventKind || null,
+    startsAt: editor.startsAt || null,
+    endsAt: editor.endsAt || null,
     durationMinutes: editor.durationMinutes ? Number(editor.durationMinutes) : null,
-    publishAt: editor.publishAt || undefined,
+    publishAt: editor.publishAt || null,
     status: editor.status,
     imageUrl: editor.imageUrl,
     registrationLimitEnabled: editor.registrationLimitEnabled,
@@ -151,6 +151,26 @@ function editorToInput(editor: EditorState): PostInput {
     featureFlags: editor.featureFlags.split(",").map((value) => value.trim()).filter(Boolean),
     isPinned: editor.isPinned,
   };
+}
+
+export function nextScheduledStart(
+  schedule: { weekday: number; time: string } | null,
+  now = new Date(),
+): string {
+  if (!schedule) return "";
+
+  const [hours, minutes] = schedule.time.split(":").map(Number);
+  const targetDay = (schedule.weekday + 1) % 7;
+  const candidate = new Date(now);
+  candidate.setHours(hours, minutes, 0, 0);
+  let daysAhead = (targetDay - candidate.getDay() + 7) % 7;
+  if (daysAhead === 0 && candidate <= now) daysAhead = 7;
+  candidate.setDate(candidate.getDate() + daysAhead);
+
+  const year = candidate.getFullYear();
+  const month = String(candidate.getMonth() + 1).padStart(2, "0");
+  const day = String(candidate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}T${schedule.time}`;
 }
 
 function PostEditor({
@@ -188,14 +208,10 @@ function PostEditor({
     const kind = getEventKind(eventKind);
     setEditor((current) => {
       if (!kind) return { ...current, eventKind };
-      const date = new Date();
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const defaultStart = `${date.getFullYear()}-${month}-${day}T${kind.schedule?.time ?? "20:00"}`;
       return {
         ...current,
         eventKind,
-        startsAt: current.startsAt || defaultStart,
+        startsAt: current.startsAt || nextScheduledStart(kind.schedule),
         durationMinutes: current.durationMinutes || String(kind.defaultDurationMinutes),
         registrationLimitEnabled: current.registrationLimitEnabled || kind.registrationDefault,
         registrationLimit: current.registrationLimit || String(kind.defaultCapacity ?? ""),

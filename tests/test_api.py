@@ -255,6 +255,41 @@ def test_scheduled_status_requires_publish_at(client, app):
     assert "publishAt" in response.get_json()["error"]["details"]["fields"]
 
 
+def test_post_optional_fields_can_be_explicitly_cleared(client, app):
+    unlock(client, app, "posts-key", ["posts"])
+    future_start = get_configured_local_now() + timedelta(days=3)
+    created_response = client.post(
+        "/api/v1/admin/posts",
+        json={
+            "title": "Temporary Trip",
+            "eventKind": "trip",
+            "startsAt": future_start.isoformat(),
+            "endsAt": (future_start + timedelta(hours=2)).isoformat(),
+            "status": "scheduled",
+            "publishAt": (get_configured_local_now() + timedelta(days=1)).isoformat(),
+        },
+        headers=API_HEADERS,
+    )
+    assert created_response.status_code == 201, created_response.get_json()
+    created = created_response.get_json()
+
+    response = client.put(
+        f"/api/v1/admin/posts/{created['id']}",
+        json={
+            "eventKind": None,
+            "startsAt": None,
+            "endsAt": None,
+            "status": "draft",
+            "publishAt": None,
+        },
+        headers=API_HEADERS,
+    )
+    assert response.status_code == 200
+    payload = response.get_json()
+    for field in ("eventKind", "startsAt", "endsAt", "publishAt"):
+        assert payload[field] is None
+
+
 def test_template_lifecycle(client, app):
     unlock(client, app, "posts-key", ["posts"])
 

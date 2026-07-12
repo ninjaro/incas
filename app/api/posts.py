@@ -237,7 +237,7 @@ def apply_post_status(item, body, errors):
             errors["publishAt"] = "Scheduled posts need a publication date and time."
             return
         item.publish_at = publish_at
-    elif status == POST_STATUS_PUBLISHED:
+    else:
         item.publish_at = None
     item.status = status
     item.is_active = status in (POST_STATUS_PUBLISHED, POST_STATUS_SCHEDULED)

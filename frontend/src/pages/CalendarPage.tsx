@@ -20,7 +20,7 @@ function eventDateKey(event: PublicPost) {
   return event.startsAt ? dateKey(new Date(event.startsAt)) : "";
 }
 
-function buildCells(year: number, month: number, events: PublicPost[]): DayCell[] {
+export function buildCells(year: number, month: number, events: PublicPost[]): DayCell[] {
   const first = new Date(year, month - 1, 1);
   const leading = (first.getDay() + 6) % 7;
   const start = new Date(year, month - 1, 1 - leading);
@@ -31,6 +31,27 @@ function buildCells(year: number, month: number, events: PublicPost[]): DayCell[
     return { date, inMonth: date.getMonth() === month - 1, events: events.filter((event) => eventDateKey(event) === key) };
   });
 }
+
+export function groupEventsByWeek(events: PublicPost[]) {
+  const groups = new Map<string, { start: Date; events: PublicPost[] }>();
+  [...events]
+    .sort((left, right) => (left.startsAt ?? "").localeCompare(right.startsAt ?? ""))
+    .forEach((event) => {
+      if (!event.startsAt) return;
+      const start = new Date(event.startsAt);
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+      const key = dateKey(start);
+      const group = groups.get(key) ?? { start, events: [] };
+      group.events.push(event);
+      groups.set(key, group);
+    });
+  return [...groups.values()];
+}
+
+export const CALENDAR_RENDERER_IDS = [
+  "month", "public-grid", "agenda", "timeline", "board", "cards", "table",
+] as const;
 
 function DayDialog({ cell, locale, onClose }: { cell: DayCell; locale: string; onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -59,8 +80,10 @@ function MonthGrid({ year, month, events, locale, minimal = false }: { year: num
   return (
     <>
       <div className={`cal-grid${minimal ? " is-public-grid" : ""}`} role="grid" aria-label={new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(year, month - 1, 1))}>
-        {weekdays.map((weekday) => <div key={weekday} className="cal-grid-head" role="columnheader">{weekday}</div>)}
-        {cells.map((cell) => {
+        <div className="cal-grid-row" role="row">
+          {weekdays.map((weekday) => <div key={weekday} className="cal-grid-head" role="columnheader">{weekday}</div>)}
+        </div>
+        {Array.from({ length: 6 }, (_, week) => <div className="cal-grid-row" role="row" key={week}>{cells.slice(week * 7, week * 7 + 7).map((cell) => {
           const hasEvents = cell.events.length > 0;
           const isToday = dateKey(cell.date) === today;
           const weekend = cell.date.getDay() === 0 || cell.date.getDay() === 6;
@@ -76,7 +99,7 @@ function MonthGrid({ year, month, events, locale, minimal = false }: { year: num
               <div className="cal-cell-events">{cell.events.slice(0, 2).map((event) => <Link key={event.slug} to={`/events/${event.slug}`} className="cal-chip"><EventMarker eventKind={event.eventKind} /><span>{event.title.full}</span>{event.registration?.priceCents ? <span aria-label="Payment required">EUR</span> : null}</Link>)}{cell.events.length > 2 ? <button type="button" className="cal-more" onClick={() => setSelected(cell)}>+{cell.events.length - 2}</button> : null}</div>
             </div>
           );
-        })}
+        })}</div>)}
       </div>
       {selected ? <DayDialog cell={selected} locale={locale} onClose={() => setSelected(null)} /> : null}
     </>
@@ -90,7 +113,16 @@ function Agenda({ events, locale }: { events: PublicPost[]; locale: string }) {
 
 function Timeline({ events, locale }: { events: PublicPost[]; locale: string }) {
   if (!events.length) return <EmptyState>{locale === "de" ? "Keine Events in diesem Monat." : "No events this month."}</EmptyState>;
-  return <div className="timeline-list">{events.map((event) => <article key={event.slug} className="timeline-item"><EventMarker eventKind={event.eventKind} />{event.startsAt ? <EventDate start={event.startsAt} end={event.endsAt} locale={locale} /> : null}<Link to={`/events/${event.slug}`}><EventTitle title={event.title} /></Link><p>{event.summary}</p>{event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}</article>)}</div>;
+  const de = locale === "de";
+  return <div className="timeline-weeks">{groupEventsByWeek(events).map((group) => <section className="timeline-week" key={dateKey(group.start)}><h2>{de ? "Woche ab" : "Week of"} {new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(group.start)}</h2><div className="timeline-list">{group.events.map((event) => <article key={event.slug} className="timeline-item"><EventMarker eventKind={event.eventKind} />{event.startsAt ? <EventDate start={event.startsAt} end={event.endsAt} locale={locale} /> : null}<Link to={`/events/${event.slug}`}><EventTitle title={event.title} /></Link><p>{event.summary}</p>{event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}</article>)}</div></section>)}</div>;
+}
+
+function Board({ events, locale }: { events: PublicPost[]; locale: string }) {
+  if (!events.length) return <EmptyState>{locale === "de" ? "Keine Events in diesem Monat." : "No events this month."}</EmptyState>;
+  return <div className="calendar-board">{events.map((event, index) => {
+    const date = event.startsAt ? new Date(event.startsAt) : null;
+    return <article key={event.slug} className={`calendar-board-item board-tone-${index % 3}`}><div className="calendar-board-date">{date ? <><strong>{date.getDate()}</strong><span>{new Intl.DateTimeFormat(locale, { month: "short" }).format(date)}</span></> : null}</div><div><div className="event-card-type"><EventMarker eventKind={event.eventKind} />{event.eventKind ? getEventKind(event.eventKind)?.label[locale === "de" ? "de" : "en"] : null}</div><Link to={`/events/${event.slug}`}><EventTitle title={event.title} /></Link><p>{event.summary}</p>{event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}</div></article>;
+  })}</div>;
 }
 
 function CardList({ events, locale }: { events: PublicPost[]; locale: string }) {
@@ -137,7 +169,7 @@ export function CalendarPage() {
         <label><span className="sr-only">{de ? "Eventtyp" : "Event kind"}</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="">{de ? "Alle Eventtypen" : "All event kinds"}</option>{kinds.map((id) => <option key={id} value={id}>{getEventKind(id)?.label[de ? "de" : "en"] ?? id}</option>)}</select></label>
         <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(1)}>{de ? "Weiter" : "Next"}</button>
       </div>
-      {calendar.loading ? <Loading /> : calendar.error ? <ErrorState error={calendar.error} onRetry={calendar.reload} /> : theme === "agenda" ? <Agenda events={events} locale={locale} /> : theme === "timeline" || theme === "board" ? <Timeline events={events} locale={locale} /> : theme === "cards" ? <CardList events={events} locale={locale} /> : theme === "table" ? <EventTable events={events} locale={locale} /> : <MonthGrid year={cursor.year} month={cursor.month} events={events} locale={locale} minimal={theme === "public-grid"} />}
+      {calendar.loading ? <Loading /> : calendar.error ? <ErrorState error={calendar.error} onRetry={calendar.reload} /> : theme === "agenda" ? <Agenda events={events} locale={locale} /> : theme === "timeline" ? <Timeline events={events} locale={locale} /> : theme === "board" ? <Board events={events} locale={locale} /> : theme === "cards" ? <CardList events={events} locale={locale} /> : theme === "table" ? <EventTable events={events} locale={locale} /> : <MonthGrid year={cursor.year} month={cursor.month} events={events} locale={locale} minimal={theme === "public-grid"} />}
     </>
   );
 }

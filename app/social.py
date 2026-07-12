@@ -15,6 +15,7 @@ Environment variables:
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from app.models import (
     SOCIAL_STATUS_FAILED,
@@ -26,6 +27,8 @@ from app.models import (
 )
 
 SOCIAL_PROVIDERS = ("facebook", "instagram")
+SOCIAL_MAX_ATTEMPTS = 5
+SOCIAL_RETRY_BASE_SECONDS = 60
 
 
 @dataclass
@@ -109,10 +112,16 @@ def _apply_result(publication, result):
         publication.media_url = result.media_url
         publication.error_code = ""
         publication.error_message = ""
+        publication.scheduled_for = None
     else:
         publication.status = SOCIAL_STATUS_FAILED
         publication.error_code = result.error_code or "publish_failed"
         publication.error_message = result.error_message
+        if publication.attempt_count < SOCIAL_MAX_ATTEMPTS:
+            delay = SOCIAL_RETRY_BASE_SECONDS * (2 ** (publication.attempt_count - 1))
+            publication.scheduled_for = publication.last_attempt_at + timedelta(seconds=delay)
+        else:
+            publication.scheduled_for = None
 
 
 def publish_post_to_channels(post, channels):
@@ -157,6 +166,9 @@ def schedule_post_channels(post, channels, publish_at):
         if publication.status != SOCIAL_STATUS_PUBLISHED:
             publication.status = SOCIAL_STATUS_SCHEDULED
             publication.scheduled_for = publish_at
+            publication.attempt_count = 0
+            publication.error_code = ""
+            publication.error_message = ""
         publications.append(publication)
     db.session.commit()
     return publications
@@ -165,16 +177,18 @@ def schedule_post_channels(post, channels, publish_at):
 def process_due_social_publications():
     """Publish scheduled channel jobs whose time has come.
 
-    Called opportunistically from request handlers so publication does not
-    depend on an admin keeping a page open. Failed jobs stay visible with
-    status "failed" and can be retried from the admin panel.
+    A dedicated CLI worker invokes this independently of web traffic. Rows
+    remain idempotent by post/provider and failed attempts use bounded
+    exponential backoff while staying visible in the admin panel.
     """
     now = get_configured_local_now()
     due = (
         SocialPublication.query
-        .filter(SocialPublication.status == SOCIAL_STATUS_SCHEDULED)
+        .filter(SocialPublication.status.in_([SOCIAL_STATUS_SCHEDULED, SOCIAL_STATUS_FAILED]))
         .filter(SocialPublication.scheduled_for.isnot(None))
         .filter(SocialPublication.scheduled_for <= now)
+        .filter(SocialPublication.attempt_count < SOCIAL_MAX_ATTEMPTS)
+        .with_for_update(skip_locked=True)
         .all()
     )
     from app.models import Post
@@ -182,8 +196,10 @@ def process_due_social_publications():
     for publication in due:
         post = db.session.get(Post, publication.post_id)
         if post is None:
-            publication.status = SOCIAL_STATUS_FAILED
-            publication.error_code = "post_missing"
+            _apply_result(
+                publication,
+                PublishResult(ok=False, error_code="post_missing", error_message="Post not found."),
+            )
             continue
         result = get_publisher(publication.provider).publish_post(post)
         _apply_result(publication, result)

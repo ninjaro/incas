@@ -20,7 +20,6 @@ from app.site_content import (
     get_site_page,
     t,
 )
-from app.social import process_due_social_publications
 from app.themes_registry import THEME_PAGES, resolve_public_theme
 
 
@@ -162,7 +161,6 @@ def get_public_items():
 
 @api_bp.get("/public/config")
 def api_public_config():
-    process_due_social_publications()
     selections = {row.page_id: row.theme_id for row in PageThemeSelection.query.all()}
     return jsonify(
         {
@@ -243,8 +241,7 @@ def api_public_calendar():
 SUPPORTED_LOCALES = {"en", "de"}
 DEFAULT_LOCALE = "en"
 
-# Legacy Flask path -> React (HashRouter) route. Values are react-router
-# "to" paths (no leading "#"); query strings are preserved.
+# Legacy Flask path -> canonical React BrowserRouter path.
 _LEGACY_TO_APP = {
     "/language-tandem": "/tandem",
     "/contact-form": "/contact",

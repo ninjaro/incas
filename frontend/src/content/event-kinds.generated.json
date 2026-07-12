@@ -45,7 +45,7 @@
       "en": "International Breakfast"
     },
     "landingPresentation": "featured",
-    "mapMode": "venue",
+    "mapMode": "country_or_region",
     "marker": "muted",
     "registrationDefault": true,
     "registrationMode": "queue",

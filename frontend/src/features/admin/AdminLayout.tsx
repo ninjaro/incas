@@ -58,7 +58,7 @@ function UnlockForm() {
         />
       </label>
       {data.isDemo ? (
-        <p style={{ fontSize: "0.75rem", color: "var(--ink-faint)", margin: "6px 0 0" }}>
+        <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", margin: "6px 0 0" }}>
           Demo keys: demo-admin, demo-review, demo-karaoke, demo-tandem-blind
         </p>
       ) : null}

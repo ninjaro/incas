@@ -6,6 +6,7 @@ import type { EventSuggestionSubmission } from "../api/types";
 import { Field, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
 import { useLocale } from "../i18n/LocaleContext";
+import { localizeFieldErrors } from "../i18n/errors";
 
 export function SuggestEventPage() {
   const [params] = useSearchParams();
@@ -37,8 +38,8 @@ export function SuggestEventForm({ initialKind = "country_evening" }: { initialK
       const response = await data.submitEventSuggestion(form);
       setResult(response.submissionId);
     } catch (error) {
-      if (error instanceof ApiError) setErrors(error.fields);
-      else setErrors({ form: error instanceof Error ? error.message : "Submission failed." });
+      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
+      else setErrors({ form: de ? "Der Vorschlag konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Submission failed.") });
     } finally {
       setBusy(false);
     }

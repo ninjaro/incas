@@ -65,6 +65,18 @@ def test_legacy_database_reconciles_without_losing_rows(tmp_path):
                 """
             )
         )
+        # These tables existed in the last pre-Alembic application schema.
+        # Only columns touched by the reconciliation revision are needed here;
+        # the preservation assertion below remains focused on real post data.
+        for statement in (
+            "CREATE TABLE language_tandem_requests (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE tandem_match_review_states (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE contact_requests (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE event_suggestions (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE access_keys (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE event_registrations (id INTEGER PRIMARY KEY, public_id VARCHAR(24) NOT NULL)",
+        ):
+            connection.execute(sa.text(statement))
         connection.execute(
             sa.text(
                 """
@@ -89,3 +101,10 @@ def test_legacy_database_reconciles_without_losing_rows(tmp_path):
         assert item.status == "published"
         assert item.registration_mode == "none"
         assert item.map_config_dict == {}
+
+
+def test_reconciliation_revision_does_not_import_live_models():
+    revision = Path(MIGRATIONS) / "versions" / "20260711_02_reconcile_legacy_schema.py"
+    source = revision.read_text(encoding="utf-8")
+    assert "app.models" not in source
+    assert "db.metadata" not in source

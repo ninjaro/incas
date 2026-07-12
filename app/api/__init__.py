@@ -17,6 +17,7 @@ from functools import wraps
 from flask import Blueprint, jsonify, request
 
 from app.routes.helpers.access import get_capabilities, has_capability
+from app.rate_limit import consume_rate_limit
 
 api_bp = Blueprint("api", __name__, url_prefix="/api/v1")
 
@@ -59,6 +60,26 @@ def require_capability(capability):
     return decorator
 
 
+def rate_limited(scope, *, limit, window_seconds=3600):
+    def decorator(handler):
+        @wraps(handler)
+        def wrapper(*args, **kwargs):
+            allowed, retry_after = consume_rate_limit(scope, limit, window_seconds)
+            if not allowed:
+                response, status = api_error(
+                    "rate_limited",
+                    "Too many requests. Try again later.",
+                    status=429,
+                )
+                response.headers["Retry-After"] = str(retry_after)
+                return response, status
+            return handler(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 @api_bp.before_request
 def enforce_write_header():
     # Provider webhooks authenticate through adapter-level signature checks,
@@ -93,5 +114,6 @@ __all__ = [
     "get_capabilities",
     "get_json_body",
     "require_capability",
+    "rate_limited",
     "validation_error",
 ]

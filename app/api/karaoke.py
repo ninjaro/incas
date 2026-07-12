@@ -1,10 +1,8 @@
 import secrets
-import time
-from collections import defaultdict, deque
 
 from flask import jsonify, request
 
-from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
 from app.models import (
     KARAOKE_QUEUE_STATUSES,
     KARAOKE_STATUS_APPROVED,
@@ -35,25 +33,8 @@ TRANSITIONS = {
     "complete": ({KARAOKE_STATUS_PERFORMING, KARAOKE_STATUS_APPROVED}, KARAOKE_STATUS_COMPLETED),
 }
 
-# Minimal in-process rate limit for the public submission endpoint.
-SUBMIT_LIMIT = 10
-SUBMIT_WINDOW_SECONDS = 3600
-_submissions_by_ip = defaultdict(deque)
-
-
-def submission_allowed(ip):
-    now = time.monotonic()
-    window = _submissions_by_ip[ip]
-    while window and now - window[0] > SUBMIT_WINDOW_SECONDS:
-        window.popleft()
-    if len(window) >= SUBMIT_LIMIT:
-        return False
-    window.append(now)
-    return True
-
-
 def new_public_id():
-    return f"KRQ-{secrets.token_hex(4).upper()}"
+    return f"KRQ-{secrets.token_urlsafe(16)}"
 
 
 def queue_position(item):
@@ -130,11 +111,8 @@ def resolve_event(slug_or_none, *, required=False):
 
 
 @api_bp.post("/public/karaoke/requests")
+@rate_limited("karaoke.submit", limit=10)
 def api_karaoke_submit():
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
-    if not submission_allowed(ip):
-        return api_error("rate_limited", "Too many requests, try again later.", status=429)
-
     body = get_json_body()
     errors = {}
     display_name = (body.get("displayName") or "").strip()
@@ -168,6 +146,7 @@ def api_karaoke_submit():
 
 
 @api_bp.get("/public/karaoke/requests/<public_id>")
+@rate_limited("karaoke.track", limit=60)
 def api_karaoke_track(public_id):
     item = KaraokeSongRequest.query.filter_by(public_id=public_id).first()
     if item is None:

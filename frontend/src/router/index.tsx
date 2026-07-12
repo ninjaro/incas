@@ -1,4 +1,4 @@
-import { Navigate, createHashRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter, createHashRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 
 import type { Capability } from "../api/types";
@@ -65,7 +65,7 @@ function NotFound() {
   );
 }
 
-export const router = createHashRouter([
+const routes = [
   {
     element: <PublicLayout />,
     children: [
@@ -146,4 +146,8 @@ export const router = createHashRouter([
       { path: "*", element: <NotFound /> },
     ],
   },
-]);
+];
+
+export const router = import.meta.env.VITE_DATA_MODE === "demo"
+  ? createHashRouter(routes)
+  : createBrowserRouter(routes);

@@ -20,6 +20,13 @@ import { useLocale } from "../i18n/LocaleContext";
 import { getEventKind } from "../domain/eventKinds";
 import { assetUrl } from "../utils/assets";
 
+export function EventDescription({ bodyHtml, summary }: { bodyHtml: string; summary: string }) {
+  if (bodyHtml) {
+    return <div className="card site-content" dangerouslySetInnerHTML={{ __html: bodyHtml }} />;
+  }
+  return <div className="card site-content"><p>{summary}</p></div>;
+}
+
 export function EventDetailPage() {
   const { slug = "" } = useParams();
   const data = useData();
@@ -43,14 +50,14 @@ export function EventDetailPage() {
           <div className="event-detail-type"><EventIcon eventKind={event.eventKind} /><EventMarker eventKind={event.eventKind} />{eventKindLabel ? <span>{eventKindLabel}</span> : null}</div>
           <EventTitle title={event.title} as="h1" />
           <p>{event.summary}</p>
-          <div className="event-card-flags">{event.isPinned ? <PinnedBadge /> : null}{event.publicationState === "archived" ? <ArchivedBadge /> : null}{event.registration ? <EventAvailability registration={event.registration} locale={locale} /> : null}</div>
+          <div className="event-card-flags">{event.isPinned ? <PinnedBadge locale={locale} /> : null}{event.publicationState === "archived" ? <ArchivedBadge locale={locale} /> : null}{event.registration ? <EventAvailability registration={event.registration} locale={locale} /> : null}</div>
         </div>
         {eventImage ? <img src={eventImage} alt="" /> : null}
       </header>
 
       <div className="event-detail-grid">
         <section className="event-detail-main">
-          <div className="card site-content" dangerouslySetInnerHTML={{ __html: event.bodyHtml || `<p>${event.summary}</p>` }} />
+          <EventDescription bodyHtml={event.bodyHtml ?? ""} summary={event.summary} />
           {event.map ? <EventMap config={event.map} /> : null}
           {event.eventKind === "karaoke" ? <KaraokeEventFeature eventSlug={event.slug} eventTitle={event.title.full} /> : null}
           {event.registration ? <EventRegistrationForm event={event} /> : null}

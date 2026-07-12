@@ -27,8 +27,8 @@ SITE_UI = {
         "demo.banner_label": "Demo mode",
         "demo.banner_body": "synthetic data, no real backend. Actions are simulated.",
         "contact.title": "Contact",
-        "contact.intro": "The contact form is being migrated to the new site and isn't ready yet.",
-        "contact.channels_intro": "In the meantime, you can reach us through:",
+        "contact.intro": "Send us a question or message. We usually reply by email.",
+        "contact.channels_intro": "You can also reach us through:",
     },
     "de": {
         "nav.home": "Start",
@@ -58,8 +58,8 @@ SITE_UI = {
         "demo.banner_label": "Demo-Modus",
         "demo.banner_body": "synthetische Daten, kein echtes Backend. Aktionen werden simuliert.",
         "contact.title": "Kontakt",
-        "contact.intro": "Das Kontaktformular wird gerade auf die neue Seite migriert und ist noch nicht fertig.",
-        "contact.channels_intro": "In der Zwischenzeit kannst du uns über folgende Wege erreichen:",
+        "contact.intro": "Schick uns eine Frage oder Nachricht. Wir antworten normalerweise per E-Mail.",
+        "contact.channels_intro": "Du erreichst uns auch über:",
     },
 }
 

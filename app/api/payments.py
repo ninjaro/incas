@@ -1,6 +1,6 @@
 from flask import jsonify, request
 
-from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
 from app.models import (
     PAYMENT_STATUS_CANCELLED,
     PAYMENT_STATUS_FAILED,
@@ -9,10 +9,12 @@ from app.models import (
     PAYMENT_STATUS_REFUND_PENDING,
     PAYMENT_STATUS_REFUNDED,
     EVENT_REGISTRATION_STATUS_CANCELLED,
+    EVENT_REGISTRATION_STATUS_APPROVED,
     EVENT_REGISTRATION_STATUS_WAITING_REFUND,
     EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
     EventRegistration,
     PaymentTransaction,
+    PaymentStatusAudit,
     Post,
     db,
 )
@@ -23,26 +25,35 @@ from app.payments import (
     serialize_transaction,
 )
 from app.routes.helpers.event_registrations import promote_waiting_list_for_post
+from app.routes.helpers.access import get_session_audit_id
 
 
 @api_bp.post("/payments/checkout")
+@rate_limited("payment.checkout", limit=20)
 def api_payments_checkout():
     body = get_json_body()
     slug = (body.get("postSlug") or "").strip()
-    item = Post.query.filter_by(slug=slug).first()
+    item = Post.query.filter_by(slug=slug).with_for_update().first()
     if item is None or not item.is_publicly_accessible:
         return api_error("not_found", "Event not found.", status=404)
     # The price always comes from the post on the server; any client-supplied
     # amount is ignored, which prevents price manipulation.
     if not item.registration_price_cents:
         return api_error("payment_not_required", "This event does not require payment.", status=422)
+    if not item.is_live:
+        return api_error("registration_closed", "Registration is closed.", status=409)
 
     registration_public_id = (body.get("registrationPublicId") or "").strip()
     if not registration_public_id:
         return validation_error(
             {"registrationPublicId": "Create an event registration before starting payment."}
         )
-    registration = EventRegistration.query.filter_by(public_id=registration_public_id).first()
+    registration = (
+        EventRegistration.query
+        .filter_by(public_id=registration_public_id)
+        .with_for_update()
+        .first()
+    )
     if registration is None or registration.post_id != item.id:
         return validation_error({"registrationPublicId": "Unknown registration."})
     if registration.status != EVENT_REGISTRATION_STATUS_WAITING_PAYMENT:
@@ -75,6 +86,7 @@ def api_payments_checkout():
 
 
 @api_bp.get("/payments/<public_id>")
+@rate_limited("payment.track", limit=60)
 def api_payments_status(public_id):
     transaction = PaymentTransaction.query.filter_by(public_id=public_id).first()
     if transaction is None:
@@ -124,10 +136,27 @@ def serialize_admin_payment(transaction):
     payload.update(
         {
             "id": transaction.id,
+            "postId": transaction.post_id,
+            "registrationId": transaction.registration_id,
             "eventTitle": post.display_title if post else "",
             "eventSlug": post.slug if post else "",
             "registrationPublicId": registration.public_id if registration else None,
             "registrationName": registration.full_name if registration else None,
+            "audit": [
+                {
+                    "previousStatus": entry.previous_status,
+                    "newStatus": entry.new_status,
+                    "actor": entry.actor,
+                    "note": entry.note,
+                    "createdAt": entry.created_at.isoformat(),
+                }
+                for entry in (
+                    PaymentStatusAudit.query
+                    .filter_by(payment_id=transaction.id)
+                    .order_by(PaymentStatusAudit.created_at.desc(), PaymentStatusAudit.id.desc())
+                    .all()
+                )
+            ],
         }
     )
     return payload
@@ -150,25 +179,48 @@ def api_admin_payment_update(payment_id):
     transaction = db.session.get(PaymentTransaction, payment_id)
     if transaction is None:
         return api_error("not_found", "Payment not found.", status=404)
-    status = (get_json_body().get("status") or "").strip()
+    body = get_json_body()
+    status = (body.get("status") or "").strip()
     if status not in {PAYMENT_STATUS_REFUND_PENDING, PAYMENT_STATUS_REFUNDED, PAYMENT_STATUS_CANCELLED}:
         return validation_error({"status": "Use refund_pending, refunded, or cancelled."})
-    if status in {PAYMENT_STATUS_REFUND_PENDING, PAYMENT_STATUS_REFUNDED} and transaction.status not in {
-        PAYMENT_STATUS_PAID,
-        PAYMENT_STATUS_REFUND_PENDING,
-    }:
-        return api_error("invalid_transition", "Only a paid payment can be refunded.", status=409)
+    allowed = {
+        PAYMENT_STATUS_PAID: {PAYMENT_STATUS_REFUND_PENDING},
+        PAYMENT_STATUS_REFUND_PENDING: {PAYMENT_STATUS_REFUNDED},
+        PAYMENT_STATUS_PENDING: {PAYMENT_STATUS_CANCELLED},
+        PAYMENT_STATUS_FAILED: {PAYMENT_STATUS_CANCELLED},
+    }.get(transaction.status, set())
+    if status not in allowed:
+        return api_error("invalid_transition", "This payment status change is not allowed.", status=409)
+    previous_status = transaction.status
     transaction.status = status
     registration = db.session.get(EventRegistration, transaction.registration_id) if transaction.registration_id else None
     if registration is not None:
-        registration.status = (
-            EVENT_REGISTRATION_STATUS_WAITING_REFUND
-            if status == PAYMENT_STATUS_REFUND_PENDING
-            else EVENT_REGISTRATION_STATUS_CANCELLED
-        )
-        if status in {PAYMENT_STATUS_REFUNDED, PAYMENT_STATUS_CANCELLED}:
-            post = db.session.get(Post, registration.post_id)
+        previous_registration_status = registration.status
+        if status == PAYMENT_STATUS_REFUND_PENDING:
+            registration.status = EVENT_REGISTRATION_STATUS_WAITING_REFUND
+        elif status in {PAYMENT_STATUS_REFUNDED, PAYMENT_STATUS_CANCELLED}:
+            registration.status = EVENT_REGISTRATION_STATUS_CANCELLED
+        if (
+            previous_registration_status in {
+                EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+                EVENT_REGISTRATION_STATUS_APPROVED,
+            }
+            and registration.status not in {
+                EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+                EVENT_REGISTRATION_STATUS_APPROVED,
+            }
+        ):
+            post = Post.query.filter_by(id=registration.post_id).with_for_update().first()
             if post is not None:
                 promote_waiting_list_for_post(post)
+    db.session.add(
+        PaymentStatusAudit(
+            payment_id=transaction.id,
+            previous_status=previous_status,
+            new_status=status,
+            actor=get_session_audit_id(),
+            note=(body.get("note") or "").strip()[:1000],
+        )
+    )
     db.session.commit()
     return jsonify(serialize_admin_payment(transaction))

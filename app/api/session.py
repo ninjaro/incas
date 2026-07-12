@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, session
 
 from app.api import api_bp, api_error, get_json_body
 from app.routes.helpers.access import (
@@ -38,6 +38,7 @@ def api_access_unlock():
         return api_error("key_invalid", "This access key is not valid.", status=403)
 
     new_scopes = [scope for scope in grant["scopes"] if scope not in get_access_scopes()]
+    session.permanent = True
     grant_scopes(grant["scopes"], expires_at=grant["expires_at"], key_id=grant.get("key_id"))
     if grant.get("key_id"):
         from app.models import AccessKey, db, get_configured_local_now

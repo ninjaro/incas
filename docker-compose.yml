@@ -7,14 +7,47 @@ services:
       db:
         condition: service_healthy
     environment:
+      APP_ENV: production
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-incas}:${POSTGRES_PASSWORD:-incas}@db:5432/${POSTGRES_DB:-incas}
-      SECRET_KEY: ${SECRET_KEY:-dev-docker-secret}
+      SECRET_KEY: ${SECRET_KEY:?Set a random SECRET_KEY of at least 32 characters}
+      ACCESS_KEYS_ROOT_HASH: ${ACCESS_KEYS_ROOT_HASH:?Set the SHA-256 hash of the bootstrap access-keys phrase}
+      AUTO_CREATE_SCHEMA: "0"
+      SEED_DEMO_DATA: "0"
+      SESSION_COOKIE_SECURE: "1"
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-0}
       INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
       INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
       INSTAGRAM_REDIRECT_URI: ${INSTAGRAM_REDIRECT_URI:-}
       INSTAGRAM_SCOPES: ${INSTAGRAM_SCOPES:-instagram_business_basic,instagram_business_content_publish}
     ports:
       - "${INCAS_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/v1/public/config')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  social-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-incas}:${POSTGRES_PASSWORD:-incas}@db:5432/${POSTGRES_DB:-incas}
+      SECRET_KEY: ${SECRET_KEY:?Set a random SECRET_KEY of at least 32 characters}
+      ACCESS_KEYS_ROOT_HASH: ${ACCESS_KEYS_ROOT_HASH:?Set the SHA-256 hash of the bootstrap access-keys phrase}
+      AUTO_CREATE_SCHEMA: "0"
+      SEED_DEMO_DATA: "0"
+      SESSION_COOKIE_SECURE: "1"
+      FACEBOOK_PAGE_ACCESS_TOKEN: ${FACEBOOK_PAGE_ACCESS_TOKEN:-}
+      FACEBOOK_PAGE_ID: ${FACEBOOK_PAGE_ID:-}
+      INSTAGRAM_ACCESS_TOKEN: ${INSTAGRAM_ACCESS_TOKEN:-}
+      INSTAGRAM_USER_ID: ${INSTAGRAM_USER_ID:-}
+    command: ["flask", "--app", "run:app", "social-worker", "--interval", "30"]
     restart: unless-stopped
 
   db:

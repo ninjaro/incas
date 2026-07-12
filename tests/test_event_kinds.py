@@ -7,7 +7,7 @@ REQUIRED_KEYS = {
     "registrationMode", "calendarPresentation", "landingPresentation",
 }
 MARKERS = {"accent", "info", "ok", "warn", "bad", "muted", "ink"}
-MAP_MODES = {"none", "venue", "country", "destination"}
+MAP_MODES = {"none", "venue", "country", "country_or_region", "destination"}
 FEATURES = {"registration", "deposit", "map", "karaoke_queue"}
 
 
@@ -36,6 +36,33 @@ def test_every_kind_has_valid_shape():
 def test_get_event_kind_unknown_returns_none():
     assert get_event_kind("does_not_exist") is None
     assert get_event_kind("breakfast")["label"]["de"] == "Internationales Frühstück"
+
+
+def test_registry_semantics_are_consistent():
+    for kind in EVENT_KINDS.values():
+        schedule = kind["schedule"]
+        if schedule:
+            assert 0 <= schedule["weekday"] <= 6
+            hours, minutes = map(int, schedule["time"].split(":"))
+            assert 0 <= hours <= 23
+            assert 0 <= minutes <= 59
+
+        has_map = kind["mapMode"] != "none"
+        assert ("map" in kind["features"]) is has_map
+
+        if kind["registrationDefault"]:
+            assert kind["registrationMode"] == "queue"
+            assert kind["defaultCapacity"] and kind["defaultCapacity"] > 0
+            assert "registration" in kind["features"]
+        if kind["depositDefault"]:
+            assert kind["registrationDefault"]
+            assert kind["defaultPriceCents"] and kind["defaultPriceCents"] > 0
+            assert "deposit" in kind["features"]
+
+
+def test_registry_matches_product_decisions():
+    assert EVENT_KINDS["trip"]["schedule"] == {"weekday": 5, "time": "09:00"}
+    assert EVENT_KINDS["breakfast"]["mapMode"] == "country_or_region"
 
 
 def test_event_kind_meta_parity():

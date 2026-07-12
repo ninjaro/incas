@@ -15,10 +15,14 @@
     "test:e2e:update": "npm run build:demo && playwright test --update-snapshots"
   },
   "dependencies": {
+    "@amcharts/amcharts5": "5.19.1",
+    "@amcharts/amcharts5-geodata": "5.1.5",
+    "ol": "10.9.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.18.1"
+    "react-router-dom": "^7.18.1",
+    "world-atlas": "2.0.2"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

@@ -12,7 +12,12 @@ from app.models import (
     EVENT_REGISTRATION_STATUS_WAITING_LIST,
     EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
     EVENT_REGISTRATION_STATUS_WAITING_REFUND,
+    PAYMENT_STATUS_CANCELLED,
+    PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_PENDING,
+    PAYMENT_STATUS_REFUND_PENDING,
     EventRegistration,
+    PaymentTransaction,
 )
 from app.routes.helpers.tandem_form import KNOWN_OCCUPATIONS, get_occupation_choices
 
@@ -33,10 +38,78 @@ EVENT_REGISTRATION_STATUS_CHOICES = [
 
 def build_event_registration_public_id():
     while True:
-        candidate = f"APP-{secrets.token_hex(4).upper()}"
+        candidate = f"APP-{secrets.token_urlsafe(16)}"
         exists = EventRegistration.query.filter_by(public_id=candidate).first()
         if exists is None:
             return candidate
+
+
+def latest_registration_payment(item):
+    return (
+        PaymentTransaction.query
+        .filter_by(registration_id=item.id)
+        .order_by(PaymentTransaction.created_at.desc(), PaymentTransaction.id.desc())
+        .first()
+    )
+
+
+def allowed_registration_transitions(item, post):
+    """Return valid admin transitions for the registration's current state.
+
+    Confirmation of a paid place is intentionally absent: only a successful
+    payment callback may move ``waiting_payment`` to ``approved``.
+    """
+    payment = latest_registration_payment(item)
+    if item.status == EVENT_REGISTRATION_STATUS_WAITING_PAYMENT:
+        return [EVENT_REGISTRATION_STATUS_CANCELLED]
+    if item.status == EVENT_REGISTRATION_STATUS_APPROVED:
+        if payment is not None and payment.status == PAYMENT_STATUS_PAID:
+            return [EVENT_REGISTRATION_STATUS_WAITING_REFUND]
+        return [EVENT_REGISTRATION_STATUS_CANCELLED]
+    if item.status == EVENT_REGISTRATION_STATUS_WAITING_LIST:
+        transitions = [EVENT_REGISTRATION_STATUS_CANCELLED]
+        if post.has_registration_space:
+            transitions.insert(
+                0,
+                EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
+                if post.registration_price_cents
+                else EVENT_REGISTRATION_STATUS_APPROVED,
+            )
+        return transitions
+    if item.status == EVENT_REGISTRATION_STATUS_CANCELLED:
+        return [EVENT_REGISTRATION_STATUS_WAITING_LIST]
+    return []
+
+
+def apply_registration_transition(item, post, target):
+    """Apply a validated transition and return automatically promoted rows."""
+    if target == item.status:
+        return []
+    if target not in allowed_registration_transitions(item, post):
+        raise ValueError("invalid_transition")
+
+    previous = item.status
+    payment = latest_registration_payment(item)
+    if target == EVENT_REGISTRATION_STATUS_WAITING_REFUND:
+        if payment is None or payment.status != PAYMENT_STATUS_PAID:
+            raise ValueError("paid_payment_required")
+        payment.status = PAYMENT_STATUS_REFUND_PENDING
+    elif target == EVENT_REGISTRATION_STATUS_CANCELLED:
+        if payment is not None and payment.status == PAYMENT_STATUS_PENDING:
+            payment.status = PAYMENT_STATUS_CANCELLED
+
+    item.status = target
+    promoted = []
+    released_place = (
+        previous in EVENT_REGISTRATION_CAPACITY_STATUSES
+        and target not in EVENT_REGISTRATION_CAPACITY_STATUSES
+    )
+    if released_place or (
+        previous == EVENT_REGISTRATION_STATUS_CANCELLED
+        and target == EVENT_REGISTRATION_STATUS_WAITING_LIST
+    ):
+        promoted = promote_waiting_list_for_post(post)
+    return promoted
 
 
 def parse_price_cents(raw_value):

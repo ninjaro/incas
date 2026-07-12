@@ -208,11 +208,11 @@ export type PostInput = Partial<{
   title: string;
   summary: string;
   body: string;
-  eventKind: string;
-  startsAt: string;
-  endsAt: string;
+  eventKind: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
   durationMinutes: number | null;
-  publishAt: string;
+  publishAt: string | null;
   status: PostStatus;
   isPinned: boolean;
   imageUrl: string;
@@ -398,8 +398,6 @@ export type PaymentStatus =
 
 export type PaymentInfo = {
   publicId: string;
-  postId: number | null;
-  registrationId?: number | null;
   amountCents: number;
   currency: string;
   status: PaymentStatus;
@@ -412,11 +410,20 @@ export type PaymentInfo = {
 
 export type AdminPayment = PaymentInfo & {
   id: number;
+  postId: number | null;
+  registrationId: number | null;
   eventTitle: string;
   eventSlug: string;
   registrationPublicId: string | null;
   registrationName: string | null;
   createdAt: string;
+  audit: {
+    previousStatus: PaymentStatus;
+    newStatus: PaymentStatus;
+    actor: string;
+    note: string;
+    createdAt: string;
+  }[];
 };
 
 export type FormOptions = {
@@ -478,15 +485,16 @@ export type EventRegistrationStatus =
   | "waiting_refund";
 
 export type RegistrationRecord = {
-  id: number | null;
+  id?: number;
   publicId: string;
   name: string;
-  firstName: string | null;
-  lastName: string | null;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   occupation?: string;
   dietPreference?: string;
   comment?: string;
+  allowedTransitions?: EventRegistrationStatus[];
   status: EventRegistrationStatus;
   statusLabel: string;
   waitingListPosition: number | null;

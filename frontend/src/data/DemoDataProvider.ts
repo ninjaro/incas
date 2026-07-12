@@ -70,6 +70,7 @@ const CAPABILITY_LABELS: Record<string, string> = {
 
 const DEMO_PRIVATE_FIELDS: Record<string, { firstName: string; lastName: string; email: string }> = {
   "demo-ref-aaaa": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com" },
+  "demo-ref-aaab": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com" },
   "demo-ref-bbbb": { firstName: "Max", lastName: "Muster", email: "max@example.com" },
   "demo-ref-cccc": { firstName: "Giulia", lastName: "Esempio", email: "giulia@example.com" },
 };
@@ -103,6 +104,10 @@ export class DemoDataProvider implements DataProvider {
   private registrations: RegistrationRecord[] = [];
   private formInbox: FormInboxEntry[] = [];
   private accessKeys: AccessKeyInfo[] = [];
+  private tandemRequests = structuredClone(demoTandemRequests);
+  private tandemPrivate = structuredClone(DEMO_PRIVATE_FIELDS);
+  private tandemReviews: Record<string, TandemMatch["review"]> = {};
+  private tandemDuplicateDecisions: Record<string, { decision: "ignore" | "different"; note: string }> = {};
   private nextId = 1000;
 
   private require(capability: Capability) {
@@ -116,6 +121,62 @@ export class DemoDataProvider implements DataProvider {
     }
   }
 
+  private paymentForRegistration(item: RegistrationRecord) {
+    return [...this.payments].reverse().find(
+      (payment) => this.paymentRegistrations[payment.publicId] === item.publicId,
+    );
+  }
+
+  private publicRegistration(item: RegistrationRecord): RegistrationRecord {
+    const {
+      id: _id,
+      firstName: _firstName,
+      lastName: _lastName,
+      email: _email,
+      occupation: _occupation,
+      dietPreference: _dietPreference,
+      comment: _comment,
+      allowedTransitions: _allowedTransitions,
+      ...publicItem
+    } = item;
+    return publicItem;
+  }
+
+  private allowedRegistrationTransitions(item: RegistrationRecord): EventRegistrationStatus[] {
+    const event = this.events.find((entry) => entry.slug === item.event.slug);
+    const payment = this.paymentForRegistration(item);
+    if (!event?.registration) return [];
+    if (item.status === "waiting_payment") return ["cancelled"];
+    if (item.status === "approved") {
+      return payment?.status === "paid" ? ["waiting_refund"] : ["cancelled"];
+    }
+    if (item.status === "waiting_list") {
+      const choices: EventRegistrationStatus[] = ["cancelled"];
+      if (this.queueSummary(event).placesRemaining > 0) {
+        choices.unshift(event.registration.priceCents ? "waiting_payment" : "approved");
+      }
+      return choices;
+    }
+    if (item.status === "cancelled") return ["waiting_list"];
+    return [];
+  }
+
+  private promoteRegistrationWaitingList(event: PublicPost) {
+    const promoted: RegistrationRecord[] = [];
+    while (this.queueSummary(event).placesRemaining > 0) {
+      const candidate = this.registrations.find(
+        (entry) => entry.event.slug === event.slug && entry.status === "waiting_list",
+      );
+      if (!candidate) break;
+      candidate.status = event.registration?.priceCents ? "waiting_payment" : "approved";
+      candidate.statusLabel = candidate.status.replaceAll("_", " ");
+      candidate.waitingListPosition = null;
+      candidate.updatedAt = new Date().toISOString();
+      promoted.push(candidate);
+    }
+    return promoted;
+  }
+
   private session(): SessionInfo {
     return {
       capabilities: [...this.capabilities].sort(),
@@ -123,6 +184,14 @@ export class DemoDataProvider implements DataProvider {
       sessionAuditId: "demo-session",
       hasAccessKeys: true,
     };
+  }
+
+  private tandemReviewKey(sourceRef: string, candidateRef: string) {
+    return `${sourceRef}\0${candidateRef}`;
+  }
+
+  private tandemDuplicateKey(leftRef: string, rightRef: string) {
+    return [leftRef, rightRef].sort().join("\0");
   }
 
   async getSession() {
@@ -154,7 +223,7 @@ export class DemoDataProvider implements DataProvider {
   async getPublicPost(slug: string) {
     const post = [...this.events, ...demoPosts].find((entry) => entry.slug === slug);
     if (!post) throw new DemoError("not_found", "Post not found.", 404);
-    return { ...post, bodyHtml: post.bodyHtml ?? `<p>${post.summary}</p>` };
+    return { ...post, bodyHtml: post.bodyHtml ?? "" };
   }
 
   async getCalendar(year: number, month: number) {
@@ -336,6 +405,10 @@ export class DemoDataProvider implements DataProvider {
       featureFlags: input.featureFlags ?? post.featureFlags,
       updatedAt: new Date().toISOString(),
     });
+    if (input.eventKind !== undefined) post.eventKind = input.eventKind;
+    if (input.startsAt !== undefined) post.startsAt = input.startsAt;
+    if (input.endsAt !== undefined) post.endsAt = input.endsAt;
+    if (input.publishAt !== undefined) post.publishAt = input.publishAt;
     return post;
   }
 
@@ -440,11 +513,11 @@ export class DemoDataProvider implements DataProvider {
     this.require("language_tandem_blind");
     const showPrivate = this.capabilities.has("language_tandem_private");
     return {
-      items: demoTandemRequests.filter((item) =>
+      items: this.tandemRequests.filter((item) =>
         (!params?.viewed || params.viewed === "all" || item.isViewed === (params.viewed === "yes"))
-        && (!params?.q || `${item.ref} ${DEMO_PRIVATE_FIELDS[item.ref]?.firstName ?? ""} ${DEMO_PRIVATE_FIELDS[item.ref]?.lastName ?? ""}`.toLowerCase().includes(params.q.toLowerCase())),
+        && (!params?.q || `${item.ref} ${this.tandemPrivate[item.ref]?.firstName ?? ""} ${this.tandemPrivate[item.ref]?.lastName ?? ""}`.toLowerCase().includes(params.q.toLowerCase())),
       ).map((item) =>
-        showPrivate ? { ...item, ...DEMO_PRIVATE_FIELDS[item.ref], comment: "" } : item,
+        showPrivate ? { ...item, ...this.tandemPrivate[item.ref], comment: "" } : item,
       ),
       capabilities: {
         private: showPrivate,
@@ -472,7 +545,8 @@ export class DemoDataProvider implements DataProvider {
         score: 10,
         reasons: ["Offers a requested language (demo scoring)"],
         warnings: [],
-        review: { hidden: false, shortlisted: false, contactedAt: null, finalPairAt: null },
+        review: this.tandemReviews[this.tandemReviewKey(source.ref, candidate.ref)]
+          ?? { hidden: false, shortlisted: false, contactedAt: null, finalPairAt: null },
       }));
     return {
       source,
@@ -481,13 +555,17 @@ export class DemoDataProvider implements DataProvider {
         partial: matches.filter((match) => match.category === "partial"),
         weak: [],
       },
-      totals: { full: 0, partial: 0, weak: 0 },
+      totals: {
+        full: matches.filter((match) => match.category === "full").length,
+        partial: matches.filter((match) => match.category === "partial").length,
+        weak: 0,
+      },
     };
   }
 
   async updateTandem(ref: string, input: Record<string, unknown>) {
     this.require("language_tandem_corrections");
-    const item = demoTandemRequests.find((entry) => entry.ref === ref);
+    const item = this.tandemRequests.find((entry) => entry.ref === ref);
     if (!item) throw new DemoError("not_found", "Request not found.", 404);
     Object.assign(item, input);
     return item;
@@ -495,37 +573,104 @@ export class DemoDataProvider implements DataProvider {
 
   async markTandemViewed(ref: string, isViewed: boolean) {
     this.require("language_tandem_blind");
-    const item = demoTandemRequests.find((entry) => entry.ref === ref);
+    const item = this.tandemRequests.find((entry) => entry.ref === ref);
     if (!item) throw new DemoError("not_found", "Request not found.", 404);
     item.isViewed = isViewed;
     return { ref, isViewed };
   }
 
-  async reviewTandemMatch(_sourceRef: string, _candidateRef: string, action: TandemReviewAction): Promise<TandemMatch["review"]> {
+  async reviewTandemMatch(sourceRef: string, candidateRef: string, action: TandemReviewAction): Promise<TandemMatch["review"]> {
     this.require("language_tandem_blind");
-    return {
-      hidden: action === "hide",
-      shortlisted: ["shortlist", "final_pair"].includes(action),
-      contactedAt: action === "contacted" ? new Date().toISOString() : null,
-      finalPairAt: action === "final_pair" ? new Date().toISOString() : null,
-    };
+    if (["contacted", "final_pair"].includes(action) && !this.capabilities.has("language_tandem_private")) {
+      throw new DemoError("capability_required", "Contact workflow needs private Tandem access.", 403);
+    }
+    if (!this.tandemRequests.some((item) => item.ref === sourceRef)
+      || !this.tandemRequests.some((item) => item.ref === candidateRef)
+      || sourceRef === candidateRef) {
+      throw new DemoError("not_found", "Match pair not found.", 404);
+    }
+    const key = this.tandemReviewKey(sourceRef, candidateRef);
+    const review = this.tandemReviews[key]
+      ?? { hidden: false, shortlisted: false, contactedAt: null, finalPairAt: null };
+    if (action === "hide") review.hidden = true;
+    if (action === "show") review.hidden = false;
+    if (action === "shortlist") review.shortlisted = true;
+    if (action === "unshortlist") review.shortlisted = false;
+    if (action === "contacted") review.contactedAt = new Date().toISOString();
+    if (action === "uncontacted") review.contactedAt = null;
+    if (action === "final_pair") {
+      review.finalPairAt = new Date().toISOString();
+      review.shortlisted = true;
+    }
+    if (action === "unpair") review.finalPairAt = null;
+    this.tandemReviews[key] = review;
+    return { ...review };
   }
 
   async getTandemDuplicates(): Promise<{ items: TandemDuplicate[] }> {
     this.require("language_tandem_corrections");
-    return { items: [] };
+    const items: TandemDuplicate[] = [];
+    this.tandemRequests.forEach((left, leftIndex) => {
+      this.tandemRequests.slice(leftIndex + 1).forEach((right) => {
+        const leftPrivate = this.tandemPrivate[left.ref];
+        const rightPrivate = this.tandemPrivate[right.ref];
+        const sameEmail = leftPrivate?.email.toLowerCase() === rightPrivate?.email.toLowerCase();
+        const sameName = `${leftPrivate?.firstName} ${leftPrivate?.lastName}`.toLowerCase()
+          === `${rightPrivate?.firstName} ${rightPrivate?.lastName}`.toLowerCase();
+        if (!sameEmail && !sameName) return;
+        const stored = this.tandemDuplicateDecisions[this.tandemDuplicateKey(left.ref, right.ref)];
+        items.push({
+          left: { ...left, ...leftPrivate, comment: "" },
+          right: { ...right, ...rightPrivate, comment: "" },
+          category: sameEmail ? "exact" : "likely",
+          score: sameEmail ? 100 : 85,
+          reasons: [sameEmail ? "Same email address" : "Same full name"],
+          decision: stored?.decision ?? null,
+        });
+      });
+    });
+    return { items };
   }
 
-  async decideTandemDuplicate(_leftRef: string, _rightRef: string, decision: "ignore" | "different", note = "") {
+  async decideTandemDuplicate(leftRef: string, rightRef: string, decision: "ignore" | "different", note = "") {
     this.require("language_tandem_corrections");
+    if (!this.tandemRequests.some((item) => item.ref === leftRef)
+      || !this.tandemRequests.some((item) => item.ref === rightRef)) {
+      throw new DemoError("not_found", "Duplicate pair not found.", 404);
+    }
+    this.tandemDuplicateDecisions[this.tandemDuplicateKey(leftRef, rightRef)] = { decision, note };
     return { decision, note };
   }
 
-  async mergeTandemDuplicate(keepRef: string, _removeRef: string, _fields?: Record<string, string>): Promise<TandemRequest> {
+  async mergeTandemDuplicate(keepRef: string, removeRef: string, fields: Record<string, string> = {}): Promise<TandemRequest> {
     this.require("language_tandem_corrections");
-    const item = demoTandemRequests.find((entry) => entry.ref === keepRef);
-    if (!item) throw new DemoError("not_found", "Request not found.", 404);
-    return item;
+    const keep = this.tandemRequests.find((entry) => entry.ref === keepRef);
+    const remove = this.tandemRequests.find((entry) => entry.ref === removeRef);
+    if (!keep || !remove || keep === remove) throw new DemoError("not_found", "Request not found.", 404);
+    (Object.keys(keep) as (keyof TandemRequest)[]).forEach((field) => {
+      if (field !== "ref" && fields[field] === "remove") {
+        (keep as Record<string, unknown>)[field] = remove[field];
+      }
+    });
+    const privateKeep = this.tandemPrivate[keepRef];
+    const privateRemove = this.tandemPrivate[removeRef];
+    (["firstName", "lastName", "email"] as const).forEach((field) => {
+      if (fields[field] === "remove" && privateKeep && privateRemove) privateKeep[field] = privateRemove[field];
+    });
+    Object.entries(this.tandemReviews).forEach(([key, review]) => {
+      const [source, candidate] = key.split("\0");
+      if (source !== removeRef && candidate !== removeRef) return;
+      delete this.tandemReviews[key];
+      const nextSource = source === removeRef ? keepRef : source;
+      const nextCandidate = candidate === removeRef ? keepRef : candidate;
+      if (nextSource !== nextCandidate) this.tandemReviews[this.tandemReviewKey(nextSource, nextCandidate)] = review;
+    });
+    this.tandemRequests = this.tandemRequests.filter((entry) => entry.ref !== removeRef);
+    delete this.tandemPrivate[removeRef];
+    Object.keys(this.tandemDuplicateDecisions).forEach((key) => {
+      if (key.split("\0").includes(removeRef)) delete this.tandemDuplicateDecisions[key];
+    });
+    return { ...keep, ...privateKeep, comment: "" };
   }
 
   async submitKaraokeRequest(input: KaraokeSubmission) {
@@ -537,10 +682,14 @@ export class DemoDataProvider implements DataProvider {
         },
       });
     }
+    const event = this.events.find(
+      (candidate) => candidate.slug === input.eventSlug && candidate.eventKind === "karaoke",
+    );
+    if (!event) throw new DemoError("event_required", "Select a karaoke event.", 422);
     const entry: KaraokeAdminEntry = {
       id: this.nextId++,
       publicId: `KRQ-DEMO${this.nextId}`,
-      postId: 1,
+      postId: this.events.indexOf(event) + 1,
       displayName: input.displayName,
       songTitle: input.songTitle,
       artist: input.artist ?? "",
@@ -549,10 +698,8 @@ export class DemoDataProvider implements DataProvider {
       status: "pending",
       position: null,
       queuePosition: null,
-      eventSlug: input.eventSlug ?? null,
-      eventTitle: input.eventSlug
-        ? this.events.find((event) => event.slug === input.eventSlug)?.title.full ?? "Karaoke"
-        : null,
+      eventSlug: event.slug,
+      eventTitle: event.title.full,
       createdAt: new Date().toISOString(),
     };
     this.karaoke.push(entry);
@@ -567,7 +714,8 @@ export class DemoDataProvider implements DataProvider {
 
   private publicEntry(entry: KaraokeAdminEntry) {
     const queue = this.karaoke
-      .filter((item) => item.status === "approved" || item.status === "performing")
+      .filter((item) => (item.status === "approved" || item.status === "performing")
+        && item.eventSlug === entry.eventSlug)
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     const queuePosition = queue.findIndex((item) => item.id === entry.id);
     return {
@@ -606,6 +754,16 @@ export class DemoDataProvider implements DataProvider {
     const entry = this.karaoke.find((item) => item.id === id);
     if (!entry) throw new DemoError("not_found", "Request not found.", 404);
 
+    const sources: Record<KaraokeAction, KaraokeStatus[]> = {
+      approve: ["pending"], reject: ["pending"],
+      cancel: ["pending", "approved", "performing"],
+      restore: ["cancelled", "rejected"], performing: ["approved"],
+      complete: ["performing", "approved"],
+    };
+    if (!sources[action].includes(entry.status)) {
+      throw new DemoError("invalid_transition", "This karaoke action is not allowed.", 409);
+    }
+
     const targets: Record<KaraokeAction, KaraokeStatus> = {
       approve: "approved",
       reject: "rejected",
@@ -616,7 +774,7 @@ export class DemoDataProvider implements DataProvider {
     };
     entry.status = targets[action];
     if (action === "approve") {
-      const max = Math.max(0, ...this.karaoke.map((item) => item.position ?? 0));
+      const max = Math.max(0, ...this.karaoke.filter((item) => item.eventSlug === entry.eventSlug).map((item) => item.position ?? 0));
       entry.position = max + 1;
     }
     if (["reject", "cancel", "restore", "complete"].includes(action)) {
@@ -627,11 +785,22 @@ export class DemoDataProvider implements DataProvider {
 
   async reorderKaraoke(order: number[]) {
     this.require("karaoke_queue");
+    const entries = order.map((id) => this.karaoke.find((item) => item.id === id));
+    const eventSlug = entries[0]?.eventSlug;
+    if (!order.length || entries.some((entry) => !entry || entry.eventSlug !== eventSlug)) {
+      throw new DemoError("queue_conflict", "Reordering cannot cross karaoke events.", 409);
+    }
+    const currentIds = this.karaoke
+      .filter((item) => item.eventSlug === eventSlug && ["approved", "performing"].includes(item.status))
+      .map((item) => item.id);
+    if (order.length !== currentIds.length || order.some((id) => !currentIds.includes(id))) {
+      throw new DemoError("queue_conflict", "The queue changed; reload before reordering.", 409);
+    }
     order.forEach((id, index) => {
       const entry = this.karaoke.find((item) => item.id === id);
       if (entry) entry.position = index + 1;
     });
-    return this.getAdminKaraoke(undefined, this.karaoke.find((entry) => order.includes(entry.id))?.eventSlug ?? undefined);
+    return this.getAdminKaraoke(undefined, eventSlug ?? undefined);
   }
 
   async getKaraokeAudit() {
@@ -650,9 +819,17 @@ export class DemoDataProvider implements DataProvider {
     if (!registration || registration.status !== "waiting_payment") {
       throw new DemoError("registration_not_payable", "Create an eligible registration first.", 409);
     }
+    const existing = this.payments.find(
+      (entry) => this.paymentRegistrations[entry.publicId] === registrationPublicId
+        && ["pending", "paid"].includes(entry.status),
+    );
+    if (existing) {
+      throw new DemoError("payment_exists", "This registration already has an active payment.", 409, {
+        publicId: existing.publicId,
+      });
+    }
     const payment: PaymentInfo = {
       publicId: `PAY-DEMO-${this.nextId++}`,
-      postId: null,
       amountCents: post.registration.priceCents,
       currency: "EUR",
       status: "pending",
@@ -670,12 +847,20 @@ export class DemoDataProvider implements DataProvider {
   async simulatePayment(publicId: string, outcome: "success" | "failure" | "cancel") {
     const payment = this.payments.find((entry) => entry.publicId === publicId);
     if (!payment) throw new DemoError("not_found", "Payment not found.", 404);
+    if (payment.status !== "pending") {
+      throw new DemoError("payment_finalized", "This payment is already finalized.", 409);
+    }
+    const registrationId = this.paymentRegistrations[publicId];
+    const registration = this.registrations.find((entry) => entry.publicId === registrationId);
+    if (outcome === "success" && registration?.status !== "waiting_payment") {
+      payment.status = "failed";
+      payment.errorMessage = "Registration is no longer eligible for payment.";
+      return payment;
+    }
     payment.status =
       outcome === "success" ? "paid" : outcome === "failure" ? "failed" : "cancelled";
     if (outcome === "failure") payment.errorMessage = "Simulated payment failure";
     if (outcome === "success") {
-      const registrationId = this.paymentRegistrations[publicId];
-      const registration = this.registrations.find((entry) => entry.publicId === registrationId);
       if (registration?.status === "waiting_payment") {
         registration.status = "approved";
         registration.statusLabel = "Approved / Confirmed";
@@ -810,8 +995,19 @@ export class DemoDataProvider implements DataProvider {
         fields: { firstName: "Complete all required fields." },
       });
     }
+    const duplicate = this.registrations.find(
+      (entry) => entry.event.slug === slug
+        && entry.email?.toLocaleLowerCase() === input.email.toLocaleLowerCase()
+        && entry.status !== "cancelled",
+    );
+    if (duplicate) {
+      throw new DemoError("registration_exists", "This email already has an active registration.", 409, {
+        publicId: duplicate.publicId,
+      });
+    }
     const publicId = `APP-DEMO${this.nextId++}`;
-    const status: EventRegistrationStatus = event.registration.placesRemaining > 0
+    const summary = this.queueSummary(event);
+    const status: EventRegistrationStatus = summary.placesRemaining > 0
       ? event.registration.priceCents ? "waiting_payment" : "approved"
       : "waiting_list";
     const now = new Date().toISOString();
@@ -819,18 +1015,18 @@ export class DemoDataProvider implements DataProvider {
       id: this.nextId++, publicId, name: `${input.firstName} ${input.lastName}`,
       firstName: input.firstName, lastName: input.lastName, email: input.email,
       occupation: input.occupation, dietPreference: input.dietPreference, comment: input.comment,
-      status, statusLabel: status.replaceAll("_", " "), waitingListPosition: status === "waiting_list" ? 1 : null,
-      event: { slug: event.slug, title: event.title.full, startsAt: event.startsAt, capacity: event.registration.capacity, placesRemaining: event.registration.placesRemaining, priceCents: event.registration.priceCents, isDeposit: event.registration.isDeposit },
+      status, statusLabel: status.replaceAll("_", " "), waitingListPosition: status === "waiting_list" ? summary.waitingListCount + 1 : null,
+      event: { slug: event.slug, title: event.title.full, startsAt: event.startsAt, capacity: event.registration.capacity, placesRemaining: summary.placesRemaining, priceCents: event.registration.priceCents, isDeposit: event.registration.isDeposit },
       payment: null, trackingPath: `/registrations/${publicId}`, createdAt: now, updatedAt: now,
     };
     this.registrations.push(item);
-    return item;
+    return this.publicRegistration(item);
   }
 
   async getRegistration(publicId: string) {
     const item = this.registrations.find((entry) => entry.publicId === publicId);
     if (!item) throw new DemoError("not_found", "Registration not found.", 404);
-    return item;
+    return this.publicRegistration(item);
   }
 
   async getFormInbox(params?: { type?: string; status?: string; q?: string }) {
@@ -857,14 +1053,16 @@ export class DemoDataProvider implements DataProvider {
   private queueSummary(event: PublicPost): EventQueueSummary {
     const registration = event.registration!;
     const items = this.registrations.filter((item) => item.event.slug === event.slug);
+    const dynamicReserved = items.filter((item) => ["approved", "waiting_payment"].includes(item.status)).length;
+    const reservedCount = registration.reservedCount + dynamicReserved;
     return {
       postId: this.events.indexOf(event) + 1, slug: event.slug, title: event.title.full,
       startsAt: event.startsAt, capacity: registration.capacity,
       confirmedCount: registration.confirmedCount + items.filter((item) => item.status === "approved").length,
-      reservedCount: registration.reservedCount + items.filter((item) => ["approved", "waiting_payment"].includes(item.status)).length,
+      reservedCount,
       waitingListCount: registration.waitingListCount + items.filter((item) => item.status === "waiting_list").length,
       nonCancelledCount: registration.nonCancelledCount + items.filter((item) => item.status !== "cancelled").length,
-      placesRemaining: registration.placesRemaining, priceCents: registration.priceCents,
+      placesRemaining: Math.max(registration.capacity - reservedCount, 0), priceCents: registration.priceCents,
       isDeposit: registration.isDeposit,
     };
   }
@@ -884,18 +1082,45 @@ export class DemoDataProvider implements DataProvider {
       && (!params?.status || item.status === params.status)
       && (!query || `${item.publicId} ${item.name}`.toLocaleLowerCase().includes(query)),
     );
-    return { event: this.queueSummary(event), items };
+    return {
+      event: this.queueSummary(event),
+      items: items.map((item) => ({
+        ...item,
+        allowedTransitions: this.allowedRegistrationTransitions(item),
+      })),
+    };
   }
 
   async updateEventRegistration(id: number, status: EventRegistrationStatus) {
     this.require("event_registrations");
     const item = this.registrations.find((entry) => entry.id === id);
     if (!item) throw new DemoError("not_found", "Registration not found.", 404);
+    if (status === item.status) {
+      const event = this.events.find((entry) => entry.slug === item.event.slug)!;
+      return { item, promoted: [] as RegistrationRecord[], event: this.queueSummary(event) };
+    }
+    if (!this.allowedRegistrationTransitions(item).includes(status)) {
+      throw new DemoError("invalid_transition", "This registration status change is not allowed.", 409);
+    }
+    const previous = item.status;
+    const payment = this.paymentForRegistration(item);
+    if (status === "waiting_refund") {
+      if (payment?.status !== "paid") {
+        throw new DemoError("invalid_transition", "A paid payment is required.", 409);
+      }
+      payment.status = "refund_pending";
+    } else if (status === "cancelled" && payment?.status === "pending") {
+      payment.status = "cancelled";
+    }
     item.status = status;
     item.statusLabel = status.replaceAll("_", " ");
     item.updatedAt = new Date().toISOString();
     const event = this.events.find((entry) => entry.slug === item.event.slug)!;
-    return { item, promoted: [] as RegistrationRecord[], event: this.queueSummary(event) };
+    const released = ["approved", "waiting_payment"].includes(previous)
+      && !["approved", "waiting_payment"].includes(status);
+    const reopened = previous === "cancelled" && status === "waiting_list";
+    const promoted = released || reopened ? this.promoteRegistrationWaitingList(event) : [];
+    return { item, promoted, event: this.queueSummary(event) };
   }
 
   async getAccessKeys() {
@@ -916,7 +1141,7 @@ export class DemoDataProvider implements DataProvider {
     const item: CreatedAccessKey = {
       id, label: input.label, prefix: secret.slice(0, 8), scopes: input.scopes,
       status: "active", expiresAt: input.expiresAt, revokedAt: null, lastUsedAt: null,
-      createdAt: new Date().toISOString(), secret, unlockFragment: `/app/#/admin/unlock/${secret}`,
+      createdAt: new Date().toISOString(), secret, unlockFragment: `#/admin/unlock/${secret}`,
       secretVisibleOnce: true,
     };
     this.accessKeys.unshift(item);
@@ -945,7 +1170,7 @@ export class DemoDataProvider implements DataProvider {
     this.require("event_registrations");
     const items = this.payments.map((payment, index) => {
       const registration = this.registrations.find((entry) => entry.publicId === this.paymentRegistrations[payment.publicId]);
-      return { ...payment, id: index + 1, eventTitle: registration?.event.title ?? "", eventSlug: registration?.event.slug ?? "", registrationPublicId: registration?.publicId ?? null, registrationName: registration?.name ?? null, createdAt: new Date().toISOString() };
+      return { ...payment, id: index + 1, postId: null, registrationId: registration?.id ?? null, eventTitle: registration?.event.title ?? "", eventSlug: registration?.event.slug ?? "", registrationPublicId: registration?.publicId ?? null, registrationName: registration?.name ?? null, createdAt: new Date().toISOString(), audit: [] };
     }).filter((payment) => !status || payment.status === status);
     return { items };
   }
@@ -954,7 +1179,20 @@ export class DemoDataProvider implements DataProvider {
     const { items } = await this.getAdminPayments();
     const item = items.find((payment) => payment.id === id);
     if (!item) throw new DemoError("not_found", "Payment not found.", 404);
-    this.payments[id - 1].status = status;
+    const payment = this.payments[id - 1];
+    const valid = (payment.status === "paid" && status === "refund_pending")
+      || (payment.status === "refund_pending" && status === "refunded")
+      || (["pending", "failed"].includes(payment.status) && status === "cancelled");
+    if (!valid) throw new DemoError("invalid_transition", "This payment status change is not allowed.", 409);
+    payment.status = status;
+    const registrationId = this.paymentRegistrations[payment.publicId];
+    const registration = this.registrations.find((entry) => entry.publicId === registrationId);
+    if (registration && status === "refund_pending") registration.status = "waiting_refund";
+    if (registration && ["refunded", "cancelled"].includes(status)) {
+      registration.status = "cancelled";
+      const event = this.events.find((entry) => entry.slug === registration.event.slug);
+      if (event) this.promoteRegistrationWaitingList(event);
+    }
     return { ...item, status };
   }
 }

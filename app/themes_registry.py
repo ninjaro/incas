@@ -77,7 +77,7 @@ THEME_PAGES = {
             },
             "board": {
                 "name": "Board",
-                "description": "Editorial event board using the shared event timeline treatment.",
+                "description": "Asymmetric editorial board with large date blocks and concise event stories.",
                 "enabled": True,
                 "legacyVariants": ["board"],
                 "decision": "migrated",

@@ -1,3 +1,23 @@
+import re
+
+from app import is_canonical_react_path, legacy_react_target
+from app.site_content import SITE_PAGES, SITE_UI
+
+
+def test_public_ui_locales_have_identical_keys():
+    assert set(SITE_UI["en"]) == set(SITE_UI["de"])
+
+
+def test_authored_internal_links_resolve_to_react_or_a_compatibility_redirect():
+    for localized_pages in SITE_PAGES.values():
+        for page in localized_pages.values():
+            for href in re.findall(r'href=["\']([^"\']+)', page.get("body_html", "")):
+                if not href.startswith("/") or href.startswith("//"):
+                    continue
+                path = href.split("?", 1)[0].split("#", 1)[0]
+                assert is_canonical_react_path(path) or legacy_react_target(path), href
+
+
 def test_public_site_en(client):
     payload = client.get("/api/v1/public/site?locale=en").get_json()
     assert payload["locale"] == "en"
@@ -27,6 +47,18 @@ def test_public_site_de_localizes(client):
     payload = client.get("/api/v1/public/site?locale=de").get_json()
     assert payload["locale"] == "de"
     assert payload["strings"]["nav.home"] == "Start"
+    assert "migriert" not in payload["strings"]["contact.intro"].lower()
+
+
+def test_api_responses_include_security_headers(client):
+    response = client.get("/api/v1/public/site?locale=de")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    policy = response.headers["Content-Security-Policy"]
+    assert "script-src 'self'" in policy
+    assert "https://tile.openstreetmap.org" in policy
+    assert "cdn.jsdelivr.net" not in policy
+    assert "cdn.amcharts.com" not in policy
+    assert "object-src 'none'" in policy
 
 
 def test_public_site_invalid_locale_falls_back_to_en(client):

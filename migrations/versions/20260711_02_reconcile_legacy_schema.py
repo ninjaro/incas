@@ -30,14 +30,182 @@ def _add_missing_columns(table_name, columns):
             op.add_column(table_name, column)
 
 
-def upgrade():
-    # Create React-era tables that do not exist in the legacy schema. The
-    # metadata is the same frozen model contract used to generate revision 1.
-    from app.models import db
+def _create_index(table_name, name, columns, *, unique=False):
+    with op.batch_alter_table(table_name, schema=None) as batch_op:
+        batch_op.create_index(name, columns, unique=unique)
 
-    bind = op.get_bind()
-    for table in db.metadata.sorted_tables:
-        table.create(bind=bind, checkfirst=True)
+
+def _create_react_era_tables():
+    """Create the frozen set of tables absent from the pre-Alembic schema."""
+    existing = set(sa.inspect(op.get_bind()).get_table_names())
+
+    if "page_theme_audits" not in existing:
+        op.create_table(
+            "page_theme_audits",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("page_id", sa.String(64), nullable=False),
+            sa.Column("previous_theme", sa.String(64), nullable=False),
+            sa.Column("new_theme", sa.String(64), nullable=False),
+            sa.Column("action", sa.String(32), nullable=False),
+            sa.Column("actor", sa.String(64), nullable=False),
+            sa.Column("note", sa.Text(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        _create_index("page_theme_audits", "ix_page_theme_audits_action", ["action"])
+        _create_index("page_theme_audits", "ix_page_theme_audits_created_at", ["created_at"])
+        _create_index("page_theme_audits", "ix_page_theme_audits_page_id", ["page_id"])
+
+    if "page_theme_selections" not in existing:
+        op.create_table(
+            "page_theme_selections",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("page_id", sa.String(64), nullable=False),
+            sa.Column("theme_id", sa.String(64), nullable=False),
+            sa.Column("last_forced_at", sa.DateTime(), nullable=True),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        _create_index(
+            "page_theme_selections", "ix_page_theme_selections_page_id", ["page_id"], unique=True
+        )
+
+    if "page_theme_votes" not in existing:
+        op.create_table(
+            "page_theme_votes",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("page_id", sa.String(64), nullable=False),
+            sa.Column("theme_id", sa.String(64), nullable=False),
+            sa.Column("voter_id", sa.String(64), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("page_id", "voter_id", name="uq_page_theme_vote_voter"),
+        )
+        _create_index("page_theme_votes", "ix_page_theme_votes_page_id", ["page_id"])
+        _create_index("page_theme_votes", "ix_page_theme_votes_voter_id", ["voter_id"])
+
+    if "post_templates" not in existing:
+        op.create_table(
+            "post_templates",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("name", sa.String(160), nullable=False),
+            sa.Column("title_pattern", sa.String(160), nullable=False),
+            sa.Column("summary", sa.String(256), nullable=False),
+            sa.Column("body", sa.Text(), nullable=False),
+            sa.Column("event_kind", sa.String(64), nullable=True),
+            sa.Column("registration_limit_enabled", sa.Boolean(), nullable=False),
+            sa.Column("registration_limit", sa.Integer(), nullable=True),
+            sa.Column("registration_price_cents", sa.Integer(), nullable=True),
+            sa.Column("registration_is_deposit", sa.Boolean(), nullable=False),
+            sa.Column("image_url", sa.String(500), nullable=False),
+            sa.Column("social_settings", sa.Text(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.PrimaryKeyConstraint("id"),
+        )
+
+    if "karaoke_song_requests" not in existing:
+        op.create_table(
+            "karaoke_song_requests",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("public_id", sa.String(24), nullable=False),
+            sa.Column("post_id", sa.Integer(), nullable=True),
+            sa.Column("display_name", sa.String(120), nullable=False),
+            sa.Column("song_title", sa.String(200), nullable=False),
+            sa.Column("artist", sa.String(200), nullable=False),
+            sa.Column("note", sa.Text(), nullable=False),
+            sa.Column("contact", sa.String(255), nullable=False),
+            sa.Column("status", sa.String(32), nullable=False),
+            sa.Column("position", sa.Integer(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["post_id"], ["posts.id"]),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        for name, columns, unique in (
+            ("ix_karaoke_song_requests_position", ["position"], False),
+            ("ix_karaoke_song_requests_post_id", ["post_id"], False),
+            ("ix_karaoke_song_requests_public_id", ["public_id"], True),
+            ("ix_karaoke_song_requests_status", ["status"], False),
+        ):
+            _create_index("karaoke_song_requests", name, columns, unique=unique)
+
+    if "social_publications" not in existing:
+        op.create_table(
+            "social_publications",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("post_id", sa.Integer(), nullable=False),
+            sa.Column("provider", sa.String(32), nullable=False),
+            sa.Column("status", sa.String(32), nullable=False),
+            sa.Column("provider_post_id", sa.String(64), nullable=False),
+            sa.Column("permalink", sa.String(500), nullable=False),
+            sa.Column("media_url", sa.String(500), nullable=False),
+            sa.Column("error_code", sa.String(64), nullable=False),
+            sa.Column("error_message", sa.Text(), nullable=False),
+            sa.Column("attempt_count", sa.Integer(), nullable=False),
+            sa.Column("is_simulated", sa.Boolean(), nullable=False),
+            sa.Column("scheduled_for", sa.DateTime(), nullable=True),
+            sa.Column("last_attempt_at", sa.DateTime(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["post_id"], ["posts.id"]),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        for name, columns in (
+            ("ix_social_publications_post_id", ["post_id"]),
+            ("ix_social_publications_provider", ["provider"]),
+            ("ix_social_publications_scheduled_for", ["scheduled_for"]),
+            ("ix_social_publications_status", ["status"]),
+        ):
+            _create_index("social_publications", name, columns)
+
+    if "karaoke_queue_audits" not in existing:
+        op.create_table(
+            "karaoke_queue_audits",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("request_id", sa.Integer(), nullable=False),
+            sa.Column("action", sa.String(32), nullable=False),
+            sa.Column("detail", sa.Text(), nullable=False),
+            sa.Column("actor", sa.String(64), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["request_id"], ["karaoke_song_requests.id"]),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        _create_index("karaoke_queue_audits", "ix_karaoke_queue_audits_created_at", ["created_at"])
+        _create_index("karaoke_queue_audits", "ix_karaoke_queue_audits_request_id", ["request_id"])
+
+    if "payment_transactions" not in existing:
+        op.create_table(
+            "payment_transactions",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("public_id", sa.String(32), nullable=False),
+            sa.Column("post_id", sa.Integer(), nullable=True),
+            sa.Column("registration_id", sa.Integer(), nullable=True),
+            sa.Column("amount_cents", sa.Integer(), nullable=False),
+            sa.Column("currency", sa.String(8), nullable=False),
+            sa.Column("status", sa.String(32), nullable=False),
+            sa.Column("provider", sa.String(32), nullable=False),
+            sa.Column("provider_session_id", sa.String(128), nullable=False),
+            sa.Column("is_simulated", sa.Boolean(), nullable=False),
+            sa.Column("error_message", sa.Text(), nullable=False),
+            sa.Column("created_at", sa.DateTime(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(), nullable=False),
+            sa.ForeignKeyConstraint(["post_id"], ["posts.id"]),
+            sa.ForeignKeyConstraint(["registration_id"], ["event_registrations.id"]),
+            sa.PrimaryKeyConstraint("id"),
+        )
+        for name, columns, unique in (
+            ("ix_payment_transactions_post_id", ["post_id"], False),
+            ("ix_payment_transactions_public_id", ["public_id"], True),
+            ("ix_payment_transactions_registration_id", ["registration_id"], False),
+            ("ix_payment_transactions_status", ["status"], False),
+        ):
+            _create_index("payment_transactions", name, columns, unique=unique)
+
+
+def upgrade():
+    _create_react_era_tables()
 
     _add_missing_columns(
         "posts",

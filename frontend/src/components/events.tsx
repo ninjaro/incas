@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import "ol/ol.css";
+import type { FeatureLike } from "ol/Feature.js";
 
 import type {
   EventMapConfig,
@@ -8,72 +10,21 @@ import type {
   PublicPost,
 } from "../api/types";
 import { getEventKind } from "../domain/eventKinds";
+import { useLocale } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
+declare global {
+  interface Window {
+    __INCAS_FORCE_EVENT_MAP_FAILURE__?: boolean;
+  }
+}
+
 const ORANGE = "#ff6600";
-const OPENLAYERS_CSS = "https://cdn.jsdelivr.net/npm/ol@10.7.0/ol.css";
-const OPENLAYERS_JS = "https://cdn.jsdelivr.net/npm/ol@10.7.0/dist/ol.js";
-const WORLD_ATLAS = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-const AMCHARTS_BASE = "https://cdn.amcharts.com/lib/5/index.js";
-const AMCHARTS_MAP = "https://cdn.amcharts.com/lib/5/map.js";
-const AMCHARTS_GEODATA = "https://cdn.amcharts.com/lib/5/geodata/worldLow.js";
-
-const scriptLoads = new Map<string, Promise<void>>();
-const styleLoads = new Map<string, Promise<void>>();
 let worldAtlasLoad: Promise<unknown> | null = null;
-
-function browserGlobal(name: string): unknown {
-  return (window as unknown as Record<string, unknown>)[name];
-}
-
-function loadScript(src: string, ready: () => boolean): Promise<void> {
-  if (ready()) return Promise.resolve();
-  const cached = scriptLoads.get(src);
-  if (cached) return cached;
-  const promise = new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => (ready() ? resolve() : reject(new Error("Map library did not initialize.")));
-    script.onerror = () => reject(new Error("Map library could not be loaded."));
-    document.head.append(script);
-  });
-  scriptLoads.set(src, promise);
-  return promise;
-}
-
-function loadStyle(href: string): Promise<void> {
-  const cached = styleLoads.get(href);
-  if (cached) return cached;
-  const promise = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLLinkElement>(`link[href="${href}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    link.onload = () => resolve();
-    link.onerror = () => reject(new Error("Map styles could not be loaded."));
-    document.head.append(link);
-  });
-  styleLoads.set(href, promise);
-  return promise;
-}
-
-async function loadOpenLayers(): Promise<Record<string, unknown>> {
-  await loadStyle(OPENLAYERS_CSS);
-  await loadScript(OPENLAYERS_JS, () => Boolean(browserGlobal("ol")));
-  return browserGlobal("ol") as Record<string, unknown>;
-}
 
 async function loadWorldAtlas(): Promise<unknown> {
   if (!worldAtlasLoad) {
-    worldAtlasLoad = fetch(WORLD_ATLAS).then((response) => {
-      if (!response.ok) throw new Error("World map data could not be loaded.");
-      return response.json();
-    });
+    worldAtlasLoad = import("world-atlas/countries-110m.json").then((module) => module.default);
   }
   return worldAtlasLoad;
 }
@@ -87,39 +38,52 @@ function dashPattern(pixelDistance: number) {
 }
 
 async function renderOpenLayers(root: HTMLDivElement, config: EventMapConfig): Promise<() => void> {
-  const [ol, topology] = await Promise.all([loadOpenLayers(), loadWorldAtlas()]);
-  const api = ol as Record<string, Record<string, new (...args: unknown[]) => unknown> & Record<string, unknown>>;
+  const [
+    { default: Map },
+    { default: View },
+    { default: Feature },
+    { default: TopoJSON },
+    { default: Point },
+    { default: LineString },
+    { default: VectorSource },
+    { default: VectorLayer },
+    { default: TileLayer },
+    { default: OSM },
+    { default: Style },
+    { default: Stroke },
+    { default: Fill },
+    { default: Circle },
+    { default: Text },
+    { fromLonLat },
+    topology,
+  ] = await Promise.all([
+    import("ol/Map.js"),
+    import("ol/View.js"),
+    import("ol/Feature.js"),
+    import("ol/format/TopoJSON.js"),
+    import("ol/geom/Point.js"),
+    import("ol/geom/LineString.js"),
+    import("ol/source/Vector.js"),
+    import("ol/layer/Vector.js"),
+    import("ol/layer/Tile.js"),
+    import("ol/source/OSM.js"),
+    import("ol/style/Style.js"),
+    import("ol/style/Stroke.js"),
+    import("ol/style/Fill.js"),
+    import("ol/style/Circle.js"),
+    import("ol/style/Text.js"),
+    import("ol/proj.js"),
+    loadWorldAtlas(),
+  ]);
   const target = config.target;
   const origin = target.origin;
   const destination = target.destination;
   if (!origin || !destination) throw new Error("Trip coordinates are incomplete.");
 
-  const proj = api.proj as unknown as { fromLonLat(point: [number, number]): unknown };
-  const originCoordinate = proj.fromLonLat(origin.coordinates);
-  const destinationCoordinate = proj.fromLonLat(destination.coordinates);
-  const format = new (api.format.TopoJSON as unknown as new () => {
-    readFeatures(value: unknown, options: Record<string, string>): unknown[];
-  })();
+  const originCoordinate = fromLonLat(origin.coordinates);
+  const destinationCoordinate = fromLonLat(destination.coordinates);
+  const format = new TopoJSON();
   const features = format.readFeatures(topology, { featureProjection: "EPSG:3857" });
-  const Style = api.style.Style as unknown as new (options: Record<string, unknown>) => unknown;
-  const Stroke = api.style.Stroke as unknown as new (options: Record<string, unknown>) => {
-    setWidth(value: number): void;
-    setLineDash(value: number[]): void;
-  };
-  const Fill = api.style.Fill as unknown as new (options: Record<string, unknown>) => unknown;
-  const Circle = api.style.Circle as unknown as new (options: Record<string, unknown>) => unknown;
-  const Text = api.style.Text as unknown as new (options: Record<string, unknown>) => unknown;
-  const Feature = api.Feature as unknown as new (options: Record<string, unknown>) => {
-    changed(): void;
-    get(key: string): string;
-    getGeometry(): { getType(): string };
-  };
-  const Point = api.geom.Point as unknown as new (coordinate: unknown) => unknown;
-  const LineString = api.geom.LineString as unknown as new (coordinates: unknown[]) => unknown;
-  const VectorSource = api.source.Vector as unknown as new (options: Record<string, unknown>) => unknown;
-  const VectorLayer = api.layer.Vector as unknown as new (options: Record<string, unknown>) => unknown;
-  const TileLayer = api.layer.Tile as unknown as new (options: Record<string, unknown>) => unknown;
-  const OSM = api.source.OSM as unknown as new () => unknown;
 
   const regionLayer = new VectorLayer({
     source: new VectorSource({ features }),
@@ -135,7 +99,7 @@ async function renderOpenLayers(root: HTMLDivElement, config: EventMapConfig): P
     new Feature({ geometry: new Point(originCoordinate), name: origin.name, role: "origin" }),
     new Feature({ geometry: new Point(destinationCoordinate), name: destination.name, role: "destination" }),
   ];
-  const markerStyle = (feature: InstanceType<typeof Feature>) =>
+  const markerStyle = (feature: FeatureLike) =>
     new Style({
       image: new Circle({
         radius: feature.get("role") === "destination" ? 6 : 5,
@@ -154,19 +118,13 @@ async function renderOpenLayers(root: HTMLDivElement, config: EventMapConfig): P
     });
   const tripLayer = new VectorLayer({
     source: new VectorSource({ features: [tripLine, ...markers] }),
-    style: (feature: InstanceType<typeof Feature>) =>
-      feature.getGeometry().getType() === "LineString" ? lineStyle : markerStyle(feature),
+    style: (feature) =>
+      feature.getGeometry()?.getType() === "LineString" ? lineStyle : markerStyle(feature),
   });
-  const MapClass = api.Map as unknown as new (options: Record<string, unknown>) => {
-    getPixelFromCoordinate(coordinate: unknown): [number, number] | null;
-    on(name: string, callback: () => void): void;
-    setTarget(target?: HTMLElement): void;
-  };
-  const View = api.View as unknown as new (options: Record<string, unknown>) => unknown;
-  const map = new MapClass({
+  const map = new Map({
     target: root,
     layers: [new TileLayer({ source: new OSM() }), regionLayer, tripLayer],
-    view: new View({ center: proj.fromLonLat(target.center ?? [6.07, 50.24]), zoom: target.zoom ?? 4.2 }),
+    view: new View({ center: fromLonLat(target.center ?? [6.07, 50.24]), zoom: target.zoom ?? 4.2 }),
   });
   const updateDash = () => {
     const start = map.getPixelFromCoordinate(originCoordinate);
@@ -184,41 +142,29 @@ async function renderOpenLayers(root: HTMLDivElement, config: EventMapConfig): P
 }
 
 async function renderAmCharts(rootElement: HTMLDivElement, config: EventMapConfig): Promise<() => void> {
-  await loadScript(AMCHARTS_BASE, () => Boolean(browserGlobal("am5")));
-  await loadScript(AMCHARTS_MAP, () => Boolean(browserGlobal("am5map")));
-  await loadScript(AMCHARTS_GEODATA, () => Boolean(browserGlobal("am5geodata_worldLow")));
-  const am5 = browserGlobal("am5") as Record<string, (...args: unknown[]) => unknown> & {
-    Root: { new: (element: HTMLElement) => Record<string, unknown> };
-    color(value: number): unknown;
-  };
-  const am5map = browserGlobal("am5map") as Record<string, Record<string, (...args: unknown[]) => unknown>>;
-  const chartRoot = am5.Root.new(rootElement) as Record<string, unknown> & {
-    container: { children: { push(value: unknown): unknown } };
-    dispose(): void;
-  };
+  const [am5, am5map, worldModule] = await Promise.all([
+    import("@amcharts/amcharts5"),
+    import("@amcharts/amcharts5/map"),
+    import("@amcharts/amcharts5-geodata/worldLow"),
+  ]);
+  const world = worldModule.default;
+  const chartRoot = am5.Root.new(rootElement);
   const target = config.target;
-  const MapChart = am5map.MapChart as unknown as { new: (root: unknown, options: unknown) => unknown };
   const chart = chartRoot.container.children.push(
-    MapChart.new(chartRoot, {
+    am5map.MapChart.new(chartRoot, {
       panX: "translateX",
       panY: "translateY",
       wheelX: "zoom",
       wheelY: "zoom",
-      projection: (am5map.geoMercator as unknown as () => unknown)(),
+      projection: am5map.geoMercator(),
       homeGeoPoint: { longitude: target.center?.[0] ?? 15, latitude: target.center?.[1] ?? 30 },
       homeZoomLevel: target.zoom ?? 1.8,
     }),
-  ) as {
-    series: { push(value: unknown): unknown };
-    set(name: string, value: unknown): void;
-    zoomToGeoPoint(point: { longitude: number; latitude: number }, zoom: number, animate: boolean): void;
-  };
-  const ZoomControl = am5map.ZoomControl as unknown as { new: (root: unknown, options: unknown) => unknown };
-  chart.set("zoomControl", ZoomControl.new(chartRoot, {}));
-  const PolygonSeries = am5map.MapPolygonSeries as unknown as { new: (root: unknown, options: unknown) => unknown };
+  );
+  chart.set("zoomControl", am5map.ZoomControl.new(chartRoot, {}));
   const base = chart.series.push(
-    PolygonSeries.new(chartRoot, { geoJSON: browserGlobal("am5geodata_worldLow"), exclude: ["AQ"] }),
-  ) as { mapPolygons: { template: { setAll(value: unknown): void } } };
+    am5map.MapPolygonSeries.new(chartRoot, { geoJSON: world, exclude: ["AQ"] }),
+  );
   base.mapPolygons.template.setAll({
     fill: am5.color(0xf4e7dc),
     stroke: am5.color(0x111827),
@@ -227,11 +173,11 @@ async function renderAmCharts(rootElement: HTMLDivElement, config: EventMapConfi
   });
   if (["country", "country_group"].includes(target.kind) && target.countryCodes?.length) {
     const focus = chart.series.push(
-      PolygonSeries.new(chartRoot, {
-        geoJSON: browserGlobal("am5geodata_worldLow"),
+      am5map.MapPolygonSeries.new(chartRoot, {
+        geoJSON: world,
         include: target.countryCodes.map((code) => code.toUpperCase()),
       }),
-    ) as { mapPolygons: { template: { setAll(value: unknown): void } } };
+    );
     focus.mapPolygons.template.setAll({
       fill: am5.color(0xff6600),
       stroke: am5.color(0x111827),
@@ -240,15 +186,9 @@ async function renderAmCharts(rootElement: HTMLDivElement, config: EventMapConfi
     });
   }
   if (target.marker) {
-    const MapPointSeries = am5map.MapPointSeries as unknown as { new: (root: unknown, options: unknown) => unknown };
-    const points = chart.series.push(MapPointSeries.new(chartRoot, {})) as {
-      bullets: { push(factory: () => unknown): void };
-      data: { setAll(value: unknown[]): void };
-    };
-    const Bullet = am5.Bullet as unknown as { new: (root: unknown, options: unknown) => unknown };
-    const Circle = am5.Circle as unknown as { new: (root: unknown, options: unknown) => unknown };
-    points.bullets.push(() => Bullet.new(chartRoot, {
-      sprite: Circle.new(chartRoot, {
+    const points = chart.series.push(am5map.MapPointSeries.new(chartRoot, {}));
+    points.bullets.push(() => am5.Bullet.new(chartRoot, {
+      sprite: am5.Circle.new(chartRoot, {
         radius: 7,
         fill: am5.color(0xff6600),
         stroke: am5.color(0x111827),
@@ -273,7 +213,7 @@ async function renderAmCharts(rootElement: HTMLDivElement, config: EventMapConfi
   return () => chartRoot.dispose();
 }
 
-function MapCanvas({ config }: { config: EventMapConfig }) {
+function MapCanvas({ config, unavailableLabel }: { config: EventMapConfig; unavailableLabel: string }) {
   const root = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -285,20 +225,26 @@ function MapCanvas({ config }: { config: EventMapConfig }) {
     setError(null);
     element.replaceChildren();
     const render = config.providerId === "openlayers" ? renderOpenLayers : renderAmCharts;
-    void render(element, config)
+    const renderPromise = window.__INCAS_FORCE_EVENT_MAP_FAILURE__
+      ? Promise.reject(new Error("Forced event-map failure."))
+      : render(element, config);
+    void renderPromise
       .then((dispose) => {
         if (disposed) dispose();
         else cleanup = dispose;
       })
       .catch((reason: unknown) => {
-        if (!disposed) setError(reason instanceof Error ? reason.message : "Map unavailable.");
+        if (!disposed) {
+          console.warn("Event map unavailable", reason);
+          setError(unavailableLabel);
+        }
       });
     return () => {
       disposed = true;
       cleanup?.();
       element.replaceChildren();
     };
-  }, [config]);
+  }, [config, unavailableLabel]);
 
   if (error) {
     return <div className="event-map-fallback" role="status">{error}</div>;
@@ -363,7 +309,7 @@ export function EventPaymentNotice({ registration, locale = "en" }: { registrati
   return (
     <div className="event-payment-notice">
       <strong>{registration.isDeposit ? `${de ? "Rückzahlbare Kaution" : "Refundable deposit"}: ${amount}` : `${de ? "Preis" : "Price"}: ${amount}`}</strong>
-      {registration.depositExplanation ? <span>{registration.depositExplanation}</span> : null}
+      {registration.depositExplanation ? <span>{de && registration.isDeposit ? "Die Kaution wird nach der Teilnahme zurückgezahlt." : registration.depositExplanation}</span> : null}
     </div>
   );
 }
@@ -394,23 +340,36 @@ export function EventFeatureSlot({ event, feature, children }: { event: PublicPo
   return event.features.includes(feature) ? <>{children}</> : null;
 }
 
-export function PinnedBadge() {
-  return <span className="badge badge-brand">Pinned</span>;
+export function PinnedBadge({ locale = "en" }: { locale?: string }) {
+  return <span className="badge badge-brand">{locale === "de" ? "Angepinnt" : "Pinned"}</span>;
 }
 
-export function ArchivedBadge() {
-  return <span className="badge badge-neutral">Archived</span>;
+export function ArchivedBadge({ locale = "en" }: { locale?: string }) {
+  return <span className="badge badge-neutral">{locale === "de" ? "Archiviert" : "Archived"}</span>;
 }
 
 export function EventMap({ config }: { config: EventMapConfig }) {
+  const { locale } = useLocale();
+  const de = locale === "de";
+  const targetLabel = config.target.destination?.name ?? config.target.label ?? config.title;
+  const localizedTitle = de
+    ? config.target.kind === "trip" ? `Ausflug nach ${targetLabel}` : "Karte zum Event"
+    : config.title;
+  const localizedDescription = de
+    ? config.target.kind === "trip"
+      ? `Aachen und ${targetLabel} im regionalen Zusammenhang.`
+      : config.target.kind === "marker"
+        ? `${targetLabel} ist auf der Karte markiert.`
+        : `${targetLabel} ist orange hervorgehoben.`
+    : config.description;
   return (
     <section className="event-map" aria-labelledby="event-map-title">
       <div className="event-map-copy">
-        <div><h2 id="event-map-title">{config.title}</h2><p>{config.description}</p></div>
+        <div><h2 id="event-map-title">{localizedTitle}</h2><p>{localizedDescription}</p></div>
         <small>{config.providerName}</small>
       </div>
-      <MapCanvas config={config} />
-      {config.note ? <p className="event-map-note">{config.note}</p> : null}
+      <MapCanvas config={config} unavailableLabel={locale === "de" ? "Die Karte ist momentan nicht verfügbar. Die Eventinformationen bleiben unten verfügbar." : "The map is currently unavailable. Event information remains available below."} />
+      {config.note ? <p className="event-map-note">{de ? (config.target.kind === "trip" ? "Die gestrichelte Linie dient nur zur Orientierung und zeigt keine echte Route." : "Du kannst die Karte zoomen und verschieben.") : config.note}</p> : null}
     </section>
   );
 }
@@ -428,8 +387,8 @@ export function EventCard({ event, locale, compact = false }: { event: PublicPos
         {event.startsAt ? <EventDate start={event.startsAt} end={event.endsAt} locale={locale} /> : null}
         {!compact && event.summary ? <p>{event.summary}</p> : null}
         <div className="event-card-flags">
-          {event.isPinned ? <PinnedBadge /> : null}
-          {event.publicationState === "archived" ? <ArchivedBadge /> : null}
+          {event.isPinned ? <PinnedBadge locale={locale} /> : null}
+          {event.publicationState === "archived" ? <ArchivedBadge locale={locale} /> : null}
           {event.registration ? <EventAvailability registration={event.registration} locale={locale} /> : null}
         </div>
         {event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}

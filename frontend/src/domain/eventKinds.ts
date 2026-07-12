@@ -1,7 +1,7 @@
 import snapshot from "../content/event-kinds.generated.json";
 
 export type EventKindMarker = "accent" | "info" | "ok" | "warn" | "bad" | "muted" | "ink";
-export type EventKindMapMode = "none" | "venue" | "country" | "destination";
+export type EventKindMapMode = "none" | "venue" | "country" | "country_or_region" | "destination";
 export type EventKindFeature = "registration" | "deposit" | "map" | "karaoke_queue";
 export type EventRegistrationMode = "none" | "queue" | "karaoke";
 

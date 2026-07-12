@@ -10,10 +10,8 @@ import { assetUrl } from "../utils/assets";
 import { SuggestEventForm } from "./SuggestEventPage";
 import { TandemEmbeddedForm } from "./TandemFormPage";
 
-// The app is a HashRouter SPA (real URLs are `#/...`), but in-body content
-// HTML is authored against the legacy Jinja site's absolute paths (e.g.
-// `/events`). Left alone, clicking those anchors triggers a full-page
-// browser navigation to the Flask server instead of an in-SPA route change.
+// In-body content is authored against legacy absolute paths (e.g. `/events`).
+// Keep clicks inside React and translate paths whose canonical route changed.
 // This map translates legacy paths that changed shape in the new app; every
 // other internal path (offers, about, suggest-event, ...) is already a
 // valid app route and passes through unchanged.

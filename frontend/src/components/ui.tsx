@@ -45,21 +45,25 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
 }
 
 export function Loading({ label = "Loading…" }: { label?: string }) {
+  const displayLabel = label === "Loading…" && document.documentElement.lang === "de"
+    ? "Wird geladen…"
+    : label;
   return (
     <div className="state-box" role="status" aria-live="polite">
-      {label}
+      {displayLabel}
     </div>
   );
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const message = error instanceof Error ? error.message : "Something went wrong.";
+  const de = document.documentElement.lang === "de";
+  const message = error instanceof Error ? error.message : (de ? "Etwas ist schiefgelaufen." : "Something went wrong.");
   return (
     <div className="state-box state-error" role="alert">
       <p>{message}</p>
       {onRetry ? (
         <button type="button" className="btn btn-outline btn-sm" onClick={onRetry}>
-          Try again
+          {de ? "Erneut versuchen" : "Try again"}
         </button>
       ) : null}
     </div>

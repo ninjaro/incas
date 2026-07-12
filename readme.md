@@ -5,7 +5,8 @@ Python/Flask backend + React/TypeScript frontend.
 - Flask owns business logic, validation, permissions, the database, and the
   versioned JSON API under `/api/v1`.
 - The React SPA (in `frontend/`) covers the public pages and the unified
-  admin panel, and is served by Flask at `/app` in production.
+  admin panel. Production uses stable BrowserRouter URLs such as `/calendar`
+  and `/events/<slug>`; Flask serves the application shell on direct loads.
 - A static demo build runs the same React pages against synthetic in-memory
   fixtures — no Python, database, or tokens required.
 
@@ -27,7 +28,7 @@ python run.py        # terminal 1: backend on :5000
 npm run dev          # terminal 2: frontend with API proxy
 ```
 
-Or build once (`npm run build`) and open `http://127.0.0.1:5000/app`.
+Or build once (`npm run build`) and open `http://127.0.0.1:5000/`.
 
 ## Static demo
 
@@ -107,12 +108,16 @@ python run.py
 
 ## Admin access
 
+Only the bootstrap `access_keys` credential is configured outside the
+database. In development its phrase is `dev-access-keys`. Use it once at
+`/admin` to create short-lived, scoped keys; Posts, Forms, Tandem, Karaoke,
+Themes, Payments, and Registration keys are never hardcoded.
+
+Production must set `ACCESS_KEYS_ROOT_HASH` to the SHA-256 digest of a strong,
+unique bootstrap phrase. Do not reuse the development phrase:
+
 ```bash
-dev-posts
-dev-language-tandem
-dev-language-tandem-corrections
-dev-forms
-dev-access-keys
+printf '%s' 'replace-with-a-long-random-phrase' | sha256sum
 ```
 
 Access keys unlock capability scopes. New scopes: `theme_review` (preview and
@@ -126,7 +131,13 @@ queue), and the graduated tandem scopes `language_tandem_blind` /
 
 Docker runs the app with Postgres via `docker-compose.yml`.
 
+Set production secrets first. `SECRET_KEY` must contain at least 32 random
+characters, and the root hash is the digest described above.
+
 ```bash
+export SECRET_KEY='replace-with-at-least-32-random-characters'
+export ACCESS_KEYS_ROOT_HASH='replace-with-a-sha256-hex-digest'
+export POSTGRES_PASSWORD='replace-with-a-database-password'
 docker compose up --build
 ```
 
@@ -134,10 +145,14 @@ docker compose up --build
 http://127.0.0.1:5000
 ```
 
+The image entrypoint runs `flask db upgrade` before Gunicorn starts. A separate
+`social-worker` service processes scheduled publications every 30 seconds with
+bounded retries; publication does not depend on web traffic.
+
 Useful environment overrides:
 
 ```bash
-INCAS_PORT=8080 POSTGRES_PASSWORD=change-me SECRET_KEY=change-me docker compose up --build
+INCAS_PORT=8080 docker compose up --build
 ```
 
 To stop the containers:
@@ -159,3 +174,41 @@ The Docker image installs these automatically. Install them locally only if you 
 ```bash
 pip install --no-cache-dir -r requirements-docker.txt
 ```
+
+## Database migrations
+
+PostgreSQL is the supported production database. Event capacity uses a locked
+event row and shared rate limits use atomic database upserts, so SQLite is for
+single-process local development and tests only.
+
+For a fresh database:
+
+```bash
+flask --app run:app db upgrade
+```
+
+For an existing deployment created before Alembic was introduced:
+
+1. Stop all web and worker processes and create a verified database backup.
+2. Deploy this release without starting the application.
+3. Run `flask --app run:app db stamp 1e2379697b4a` exactly once.
+4. Run `flask --app run:app db upgrade` and restart the services.
+5. Verify posts, access keys, registrations, payments, and Tandem data before removing the backup.
+
+Do not stamp a fresh database. Historical revisions contain frozen schema
+operations and migration errors are intentionally fatal.
+
+## Production settings
+
+`APP_ENV=production` fails startup unless all safety requirements hold:
+
+- `SECRET_KEY`: explicit and at least 32 characters;
+- `ACCESS_KEYS_ROOT_HASH`: non-development SHA-256 digest;
+- `DATABASE_URL`: PostgreSQL;
+- `AUTO_CREATE_SCHEMA=0` and `SEED_DEMO_DATA=0`;
+- `SESSION_COOKIE_SECURE=1`.
+
+Admin sessions are HTTP-only, SameSite=Lax, secure in production, and expire
+after eight hours by default (`ADMIN_SESSION_HOURS`). Forwarded IP, host, and
+scheme headers are ignored unless `TRUST_PROXY_HEADERS=1`; set
+`TRUSTED_PROXY_COUNT` to the exact number of trusted proxies when enabling it.

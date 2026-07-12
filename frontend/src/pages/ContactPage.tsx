@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { Field, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
 import { useLocale } from "../i18n/LocaleContext";
+import { localizeFieldErrors } from "../i18n/errors";
 
 const COPY = {
   en: {
@@ -36,8 +37,8 @@ export function ContactPage() {
       setSubmissionId(result.submissionId);
       setForm({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
-      if (error instanceof ApiError) setErrors(error.fields);
-      else setErrors({ form: error instanceof Error ? error.message : "Submission failed." });
+      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
+      else setErrors({ form: locale === "de" ? "Die Nachricht konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Submission failed.") });
     } finally {
       setBusy(false);
     }

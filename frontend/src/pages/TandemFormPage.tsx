@@ -7,6 +7,7 @@ import { useData } from "../data/DataProviderContext";
 import { usePublicTheme } from "../features/themes/usePublicTheme";
 import { useAsync } from "../hooks/useAsync";
 import { useLocale } from "../i18n/LocaleContext";
+import { localizeFieldErrors } from "../i18n/errors";
 
 const EMPTY_FORM: TandemSubmission = {
   firstName: "", lastName: "", email: "", occupation: "", occupationOther: "",
@@ -128,8 +129,8 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
       const response = await data.submitTandem(form);
       setResult(response.submissionId);
     } catch (error) {
-      if (error instanceof ApiError) setErrors(error.fields);
-      else setErrors({ form: error instanceof Error ? error.message : "Submission failed." });
+      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
+      else setErrors({ form: locale === "de" ? "Die Anmeldung konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Submission failed.") });
     } finally {
       setBusy(false);
     }

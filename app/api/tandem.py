@@ -348,14 +348,62 @@ def api_admin_tandem_duplicate_merge():
         if fields.get(source) == "remove":
             setattr(keep, attr, getattr(remove, attr))
 
-    TandemMatchReviewState.query.filter(
+    review_states = TandemMatchReviewState.query.filter(
         (TandemMatchReviewState.source_request_id == remove.id)
         | (TandemMatchReviewState.candidate_request_id == remove.id)
-    ).delete(synchronize_session=False)
-    TandemDuplicateDecision.query.filter(
+    ).all()
+    for state in review_states:
+        source_id = keep.id if state.source_request_id == remove.id else state.source_request_id
+        candidate_id = keep.id if state.candidate_request_id == remove.id else state.candidate_request_id
+        if source_id == candidate_id:
+            db.session.delete(state)
+            continue
+        existing = TandemMatchReviewState.query.filter_by(
+            source_request_id=source_id,
+            candidate_request_id=candidate_id,
+        ).first()
+        if existing is not None and existing.id != state.id:
+            existing.is_hidden = existing.is_hidden or state.is_hidden
+            existing.is_shortlisted = existing.is_shortlisted or state.is_shortlisted
+            existing.contacted_at = max(
+                (value for value in (existing.contacted_at, state.contacted_at) if value),
+                default=None,
+            )
+            existing.final_pair_at = max(
+                (value for value in (existing.final_pair_at, state.final_pair_at) if value),
+                default=None,
+            )
+            db.session.delete(state)
+        else:
+            state.source_request_id = source_id
+            state.candidate_request_id = candidate_id
+
+    decisions = TandemDuplicateDecision.query.filter(
         (TandemDuplicateDecision.left_request_id == remove.id)
         | (TandemDuplicateDecision.right_request_id == remove.id)
-    ).delete(synchronize_session=False)
+    ).all()
+    for decision in decisions:
+        other_id = (
+            decision.right_request_id
+            if decision.left_request_id == remove.id
+            else decision.left_request_id
+        )
+        if other_id == keep.id:
+            db.session.delete(decision)
+            continue
+        left_id, right_id = canonicalize_duplicate_pair(keep.id, other_id)
+        existing = TandemDuplicateDecision.query.filter_by(
+            left_request_id=left_id,
+            right_request_id=right_id,
+        ).first()
+        if existing is not None and existing.id != decision.id:
+            if decision.updated_at >= existing.updated_at:
+                existing.decision = decision.decision
+                existing.note = decision.note
+            db.session.delete(decision)
+        else:
+            decision.left_request_id = left_id
+            decision.right_request_id = right_id
     db.session.delete(remove)
     db.session.commit()
     return jsonify(serialize_private(keep))

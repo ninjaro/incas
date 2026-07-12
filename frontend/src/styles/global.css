@@ -902,7 +902,7 @@ a {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ink-faint);
+  color: var(--ink-soft);
   text-align: center;
   padding: 4px 0;
 }
@@ -917,7 +917,13 @@ a {
 }
 
 .cal-cell.is-outside {
-  opacity: 0.4;
+  opacity: 1;
+  color: var(--ink-soft);
+  background: var(--paper-warm);
+}
+
+.cal-grid-row {
+  display: contents;
 }
 
 .cal-cell.is-today {
@@ -973,6 +979,59 @@ a {
   height: 11px;
   border-radius: 50%;
   background: var(--incas-orange);
+}
+
+.timeline-weeks {
+  display: grid;
+  gap: 2.5rem;
+}
+
+.timeline-week > h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+}
+
+.calendar-board {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--line);
+}
+
+.calendar-board-item {
+  grid-column: span 6;
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 1.25rem;
+  min-height: 220px;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  background: var(--paper);
+}
+
+.calendar-board-item:nth-child(3n + 1) {
+  grid-column: span 7;
+}
+
+.calendar-board-item:nth-child(3n + 2) {
+  grid-column: span 5;
+  background: var(--paper-warm);
+}
+
+.calendar-board-date {
+  align-self: start;
+  display: grid;
+  color: var(--incas-orange-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.calendar-board-date strong {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  line-height: 0.9;
 }
 
 /* ---------- team themes ---------- */
@@ -2040,6 +2099,11 @@ a {
     position: static;
   }
 
+  .calendar-board-item,
+  .calendar-board-item:nth-child(n) {
+    grid-column: span 12;
+  }
+
   .editorial-stream > a {
     grid-template-columns: auto 1fr;
   }
@@ -2125,5 +2189,15 @@ a {
   .event-map-canvas,
   .event-map-fallback {
     height: 300px;
+  }
+
+  .calendar-board-item {
+    grid-template-columns: 3.25rem 1fr;
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  .calendar-board-date strong {
+    font-size: 2.25rem;
   }
 }

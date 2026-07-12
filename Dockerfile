@@ -12,10 +12,12 @@ COPY . .
 
 RUN useradd --create-home --shell /usr/sbin/nologin incas \
     && mkdir -p /app/instance \
+    && chmod +x /app/docker-entrypoint.sh \
     && chown -R incas:incas /app
 
 USER incas
 
 EXPOSE 5000
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]

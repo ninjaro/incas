@@ -1,12 +1,10 @@
 import json
 import re
-import time
-from collections import defaultdict, deque
 
 from flask import jsonify, request
 from sqlalchemy import func, or_
 
-from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.api import api_bp, get_json_body, rate_limited, require_capability, validation_error
 from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, db
 from app.routes.helpers.tandem_form import (
     get_country_options,
@@ -20,23 +18,6 @@ from app.routes.helpers.tandem_form import (
 
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-FORM_LIMIT = 20
-FORM_WINDOW_SECONDS = 3600
-_submissions_by_ip = defaultdict(deque)
-
-
-def _submission_allowed():
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown").split(",")[0].strip()
-    now = time.monotonic()
-    window = _submissions_by_ip[ip]
-    while window and now - window[0] > FORM_WINDOW_SECONDS:
-        window.popleft()
-    if len(window) >= FORM_LIMIT:
-        return False
-    window.append(now)
-    return True
-
-
 def _email_is_valid(value):
     return bool(EMAIL_RE.match(value or ""))
 
@@ -67,9 +48,8 @@ def api_public_form_options():
 
 
 @api_bp.post("/public/contact")
+@rate_limited("form.contact", limit=20)
 def api_public_contact_submit():
-    if not _submission_allowed():
-        return api_error("rate_limited", "Too many submissions. Try again later.", status=429)
     body = get_json_body()
     values = {
         "name": (body.get("name") or "").strip(),
@@ -99,9 +79,8 @@ def api_public_contact_submit():
 
 
 @api_bp.post("/public/event-suggestions")
+@rate_limited("form.event_suggestion", limit=20)
 def api_public_event_suggestion_submit():
-    if not _submission_allowed():
-        return api_error("rate_limited", "Too many submissions. Try again later.", status=429)
     body = get_json_body()
     values = {
         "kind": (body.get("kind") or "").strip(),
@@ -140,9 +119,8 @@ def api_public_event_suggestion_submit():
 
 
 @api_bp.post("/public/language-tandem")
+@rate_limited("form.language_tandem", limit=10)
 def api_public_tandem_submit():
-    if not _submission_allowed():
-        return api_error("rate_limited", "Too many submissions. Try again later.", status=429)
     body = get_json_body()
     values = {
         "firstName": (body.get("firstName") or "").strip(),

@@ -7,6 +7,7 @@ import { EventAvailability, EventPaymentNotice } from "../../components/events";
 import { Field } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { useLocale } from "../../i18n/LocaleContext";
+import { localizeFieldErrors } from "../../i18n/errors";
 
 const EMPTY: EventRegistrationInput = {
   firstName: "", lastName: "", email: "", occupation: "", dietPreference: "", comment: "",
@@ -31,8 +32,8 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
       const result = await data.registerForEvent(event.slug, form);
       navigate(`/registrations/${result.publicId}`);
     } catch (error) {
-      if (error instanceof ApiError) setErrors(error.fields);
-      else setErrors({ form: error instanceof Error ? error.message : "Registration failed." });
+      if (error instanceof ApiError) setErrors(localizeFieldErrors(error.fields, locale));
+      else setErrors({ form: de ? "Die Anmeldung konnte nicht gesendet werden." : (error instanceof Error ? error.message : "Registration failed.") });
     } finally {
       setBusy(false);
     }

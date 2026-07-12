@@ -8,6 +8,7 @@ import { ErrorState, Loading, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
 import { useAsync } from "../hooks/useAsync";
 import { useLocale } from "../i18n/LocaleContext";
+import { absoluteAppUrl } from "../utils/assets";
 
 export function RegistrationStatusPage() {
   const { publicId = "" } = useParams();
@@ -26,7 +27,7 @@ export function RegistrationStatusPage() {
   if (state.loading && !state.data) return <Loading />;
   if (state.error || !state.data) return <ErrorState error={state.error} onRetry={state.reload} />;
   const registration = state.data;
-  const trackingUrl = `${window.location.origin}${window.location.pathname}#/registrations/${registration.publicId}`;
+  const trackingUrl = absoluteAppUrl(`/registrations/${registration.publicId}`);
 
   const checkout = async () => {
     setPaymentError(null);
@@ -35,7 +36,7 @@ export function RegistrationStatusPage() {
       setPayment(result);
       if (!result.isSimulated && result.checkoutUrl) window.location.assign(result.checkoutUrl);
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : "Payment could not be started.");
+      setPaymentError(de ? "Die Zahlung konnte nicht gestartet werden." : (error instanceof Error ? error.message : "Payment could not be started."));
     }
   };
   const simulate = async (outcome: "success" | "failure" | "cancel") => {

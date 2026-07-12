@@ -11,7 +11,7 @@ import { useLocale } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
 function PostCard({ post, de }: { post: PublicPost; de: boolean }) {
-  return <article className="post-card">{post.isPinned ? <PinnedBadge /> : null}<h3><Link to={`/events/${post.slug}`}>{post.title.full}</Link></h3><p>{post.summary}</p><Link to={`/events/${post.slug}`}>{de ? "Weiterlesen" : "Read more"}</Link></article>;
+  return <article className="post-card">{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3><Link to={`/events/${post.slug}`}>{post.title.full}</Link></h3><p>{post.summary}</p><Link to={`/events/${post.slug}`}>{de ? "Weiterlesen" : "Read more"}</Link></article>;
 }
 
 function Upcoming({ events, locale, limit = 6 }: { events: PublicPost[]; locale: string; limit?: number }) {
@@ -56,7 +56,7 @@ function EditorialLanding({ data, locale }: { data: PublicPostsResponse; locale:
 function EventFirstLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {
   const de = locale === "de";
   const [next, ...rest] = data.events;
-  return <><div className="eventfirst-head"><div><p className="page-kicker">INCAS Aachen</p><h1>{de ? "Was als Nächstes passiert" : "What's happening next"}</h1></div><Link to="/calendar" className="btn btn-outline">{de ? "Ganzer Kalender" : "Full calendar"}</Link></div>{next ? <EventCard event={next} locale={locale} /> : <EmptyState>No upcoming events.</EmptyState>}<Upcoming events={rest} locale={locale} limit={5} /><AboutAndOffers /><News posts={data.posts} locale={locale} /></>;
+  return <><div className="eventfirst-head"><div><p className="page-kicker">INCAS Aachen</p><h1>{de ? "Was als Nächstes passiert" : "What's happening next"}</h1></div><Link to="/calendar" className="btn btn-outline">{de ? "Ganzer Kalender" : "Full calendar"}</Link></div>{next ? <EventCard event={next} locale={locale} /> : <EmptyState>{de ? "Keine bevorstehenden Events." : "No upcoming events."}</EmptyState>}<Upcoming events={rest} locale={locale} limit={5} /><AboutAndOffers /><News posts={data.posts} locale={locale} /></>;
 }
 
 function PortalLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {
@@ -74,5 +74,5 @@ export function LandingPage() {
   if (posts.loading || themeLoading) return <Loading />;
   if (posts.error || !posts.data) return <ErrorState error={posts.error} onRetry={posts.reload} />;
   const content = posts.data;
-  return <>{isPreview ? <p className="notice notice-info">Theme preview: <strong>{theme}</strong>.</p> : null}{theme === "editorial" ? <EditorialLanding data={content} locale={locale} /> : theme === "event-first" ? <EventFirstLanding data={content} locale={locale} /> : theme === "portal" ? <PortalLanding data={content} locale={locale} /> : <HeroLanding data={content} locale={locale} />}{content.archivedEvents.length ? <section className="landing-archive"><button type="button" className="btn btn-ghost" onClick={() => setShowArchive((value) => !value)} aria-expanded={showArchive}>{showArchive ? (locale === "de" ? "Vergangene Events ausblenden" : "Hide past events") : (locale === "de" ? "Vergangene Events anzeigen" : "Show past events")}</button>{showArchive ? <div className="event-grid">{content.archivedEvents.slice(0, 6).map((event) => <EventCard key={event.slug} event={event} locale={locale} compact />)}</div> : null}</section> : null}</>;
+  return <>{isPreview ? <p className="notice notice-info">{locale === "de" ? "Theme-Vorschau" : "Theme preview"}: <strong>{theme}</strong>.</p> : null}{theme === "editorial" ? <EditorialLanding data={content} locale={locale} /> : theme === "event-first" ? <EventFirstLanding data={content} locale={locale} /> : theme === "portal" ? <PortalLanding data={content} locale={locale} /> : <HeroLanding data={content} locale={locale} />}{content.archivedEvents.length ? <section className="landing-archive"><button type="button" className="btn btn-ghost" onClick={() => setShowArchive((value) => !value)} aria-expanded={showArchive}>{showArchive ? (locale === "de" ? "Vergangene Events ausblenden" : "Hide past events") : (locale === "de" ? "Vergangene Events anzeigen" : "Show past events")}</button>{showArchive ? <div className="event-grid">{content.archivedEvents.slice(0, 6).map((event) => <EventCard key={event.slug} event={event} locale={locale} compact />)}</div> : null}</section> : null}</>;
 }

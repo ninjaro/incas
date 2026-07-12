@@ -6,6 +6,7 @@ import { EmptyState, Field, StatusBadge } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { useAsync } from "../../hooks/useAsync";
 import { useLocale } from "../../i18n/LocaleContext";
+import { localizeFieldErrors } from "../../i18n/errors";
 
 const TRACKING_STORAGE_KEY = "incas-karaoke-tracking";
 const QUEUE_POLL_MS = 10000;
@@ -92,7 +93,7 @@ export function KaraokeEventFeature({ eventSlug, eventTitle }: { eventSlug: stri
       setRefreshKey((value) => value + 1);
     } catch (error) {
       if (error instanceof ApiError && Object.keys(error.fields).length > 0) {
-        setFieldErrors(error.fields);
+        setFieldErrors(localizeFieldErrors(error.fields, locale));
       } else if (error instanceof Error && "fields" in error) {
         setFieldErrors((error as { fields: Record<string, string> }).fields);
       } else {
