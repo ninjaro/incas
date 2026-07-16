@@ -14,6 +14,7 @@ import {
 import { useData } from "../../data/DataProviderContext";
 import { EVENT_KINDS, getEventKind } from "../../domain/eventKinds";
 import { useAsync } from "../../hooks/useAsync";
+import { fromDateTimeLocal, toDateTimeLocal } from "../../utils/datetime";
 
 const STATUS_FILTERS: (PostStatus | "all")[] = ["all", "draft", "scheduled", "published", "archived"];
 
@@ -89,10 +90,10 @@ function editorFromPost(post: AdminPost): EditorState {
     summary: post.summary,
     body: post.body,
     eventKind: post.eventKind ?? "",
-    startsAt: post.startsAt?.slice(0, 16) ?? "",
-    endsAt: post.endsAt?.slice(0, 16) ?? "",
+    startsAt: toDateTimeLocal(post.startsAt),
+    endsAt: toDateTimeLocal(post.endsAt),
     durationMinutes: post.durationMinutes?.toString() ?? "",
-    publishAt: post.publishAt?.slice(0, 16) ?? "",
+    publishAt: toDateTimeLocal(post.publishAt),
     status: post.storedStatus,
     imageUrl: post.imageUrl,
     registrationLimitEnabled: post.registrationLimitEnabled,
@@ -124,10 +125,10 @@ export function editorToInput(editor: EditorState): PostInput {
     summary: editor.summary,
     body: editor.body,
     eventKind: editor.eventKind || null,
-    startsAt: editor.startsAt || null,
-    endsAt: editor.endsAt || null,
+    startsAt: fromDateTimeLocal(editor.startsAt),
+    endsAt: fromDateTimeLocal(editor.endsAt),
     durationMinutes: editor.durationMinutes ? Number(editor.durationMinutes) : null,
-    publishAt: editor.publishAt || null,
+    publishAt: fromDateTimeLocal(editor.publishAt),
     status: editor.status,
     imageUrl: editor.imageUrl,
     registrationLimitEnabled: editor.registrationLimitEnabled,
@@ -190,6 +191,8 @@ function PostEditor({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [slug, setSlug] = useState(post?.slug ?? "");
+  const [slugBusy, setSlugBusy] = useState(false);
 
   // Unsaved-change protection when leaving the browser tab.
   useEffect(() => {
@@ -282,6 +285,26 @@ function PostEditor({
     }
   };
 
+  const changeSlug = async () => {
+    if (!post) return;
+    setSlugBusy(true);
+    setFieldErrors((current) => ({ ...current, slug: "" }));
+    try {
+      const updated = await data.updatePostSlug(post.id, slug);
+      setSlug(updated.slug);
+      setNotice({ tone: "ok", text: "Post URL updated. The previous URL now redirects here." });
+      onSaved();
+    } catch (error) {
+      if (error instanceof ApiError && error.fields.slug) {
+        setFieldErrors((current) => ({ ...current, slug: error.fields.slug }));
+      } else {
+        setNotice({ tone: "bad", text: error instanceof Error ? error.message : "URL update failed." });
+      }
+    } finally {
+      setSlugBusy(false);
+    }
+  };
+
   const close = () => {
     if (dirty) {
       setConfirmDiscard(true);
@@ -317,6 +340,7 @@ function PostEditor({
           <Field label="Title" error={fieldErrors.title}>
             <input value={editor.title} onChange={(event) => set("title", event.target.value)} />
           </Field>
+          {post ? <div className="slug-editor"><Field label="URL slug" error={fieldErrors.slug}><input value={slug} onChange={(event) => setSlug(event.target.value)} /></Field><button type="button" className="btn btn-outline btn-sm" disabled={slugBusy || slug === post.slug} onClick={changeSlug}>{slugBusy ? "Updating…" : "Change URL"}</button><small>Title edits keep this URL unchanged. Changing it creates a redirect from the previous URL.</small></div> : null}
           <Field label="Summary">
             <input value={editor.summary} onChange={(event) => set("summary", event.target.value)} maxLength={256} />
           </Field>

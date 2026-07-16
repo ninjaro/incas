@@ -50,6 +50,25 @@ services:
     command: ["flask", "--app", "run:app", "social-worker", "--interval", "30"]
     restart: unless-stopped
 
+  reservation-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-incas}:${POSTGRES_PASSWORD:-incas}@db:5432/${POSTGRES_DB:-incas}
+      SECRET_KEY: ${SECRET_KEY:?Set a random SECRET_KEY of at least 32 characters}
+      ACCESS_KEYS_ROOT_HASH: ${ACCESS_KEYS_ROOT_HASH:?Set the SHA-256 hash of the bootstrap access-keys phrase}
+      AUTO_CREATE_SCHEMA: "0"
+      SEED_DEMO_DATA: "0"
+      SESSION_COOKIE_SECURE: "1"
+      PAYMENT_RESERVATION_MINUTES: ${PAYMENT_RESERVATION_MINUTES:-20}
+    command: ["flask", "--app", "run:app", "reservation-worker", "--interval", "30"]
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     environment:

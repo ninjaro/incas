@@ -2,13 +2,14 @@ import { useState, type FormEvent } from "react";
 
 import { EmptyState, Field, StatusBadge } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
+import { KARAOKE_TRACKING_BATCH_SIZE } from "../../data/karaokeTracking";
 import { usePublicFormErrors } from "../../forms/usePublicFormErrors";
 import { useResilientPolling } from "../../hooks/useResilientPolling";
 import { useLocale } from "../../i18n/LocaleContext";
 
 const TRACKING_STORAGE_KEY = "incas-karaoke-tracking";
-// One batched request every 90 seconds is at most 40 requests/hour, leaving
-// headroom under the backend's 60/hour tracking budget for retries.
+// The interval scales with the number of 20-ID batches, keeping the aggregate
+// request rate at no more than 40/hour with retry headroom.
 const QUEUE_POLL_MS = 90_000;
 
 function loadTrackedIds(): string[] {
@@ -22,13 +23,17 @@ function loadTrackedIds(): string[] {
 
 function TrackedRequests({ refreshKey, de }: { refreshKey: number; de: boolean }) {
   const data = useData();
+  const batchCount = Math.max(
+    1,
+    Math.ceil(loadTrackedIds().length / KARAOKE_TRACKING_BATCH_SIZE),
+  );
   const tracked = useResilientPolling({
     load: () => {
       const ids = loadTrackedIds();
       return ids.length ? data.trackKaraokeRequests(ids) : Promise.resolve({ items: [], missing: [] });
     },
     deps: [data, refreshKey],
-    intervalMs: QUEUE_POLL_MS,
+    intervalMs: QUEUE_POLL_MS * batchCount,
   });
   const entries = tracked.data?.items ?? [];
   const missing = tracked.data?.missing ?? [];

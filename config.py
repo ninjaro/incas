@@ -47,3 +47,22 @@ class Config:
         "INSTAGRAM_SCOPES",
         "instagram_business_basic,instagram_business_content_publish",
     )
+    PAYMENT_PROVIDER = os.getenv("PAYMENT_PROVIDER", "mock").strip().lower()
+    SOCIAL_PROVIDER_MODE = os.getenv("SOCIAL_PROVIDER_MODE", "mock").strip().lower()
+    PAYMENT_RESERVATION_MINUTES = max(
+        5, int(os.getenv("PAYMENT_RESERVATION_MINUTES", "20"))
+    )
+    REMOTE_IMAGE_ORIGINS = tuple(
+        value
+        for value in os.getenv(
+            "REMOTE_IMAGE_ORIGINS",
+            "https://tile.openstreetmap.org https://cdn.simulated.social",
+        ).split()
+        if value
+    )
+    SMTP_HOST = os.getenv("SMTP_HOST", "")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_STARTTLS = _env_bool("SMTP_STARTTLS", True)
+    SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+    MAIL_FROM = os.getenv("MAIL_FROM", "")

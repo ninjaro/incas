@@ -47,7 +47,7 @@ test("About navigation, route focus, and section boundaries are canonical", asyn
   const workingGroupsCardLink = page
     .locator(".about-topic-preview .section-card")
     .filter({ has: page.getByRole("heading", { name: "Working Groups" }) })
-    .getByRole("link", { name: "Read more" });
+    .getByRole("link", { name: "Working Groups" });
   await workingGroupsCardLink.scrollIntoViewIfNeeded();
   const savedScrollPosition = await page.evaluate(() => window.scrollY);
   expect(savedScrollPosition).toBeGreaterThan(400);
@@ -150,6 +150,48 @@ test("paid registration is linked to payment and ends confirmed", async ({ page 
   await page.getByRole("button", { name: "Start payment" }).click();
   await page.getByRole("button", { name: "Simulate success" }).click();
   await expect(page.getByText("Approved")).toBeVisible();
+});
+
+test("landing Scroll stays in the HashRouter route and reaches Upcoming Events", async ({ page }) => {
+  await page.goto("/");
+  const originalUrl = page.url();
+  await page.getByRole("button", { name: "Scroll" }).click();
+  await expect(page).toHaveURL(originalUrl);
+  await expect.poll(async () => {
+    const box = await page.getByRole("heading", { name: "Upcoming events" }).boundingBox();
+    return box ? box.y >= 0 && box.y < 260 : false;
+  }).toBe(true);
+});
+
+test("access-key activation cleans the URL after body-based unlock", async ({ page }) => {
+  await page.goto("/#/admin?accessKey=demo-review");
+  await expect(page).toHaveURL(/#\/admin$/);
+  await expect(page.getByRole("link", { name: "Themes", exact: true }))
+    .not.toHaveAttribute("aria-disabled", "true");
+  expect(page.url()).not.toContain("demo-review");
+});
+
+test("public cards expose one descriptive primary link", async ({ page }) => {
+  await page.goto("/#/offers");
+  const offerCards = page.locator(".offers-card");
+  await expect(offerCards).toHaveCount(9);
+  for (let index = 0; index < await offerCards.count(); index += 1) {
+    const card = offerCards.nth(index);
+    await expect(card.locator(".card-primary-link")).toHaveCount(1);
+    await expect(card.getByRole("link").first()).not.toHaveText(/Read more|Learn more/i);
+  }
+
+  await page.goto("/#/about");
+  for (const card of await page.locator(".about-topic-preview .section-card").all()) {
+    await expect(card.getByRole("link")).toHaveCount(1);
+    await expect(card.getByRole("link")).toHaveAccessibleName(/.+/);
+  }
+
+  await page.goto("/");
+  for (const card of await page.locator(".event-card").all()) {
+    await expect(card.getByRole("link")).toHaveCount(1);
+    await expect(card.getByRole("link")).toHaveAccessibleName(/.+/);
+  }
 });
 
 test("free registration confirms without checkout", async ({ page }) => {

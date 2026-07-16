@@ -40,6 +40,7 @@ import siteSnapshot from "../content/site.generated.json";
 import { PAGE_THEMES } from "../features/themes/registry";
 import { ApiError } from "../api/client";
 import type { DataProvider } from "./DataProvider";
+import { KARAOKE_TRACKING_BATCH_SIZE, trackKaraokeInBatches } from "./karaokeTracking";
 import {
   DEMO_KEYS,
   buildDemoAdminPosts,
@@ -103,8 +104,15 @@ export class DemoDataProvider implements DataProvider {
   private payments: PaymentInfo[] = [];
   private paymentRegistrations: Record<string, string> = {};
   private registrations: RegistrationRecord[] = [];
+  private postSlugRedirects = new Map<string, string>();
   private formInbox: FormInboxEntry[] = [];
   private accessKeys: AccessKeyInfo[] = [];
+  private generatedKeys = new Map<
+    string,
+    { item: AccessKeyInfo; scopes: Capability[] }
+  >();
+  private staticUnlockedScopes = new Set<Capability>();
+  private generatedUnlocks = new Set<string>();
   private tandemRequests = structuredClone(demoTandemRequests);
   private tandemPrivate = structuredClone(DEMO_PRIVATE_FIELDS);
   private tandemReviews: Record<string, TandemMatch["review"]> = {};
@@ -112,6 +120,7 @@ export class DemoDataProvider implements DataProvider {
   private nextId = 1000;
 
   private require(capability: Capability) {
+    this.refreshCapabilities();
     if (!this.capabilities.has(capability)) {
       throw new DemoError(
         "capability_required",
@@ -120,6 +129,26 @@ export class DemoDataProvider implements DataProvider {
         { capability },
       );
     }
+  }
+
+  private refreshCapabilities() {
+    const capabilities = new Set(this.staticUnlockedScopes);
+    for (const secret of [...this.generatedUnlocks]) {
+      const generated = this.generatedKeys.get(secret);
+      const expiresAt = generated ? new Date(generated.item.expiresAt).valueOf() : 0;
+      if (
+        !generated
+        || generated.item.status !== "active"
+        || !Number.isFinite(expiresAt)
+        || expiresAt <= Date.now()
+      ) {
+        this.generatedUnlocks.delete(secret);
+        continue;
+      }
+      generated.scopes.forEach((scope) => capabilities.add(scope));
+    }
+    if (capabilities.has("theme_force")) capabilities.add("theme_review");
+    this.capabilities = capabilities;
   }
 
   private paymentForRegistration(item: RegistrationRecord) {
@@ -179,6 +208,7 @@ export class DemoDataProvider implements DataProvider {
   }
 
   private session(): SessionInfo {
+    this.refreshCapabilities();
     return {
       capabilities: [...this.capabilities].sort(),
       capabilityLabels: CAPABILITY_LABELS,
@@ -200,17 +230,39 @@ export class DemoDataProvider implements DataProvider {
   }
 
   async unlock(key: string) {
-    const scopes = DEMO_KEYS[key.trim()];
-    if (!scopes) {
+    const normalized = key.trim();
+    const staticScopes = DEMO_KEYS[normalized] as Capability[] | undefined;
+    const generated = this.generatedKeys.get(normalized);
+    const expiresAt = generated ? new Date(generated.item.expiresAt).valueOf() : 0;
+    if (
+      !staticScopes
+      && (
+        !generated
+        || generated.item.status !== "active"
+        || !Number.isFinite(expiresAt)
+        || expiresAt <= Date.now()
+      )
+    ) {
       throw new DemoError("key_invalid", "This access key is not valid.", 403);
     }
-    scopes.forEach((scope) => this.capabilities.add(scope as Capability));
-    if (this.capabilities.has("theme_force")) this.capabilities.add("theme_review");
+    if (staticScopes) {
+      staticScopes.forEach((scope) => this.staticUnlockedScopes.add(scope));
+    } else {
+      this.generatedUnlocks.add(normalized);
+      generated!.item.lastUsedAt = new Date().toISOString();
+    }
+    const scopes = staticScopes ?? generated!.scopes;
     return { ...this.session(), newScopes: scopes };
   }
 
   async getPublicConfig() {
-    return { themes: { ...this.publicThemes } };
+    return {
+      themes: { ...this.publicThemes },
+      integrations: {
+        payment: { provider: "mock", isSimulated: true },
+        social: { mode: "mock", isSimulated: true },
+      },
+    };
   }
 
   async getPublicPosts() {
@@ -222,7 +274,13 @@ export class DemoDataProvider implements DataProvider {
   }
 
   async getPublicPost(slug: string) {
-    const post = [...this.events, ...demoPosts].find((entry) => entry.slug === slug);
+    let canonicalSlug = slug;
+    const visited = new Set<string>();
+    while (this.postSlugRedirects.has(canonicalSlug) && !visited.has(canonicalSlug)) {
+      visited.add(canonicalSlug);
+      canonicalSlug = this.postSlugRedirects.get(canonicalSlug)!;
+    }
+    const post = [...this.events, ...demoPosts].find((entry) => entry.slug === canonicalSlug);
     if (!post) throw new DemoError("not_found", "Post not found.", 404);
     return { ...post, bodyHtml: post.bodyHtml ?? "" };
   }
@@ -230,8 +288,14 @@ export class DemoDataProvider implements DataProvider {
   async getCalendar(year: number, month: number) {
     const events = this.events.filter((event) => {
       if (!event.startsAt) return false;
-      const date = new Date(event.startsAt);
-      return date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month;
+      const parts = Object.fromEntries(
+        new Intl.DateTimeFormat("en", {
+          timeZone: "Europe/Berlin",
+          year: "numeric",
+          month: "numeric",
+        }).formatToParts(new Date(event.startsAt)).map((part) => [part.type, part.value]),
+      );
+      return Number(parts.year) === year && Number(parts.month) === month;
     });
     return { year, month, events };
   }
@@ -348,7 +412,7 @@ export class DemoDataProvider implements DataProvider {
       publishAt: input.publishAt ?? null,
       status: input.status ?? "draft",
       storedStatus: input.status ?? "draft",
-      isActive: input.status === "published",
+      isActive: ["published", "scheduled"].includes(input.status ?? "draft"),
       isPinned: Boolean(input.isPinned),
       imageUrl: input.imageUrl ?? "",
       registrationLimitEnabled: Boolean(input.registrationLimitEnabled),
@@ -379,37 +443,77 @@ export class DemoDataProvider implements DataProvider {
 
   async updatePost(id: number, input: PostInput) {
     const post = await this.getAdminPost(id);
-    Object.assign(post, {
-      title: input.title ?? post.title,
-      summary: input.summary ?? post.summary,
-      body: input.body ?? post.body,
-      eventKind: input.eventKind ?? post.eventKind,
-      startsAt: input.startsAt ?? post.startsAt,
-      endsAt: input.endsAt ?? post.endsAt,
-      durationMinutes: input.durationMinutes ?? post.durationMinutes,
-      publishAt: input.publishAt ?? post.publishAt,
-      status: input.status ?? post.status,
-      storedStatus: input.status ?? post.storedStatus,
-      registrationMode: input.registrationMode ?? post.registrationMode,
-      depositExplanation: input.depositExplanation ?? post.depositExplanation,
-      venue: input.venue ?? post.venue,
-      address: input.address ?? post.address,
-      city: input.city ?? post.city,
-      meetingPoint: input.meetingPoint ?? post.meetingPoint,
-      destination: input.destination ?? post.destination,
-      countryCode: input.countryCode ?? post.countryCode,
-      latitude: input.latitude ?? post.latitude,
-      longitude: input.longitude ?? post.longitude,
-      destinationLatitude: input.destinationLatitude ?? post.destinationLatitude,
-      destinationLongitude: input.destinationLongitude ?? post.destinationLongitude,
-      mapConfig: input.mapConfig ?? post.mapConfig,
-      featureFlags: input.featureFlags ?? post.featureFlags,
-      updatedAt: new Date().toISOString(),
-    });
-    if (input.eventKind !== undefined) post.eventKind = input.eventKind;
-    if (input.startsAt !== undefined) post.startsAt = input.startsAt;
-    if (input.endsAt !== undefined) post.endsAt = input.endsAt;
-    if (input.publishAt !== undefined) post.publishAt = input.publishAt;
+    const assign = <K extends keyof PostInput & keyof AdminPost>(key: K) => {
+      if (input[key] !== undefined) {
+        (post[key] as PostInput[K]) = input[key];
+      }
+    };
+    for (const key of [
+      "title",
+      "summary",
+      "body",
+      "eventKind",
+      "startsAt",
+      "endsAt",
+      "durationMinutes",
+      "publishAt",
+      "isPinned",
+      "imageUrl",
+      "registrationLimitEnabled",
+      "registrationLimit",
+      "registrationPriceCents",
+      "registrationIsDeposit",
+      "registrationMode",
+      "depositExplanation",
+      "venue",
+      "address",
+      "city",
+      "meetingPoint",
+      "destination",
+      "countryCode",
+      "latitude",
+      "longitude",
+      "destinationLatitude",
+      "destinationLongitude",
+      "mapConfig",
+      "featureFlags",
+    ] as const) {
+      assign(key);
+    }
+    if (input.status !== undefined) {
+      post.status = input.status;
+      post.storedStatus = input.status;
+      post.isActive = ["published", "scheduled"].includes(input.status);
+    }
+    post.updatedAt = new Date().toISOString();
+    return post;
+  }
+
+  async updatePostSlug(id: number, slug: string) {
+    const post = await this.getAdminPost(id);
+    const normalized = slug.trim().toLowerCase();
+    if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized)
+      || this.adminPosts.some((entry) => entry.id !== id && entry.slug === normalized)
+      || this.postSlugRedirects.has(normalized)
+    ) {
+      throw new DemoError("validation_failed", "Some fields are invalid.", 422, {
+        fields: { slug: "This URL slug is invalid or already in use." },
+      });
+    }
+    if (normalized !== post.slug) {
+      const oldSlug = post.slug;
+      for (const [source, target] of this.postSlugRedirects) {
+        if (target === oldSlug) this.postSlugRedirects.set(source, normalized);
+      }
+      this.postSlugRedirects.set(oldSlug, normalized);
+      post.slug = normalized;
+      const publicPost = [...this.events, ...demoPosts].find(
+        (entry) => entry.slug === oldSlug,
+      );
+      if (publicPost) publicPost.slug = normalized;
+      post.updatedAt = new Date().toISOString();
+    }
     return post;
   }
 
@@ -714,13 +818,21 @@ export class DemoDataProvider implements DataProvider {
   }
 
   async trackKaraokeRequests(publicIds: string[]) {
-    const unique = [...new Set(publicIds)];
-    const items = unique
-      .map((publicId) => this.karaoke.find((entry) => entry.publicId === publicId))
-      .filter((entry): entry is KaraokeAdminEntry => Boolean(entry))
-      .map((entry) => this.publicEntry(entry));
-    const found = new Set(items.map((entry) => entry.publicId));
-    return { items, missing: unique.filter((publicId) => !found.has(publicId)) };
+    return trackKaraokeInBatches(publicIds, async (batch) => {
+      if (batch.length > KARAOKE_TRACKING_BATCH_SIZE) {
+        throw new DemoError(
+          "validation_failed",
+          "Provide between 1 and 20 tracking codes.",
+          422,
+        );
+      }
+      const items = batch
+        .map((publicId) => this.karaoke.find((entry) => entry.publicId === publicId))
+        .filter((entry): entry is KaraokeAdminEntry => Boolean(entry))
+        .map((entry) => this.publicEntry(entry));
+      const found = new Set(items.map((entry) => entry.publicId));
+      return { items, missing: batch.filter((publicId) => !found.has(publicId)) };
+    });
   }
 
   private publicEntry(entry: KaraokeAdminEntry) {
@@ -804,7 +916,11 @@ export class DemoDataProvider implements DataProvider {
     const currentIds = this.karaoke
       .filter((item) => item.eventSlug === eventSlug && ["approved", "performing"].includes(item.status))
       .map((item) => item.id);
-    if (order.length !== currentIds.length || order.some((id) => !currentIds.includes(id))) {
+    if (
+      order.length !== new Set(order).size
+      || order.length !== currentIds.length
+      || order.some((id) => !currentIds.includes(id))
+    ) {
       throw new DemoError("queue_conflict", "The queue changed; reload before reordering.", 409);
     }
     order.forEach((id, index) => {
@@ -827,18 +943,16 @@ export class DemoDataProvider implements DataProvider {
     const registration = this.registrations.find(
       (entry) => entry.publicId === registrationPublicId && entry.event.slug === postSlug,
     );
-    if (!registration || registration.status !== "waiting_payment") {
-      throw new DemoError("registration_not_payable", "Create an eligible registration first.", 409);
-    }
     const existing = this.payments.find(
       (entry) => this.paymentRegistrations[entry.publicId] === registrationPublicId
         && ["pending", "paid"].includes(entry.status),
     );
-    if (existing) {
-      throw new DemoError("payment_exists", "This registration already has an active payment.", 409, {
-        publicId: existing.publicId,
-      });
+    if (existing) return existing;
+    if (!registration || registration.status !== "waiting_payment") {
+      throw new DemoError("registration_not_payable", "Create an eligible registration first.", 409);
     }
+    const expiresAt = registration.paymentExpiresAt
+      ?? new Date(Date.now() + 20 * 60_000).toISOString();
     const payment: PaymentInfo = {
       publicId: `PAY-DEMO-${this.nextId++}`,
       amountCents: post.registration.priceCents,
@@ -847,11 +961,15 @@ export class DemoDataProvider implements DataProvider {
       provider: "mock",
       isSimulated: true,
       errorMessage: "",
+      expiresAt,
+      createdAt: new Date().toISOString(),
       checkoutUrl: "#/pay/simulated",
       simulated: true,
     };
     this.payments.push(payment);
     this.paymentRegistrations[payment.publicId] = registration.publicId;
+    registration.payment = payment;
+    registration.paymentExpiresAt = expiresAt;
     return payment;
   }
 
@@ -880,9 +998,21 @@ export class DemoDataProvider implements DataProvider {
           status: payment.status,
           amountCents: payment.amountCents,
           currency: payment.currency,
+          provider: payment.provider,
           isSimulated: payment.isSimulated,
+          errorMessage: payment.errorMessage,
+          expiresAt: payment.expiresAt,
+          createdAt: payment.createdAt,
+          checkoutUrl: payment.checkoutUrl,
+          simulated: payment.simulated,
         };
+        registration.paymentExpiresAt = null;
       }
+    } else if (outcome === "cancel" && registration) {
+      registration.status = "cancelled";
+      registration.statusLabel = "Cancelled";
+      registration.paymentExpiresAt = null;
+      registration.payment = payment;
     }
     return payment;
   }
@@ -1015,9 +1145,11 @@ export class DemoDataProvider implements DataProvider {
         && entry.status !== "cancelled",
     );
     if (duplicate) {
-      throw new DemoError("registration_exists", "This email already has an active registration.", 409, {
-        publicId: duplicate.publicId,
-      });
+      throw new DemoError(
+        "registration_conflict",
+        "A new registration cannot be created with these details.",
+        409,
+      );
     }
     const publicId = `APP-DEMO${this.nextId++}`;
     const summary = this.queueSummary(event);
@@ -1025,13 +1157,16 @@ export class DemoDataProvider implements DataProvider {
       ? event.registration.priceCents ? "waiting_payment" : "approved"
       : "waiting_list";
     const now = new Date().toISOString();
+    const paymentExpiresAt = status === "waiting_payment"
+      ? new Date(Date.now() + 20 * 60_000).toISOString()
+      : null;
     const item: RegistrationRecord = {
       id: this.nextId++, publicId, name: `${input.firstName} ${input.lastName}`,
       firstName: input.firstName, lastName: input.lastName, email: input.email,
       occupation: input.occupation, dietPreference: input.dietPreference, comment: input.comment,
       status, statusLabel: status.replaceAll("_", " "), waitingListPosition: status === "waiting_list" ? summary.waitingListCount + 1 : null,
       event: { slug: event.slug, title: event.title.full, startsAt: event.startsAt, capacity: event.registration.capacity, placesRemaining: summary.placesRemaining, priceCents: event.registration.priceCents, isDeposit: event.registration.isDeposit },
-      payment: null, trackingPath: `/registrations/${publicId}`, createdAt: now, updatedAt: now,
+      payment: null, paymentExpiresAt, trackingPath: `/registrations/${publicId}`, createdAt: now, updatedAt: now,
     };
     this.registrations.push(item);
     return this.publicRegistration(item);
@@ -1041,6 +1176,13 @@ export class DemoDataProvider implements DataProvider {
     const item = this.registrations.find((entry) => entry.publicId === publicId);
     if (!item) throw new DemoError("not_found", "Registration not found.", 404);
     return this.publicRegistration(item);
+  }
+
+  async recoverRegistration(_eventSlug: string, _email: string) {
+    return {
+      accepted: true as const,
+      message: "If a matching active registration exists, its private link will be sent.",
+    };
   }
 
   async getFormInbox(params?: { type?: string; status?: string; q?: string }) {
@@ -1151,13 +1293,16 @@ export class DemoDataProvider implements DataProvider {
     this.require("access_keys");
     const id = this.nextId++;
     const secret = `demo-generated-${id}`;
-    DEMO_KEYS[secret] = input.scopes;
     const item: CreatedAccessKey = {
       id, label: input.label, prefix: secret.slice(0, 8), scopes: input.scopes,
       status: "active", expiresAt: input.expiresAt, revokedAt: null, lastUsedAt: null,
-      createdAt: new Date().toISOString(), secret, unlockFragment: `#/admin/unlock/${secret}`,
+      createdAt: new Date().toISOString(), secret, unlockFragment: `#/admin?accessKey=${encodeURIComponent(secret)}`,
       secretVisibleOnce: true,
     };
+    this.generatedKeys.set(secret, {
+      item,
+      scopes: input.scopes as Capability[],
+    });
     this.accessKeys.unshift(item);
     return item;
   }
@@ -1168,6 +1313,7 @@ export class DemoDataProvider implements DataProvider {
     if (!item) throw new DemoError("not_found", "Access key not found.", 404);
     item.status = "revoked";
     item.revokedAt = new Date().toISOString();
+    this.refreshCapabilities();
     return item;
   }
 
@@ -1177,6 +1323,7 @@ export class DemoDataProvider implements DataProvider {
     if (!item) throw new DemoError("not_found", "Access key not found.", 404);
     item.status = "expired";
     item.expiresAt = new Date().toISOString();
+    this.refreshCapabilities();
     return item;
   }
 

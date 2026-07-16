@@ -15,7 +15,6 @@ import { SocialPublicationsPanel } from "../features/admin/SocialPublicationsPan
 import { PostsPanel } from "../features/admin/PostsPanel";
 import { TandemPanel } from "../features/admin/TandemPanel";
 import { ThemesPanel } from "../features/admin/ThemesPanel";
-import { UnlockRoute } from "../features/admin/UnlockRoute";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { AboutLayout, OffersLayout } from "../layouts/SectionLayouts";
 import { CalendarPage } from "../pages/CalendarPage";
@@ -103,7 +102,6 @@ const routes = [
         element: <AdminLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
-          { path: "unlock/:key", element: <UnlockRoute /> },
           {
             path: "posts",
             element: (

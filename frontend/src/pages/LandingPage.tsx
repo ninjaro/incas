@@ -11,7 +11,7 @@ import { useLocale } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
 function PostCard({ post, de }: { post: PublicPost; de: boolean }) {
-  return <article className="post-card">{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3><Link to={`/events/${post.slug}`}>{post.title.full}</Link></h3><p>{post.summary}</p><Link to={`/events/${post.slug}`}>{de ? "Weiterlesen" : "Read more"}</Link></article>;
+  return <article className="post-card"><Link className="post-card-main card-primary-link" to={`/events/${post.slug}`} aria-label={post.title.full}>{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3>{post.title.full}</h3><p>{post.summary}</p></Link></article>;
 }
 
 function Upcoming({ events, locale, limit = 6 }: { events: PublicPost[]; locale: string; limit?: number }) {
@@ -43,7 +43,13 @@ function News({ posts, locale }: { posts: PublicPost[]; locale: string }) {
 
 function HeroLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {
   const de = locale === "de";
-  return <><section className="landing-hero"><div><p className="page-kicker">Intercultural Centre of Aachen Students</p><h1>{de ? "Menschen in Aachen zusammenbringen" : "Bringing people together in Aachen"}</h1><p>{de ? "Offene Events, Sprachaustausch und Ausflüge von Studierenden für Studierende." : "Open events, language exchange and trips organized by students for students."}</p><div className="hero-actions"><Link to="/calendar" className="btn btn-primary">{de ? "Events entdecken" : "Discover events"}</Link><Link to="/about" className="btn btn-outline">{de ? "Über uns" : "About us"}</Link></div></div><a href="#upcoming-title" className="scroll-indicator">{de ? "Weiter" : "Scroll"}<span aria-hidden="true">v</span></a></section><Upcoming events={data.events} locale={locale} /><News posts={data.posts} locale={locale} /><AboutAndOffers /></>;
+  const scrollToUpcoming = () => {
+    document.getElementById("upcoming-title")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+  return <><section className="landing-hero"><div><p className="page-kicker">Intercultural Centre of Aachen Students</p><h1>{de ? "Menschen in Aachen zusammenbringen" : "Bringing people together in Aachen"}</h1><p>{de ? "Offene Events, Sprachaustausch und Ausflüge von Studierenden für Studierende." : "Open events, language exchange and trips organized by students for students."}</p><div className="hero-actions"><Link to="/calendar" className="btn btn-primary">{de ? "Events entdecken" : "Discover events"}</Link><Link to="/about" className="btn btn-outline">{de ? "Über uns" : "About us"}</Link></div></div><button type="button" className="scroll-indicator" onClick={scrollToUpcoming}>{de ? "Weiter" : "Scroll"}<span aria-hidden="true">v</span></button></section><Upcoming events={data.events} locale={locale} /><News posts={data.posts} locale={locale} /><AboutAndOffers /></>;
 }
 
 function EditorialLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {

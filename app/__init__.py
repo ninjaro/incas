@@ -18,6 +18,7 @@ from app.models import (
 from app.routes.helpers.access import has_any_access, has_any_access_key
 from config import Config
 from app.event_kinds import get_event_kind
+from app.security_policy import content_security_policy
 
 migrate = Migrate(compare_type=True)
 
@@ -48,7 +49,7 @@ def legacy_react_target(path):
         "/events": "/calendar",
         "/calendar": "/calendar",
         "/contacts": "/contact",
-        "/contact-form": "/contact",
+        "/contact-form": "/contact?form=general",
         "/suggest-event": "/suggest-event",
         "/language-tandem": "/tandem",
         "/team": "/about/team",
@@ -280,6 +281,35 @@ def create_app(config_overrides=None):
                 return
             time.sleep(interval)
 
+    @app.cli.command("expire-payment-reservations")
+    def expire_payment_reservations_command():
+        """Release expired unpaid reservations and promote waiting lists."""
+        from app.routes.helpers.event_registrations import (
+            expire_waiting_payment_registrations,
+        )
+
+        expired, promoted = expire_waiting_payment_registrations()
+        db.session.commit()
+        click.echo(f"expired={len(expired)} promoted={len(promoted)}")
+
+    @app.cli.command("reservation-worker")
+    @click.option("--once", is_flag=True, help="Process expired reservations once and exit.")
+    @click.option("--interval", default=30, type=click.IntRange(min=5), show_default=True)
+    def reservation_worker_command(once, interval):
+        """Continuously release expired unpaid reservations."""
+        from app.routes.helpers.event_registrations import (
+            expire_waiting_payment_registrations,
+        )
+
+        while True:
+            expired, promoted = expire_waiting_payment_registrations()
+            db.session.commit()
+            click.echo(f"expired={len(expired)} promoted={len(promoted)}")
+            db.session.remove()
+            if once:
+                return
+            time.sleep(interval)
+
     from app.routes import bp
     app.register_blueprint(bp)
 
@@ -295,19 +325,7 @@ def create_app(config_overrides=None):
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault(
             "Content-Security-Policy",
-            "; ".join(
-                (
-                    "default-src 'self'",
-                    "script-src 'self'",
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-                    "font-src 'self' https://fonts.gstatic.com data:",
-                    "img-src 'self' data: blob: https://tile.openstreetmap.org https://cdn.simulated.social",
-                    "connect-src 'self'",
-                    "object-src 'none'",
-                    "base-uri 'self'",
-                    "frame-ancestors 'self'",
-                )
-            ),
+            content_security_policy(),
         )
         return response
 
@@ -317,6 +335,17 @@ def create_app(config_overrides=None):
             return None
         if request.path.startswith(("/api/", "/static/", "/app")):
             return None
+        if request.path.startswith("/events/"):
+            from app.models import PostSlugRedirect
+
+            old_slug = request.path.removeprefix("/events/").strip("/")
+            slug_redirect = PostSlugRedirect.query.filter_by(old_slug=old_slug).first()
+            if slug_redirect is not None:
+                from app.models import Post
+
+                post = db.session.get(Post, slug_redirect.post_id)
+                if post is not None:
+                    return redirect(f"/events/{post.slug}", code=308)
         if is_canonical_react_path(request.path):
             return app.extensions["incas_spa_response"]()
         target = legacy_react_target(request.path)

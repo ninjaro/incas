@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Link, useParams } from "react-router-dom";
 
@@ -25,11 +25,25 @@ export function RegistrationStatusPage() {
   });
   const [payment, setPayment] = useState<PaymentInfo | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const registrationPayment = state.data?.payment ?? null;
+
+  useEffect(() => {
+    setPayment(registrationPayment);
+  }, [
+    registrationPayment?.publicId,
+    registrationPayment?.status,
+    registrationPayment?.checkoutUrl,
+  ]);
 
   if (state.loading && !state.data) return <Loading />;
   if (!state.data) return <ErrorState error={state.error} onRetry={() => void state.reload()} />;
   const registration = state.data;
   const trackingUrl = absoluteAppUrl(`/registrations/${registration.publicId}`);
+  const paymentActionLabel = payment?.status === "pending"
+    ? (de ? "Zahlung fortsetzen" : "Resume payment")
+    : payment?.status === "failed"
+      ? (de ? "Zahlung erneut versuchen" : "Retry payment")
+      : (de ? "Zahlung starten" : "Start payment");
 
   const checkout = async () => {
     setPaymentError(null);
@@ -60,10 +74,10 @@ export function RegistrationStatusPage() {
             <div><dt>Status</dt><dd><EventRegistrationStatus status={registration.status} position={registration.waitingListPosition} locale={locale} /></dd></div>
             <div><dt>{de ? "Freie Plätze" : "Places remaining"}</dt><dd>{registration.event.placesRemaining} / {registration.event.capacity}</dd></div>
           </dl>
-          {registration.status === "waiting_payment" && registration.event.priceCents ? <button className="btn btn-primary" type="button" onClick={checkout}>{de ? "Zahlung starten" : "Start payment"}</button> : null}
+          {registration.status === "waiting_payment" && registration.event.priceCents ? <button className="btn btn-primary" type="button" onClick={checkout}>{paymentActionLabel}</button> : null}
           {paymentError ? <p className="notice notice-bad" role="alert">{paymentError}</p> : null}
-          {payment?.isSimulated && payment.status === "pending" ? <div className="notice notice-info"><strong>{de ? "Simulierte Zahlung" : "Simulated payment"}</strong><div className="form-actions"><button className="btn btn-primary btn-sm" type="button" onClick={() => simulate("success")}>{de ? "Erfolg simulieren" : "Simulate success"}</button><button className="btn btn-outline btn-sm" type="button" onClick={() => simulate("failure")}>{de ? "Fehler simulieren" : "Simulate failure"}</button></div></div> : null}
-          {payment ? <p>{de ? "Zahlungsstatus" : "Payment status"}: <strong>{payment.status}</strong></p> : null}
+          {payment?.isSimulated && payment.status === "pending" ? <div className="notice notice-info"><strong>{de ? "Simulierte Zahlung" : "Simulated payment"}</strong><div className="form-actions"><button className="btn btn-primary btn-sm" type="button" onClick={() => simulate("success")}>{de ? "Erfolg simulieren" : "Simulate success"}</button><button className="btn btn-outline btn-sm" type="button" onClick={() => simulate("failure")}>{de ? "Fehler simulieren" : "Simulate failure"}</button><button className="btn btn-ghost btn-sm" type="button" onClick={() => simulate("cancel")}>{de ? "Abbruch simulieren" : "Simulate cancellation"}</button></div></div> : null}
+          {payment ? <div className={`notice notice-${payment.status === "paid" ? "ok" : payment.status === "failed" || payment.status === "cancelled" ? "bad" : "info"}`}><strong>{de ? "Zahlungsstatus" : "Payment status"}: {payment.status.replaceAll("_", " ")}</strong>{payment.errorMessage ? <p>{payment.errorMessage}</p> : null}{payment.expiresAt && payment.status === "pending" ? <p>{de ? "Reserviert bis" : "Reserved until"}: <time dateTime={payment.expiresAt}>{new Date(payment.expiresAt).toLocaleString(locale)}</time></p> : null}</div> : null}
           <button className="btn btn-ghost btn-sm" type="button" onClick={() => void state.reload()}>{de ? "Status aktualisieren" : "Refresh status"}</button>
         </section>
         <aside className="card registration-qr">

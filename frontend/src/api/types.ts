@@ -27,6 +27,10 @@ export type SessionInfo = {
 
 export type PublicConfig = {
   themes: Record<string, string>;
+  integrations?: {
+    payment: { provider: string; isSimulated: boolean };
+    social: { mode: string; isSimulated: boolean };
+  };
 };
 
 export type PublicationState = "draft" | "scheduled" | "live" | "archived" | "inactive";
@@ -99,7 +103,7 @@ export type PublicPost = {
   coordinates: { latitude: number; longitude: number } | null;
   destinationCoordinates: { latitude: number; longitude: number } | null;
   countryCode: string | null;
-  socialLinks: { provider: string; url: string }[];
+  socialLinks: { provider: string; url: string; isSimulated: boolean }[];
   features: string[];
   map: EventMapConfig | null;
   registration: EventRegistrationSummary | null;
@@ -404,6 +408,8 @@ export type PaymentInfo = {
   provider: string;
   isSimulated: boolean;
   errorMessage: string;
+  expiresAt: string | null;
+  createdAt?: string | null;
   checkoutUrl?: string;
   simulated?: boolean;
 };
@@ -507,13 +513,8 @@ export type RegistrationRecord = {
     priceCents: number | null;
     isDeposit: boolean;
   };
-  payment: {
-    publicId: string;
-    status: PaymentStatus;
-    amountCents: number;
-    currency: string;
-    isSimulated: boolean;
-  } | null;
+  payment: PaymentInfo | null;
+  paymentExpiresAt: string | null;
   trackingPath: string;
   createdAt: string;
   updatedAt: string;

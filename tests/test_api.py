@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from app.datetime_utils import utc_now
 from app.models import (
     PageThemeSelection,
     PaymentTransaction,
@@ -182,7 +183,7 @@ def test_theme_force_allowed_after_cooldown(client, app):
     )
     with app.app_context():
         selection = PageThemeSelection.query.filter_by(page_id="landing").first()
-        selection.last_forced_at = get_configured_local_now() - timedelta(hours=25)
+        selection.last_forced_at = utc_now() - timedelta(hours=25)
         db.session.commit()
 
     response = client.post(

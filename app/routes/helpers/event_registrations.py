@@ -1,8 +1,11 @@
 import secrets
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
+from flask import current_app
 from sqlalchemy import func, or_
 
+from app.datetime_utils import utc_now
 from app.models import (
     EVENT_REGISTRATION_CAPACITY_STATUSES,
     EVENT_REGISTRATION_NON_CANCELLED_STATUSES,
@@ -17,7 +20,10 @@ from app.models import (
     PAYMENT_STATUS_PENDING,
     PAYMENT_STATUS_REFUND_PENDING,
     EventRegistration,
+    PaymentStatusAudit,
     PaymentTransaction,
+    Post,
+    db,
 )
 from app.routes.helpers.tandem_form import KNOWN_OCCUPATIONS, get_occupation_choices
 
@@ -51,6 +57,69 @@ def latest_registration_payment(item):
         .order_by(PaymentTransaction.created_at.desc(), PaymentTransaction.id.desc())
         .first()
     )
+
+
+def payment_reservation_deadline(now=None):
+    now = now or utc_now()
+    minutes = int(current_app.config.get("PAYMENT_RESERVATION_MINUTES", 20))
+    return now + timedelta(minutes=max(5, minutes))
+
+
+def assign_payment_deadline(item, post, *, now=None):
+    if (
+        item.status == EVENT_REGISTRATION_STATUS_WAITING_PAYMENT
+        and post.registration_price_cents
+    ):
+        item.payment_expires_at = payment_reservation_deadline(now)
+    else:
+        item.payment_expires_at = None
+
+
+def expire_waiting_payment_registrations(*, post_id=None, now=None):
+    """Cancel expired unpaid reservations and promote waiting-list entries.
+
+    The operation is safe to call repeatedly. Callers own the transaction and
+    decide when to commit.
+    """
+    now = now or utc_now()
+    query = (
+        EventRegistration.query
+        .filter(EventRegistration.status == EVENT_REGISTRATION_STATUS_WAITING_PAYMENT)
+        .filter(EventRegistration.payment_expires_at.isnot(None))
+        .filter(EventRegistration.payment_expires_at <= now)
+    )
+    if post_id is not None:
+        query = query.filter(EventRegistration.post_id == post_id)
+    expired = query.with_for_update(skip_locked=True).all()
+    if not expired:
+        return [], []
+
+    affected_post_ids = set()
+    for item in expired:
+        item.status = EVENT_REGISTRATION_STATUS_CANCELLED
+        item.payment_expires_at = None
+        affected_post_ids.add(item.post_id)
+        payment = latest_registration_payment(item)
+        if payment is not None and payment.status == PAYMENT_STATUS_PENDING:
+            previous = payment.status
+            payment.status = PAYMENT_STATUS_CANCELLED
+            payment.error_message = "Payment reservation expired."
+            db.session.add(
+                PaymentStatusAudit(
+                    payment_id=payment.id,
+                    previous_status=previous,
+                    new_status=payment.status,
+                    actor="system",
+                    note="Payment reservation expired.",
+                )
+            )
+
+    promoted = []
+    for affected_post_id in sorted(affected_post_ids):
+        post = Post.query.filter_by(id=affected_post_id).with_for_update().first()
+        if post is not None:
+            promoted.extend(promote_waiting_list_for_post(post, now=now))
+    return expired, promoted
 
 
 def allowed_registration_transitions(item, post):
@@ -99,6 +168,7 @@ def apply_registration_transition(item, post, target):
             payment.status = PAYMENT_STATUS_CANCELLED
 
     item.status = target
+    assign_payment_deadline(item, post)
     promoted = []
     released_place = (
         previous in EVENT_REGISTRATION_CAPACITY_STATUSES
@@ -185,7 +255,7 @@ def determine_initial_registration_status(post):
     return EVENT_REGISTRATION_STATUS_APPROVED
 
 
-def promote_waiting_list_for_post(post):
+def promote_waiting_list_for_post(post, *, now=None):
     if not post.has_registration_queue:
         return []
 
@@ -207,6 +277,7 @@ def promote_waiting_list_for_post(post):
             if post.registration_price_cents
             else EVENT_REGISTRATION_STATUS_APPROVED
         )
+        assign_payment_deadline(candidate, post, now=now)
         promoted.append(candidate)
 
     return promoted

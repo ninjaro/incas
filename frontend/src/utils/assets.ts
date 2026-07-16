@@ -13,3 +13,11 @@ export function absoluteAppUrl(path: string): string {
   }
   return new URL(normalized, window.location.origin).toString();
 }
+
+export function accessKeyActivationUrl(secret: string): string {
+  const encoded = encodeURIComponent(secret);
+  if (import.meta.env.VITE_DATA_MODE === "demo") {
+    return `${window.location.origin}${window.location.pathname}#/admin?accessKey=${encoded}`;
+  }
+  return `${new URL("/admin", window.location.origin)}#access-key=${encoded}`;
+}

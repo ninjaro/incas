@@ -29,6 +29,26 @@ describe("DemoDataProvider", () => {
     await expect(provider.unlock("wrong")).rejects.toMatchObject({ code: "key_invalid" });
   });
 
+  it("revokes generated-key access when the key expires", async () => {
+    await provider.unlock("demo-admin");
+    const generated = await provider.createAccessKey({
+      label: "Temporary forms",
+      scopes: ["forms"],
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+    const temporary = new DemoDataProvider();
+    // Generated keys belong to their provider instance, like one backend.
+    const localGenerated = await provider.unlock(generated.secret);
+    expect(localGenerated.capabilities).toContain("forms");
+    await provider.expireAccessKey(generated.id);
+    await expect(provider.unlock(generated.secret)).rejects.toMatchObject({
+      code: "key_invalid",
+    });
+    await expect(temporary.unlock(generated.secret)).rejects.toMatchObject({
+      code: "key_invalid",
+    });
+  });
+
   it("replaces a previous theme vote instead of stacking votes", async () => {
     await provider.unlock("demo-admin");
     await provider.voteTheme("landing", "editorial");
@@ -120,9 +140,8 @@ describe("DemoDataProvider", () => {
     const checkout = await provider.startCheckout(paidEvent!.slug, registration.publicId);
     expect(checkout.status).toBe("pending");
     expect(checkout.isSimulated).toBe(true);
-    await expect(provider.startCheckout(paidEvent!.slug, registration.publicId)).rejects.toMatchObject({
-      code: "payment_exists",
-    });
+    const resumed = await provider.startCheckout(paidEvent!.slug, registration.publicId);
+    expect(resumed.publicId).toBe(checkout.publicId);
 
     const paid = await provider.simulatePayment(checkout.publicId, "success");
     expect(paid.status).toBe("paid");
@@ -200,6 +219,13 @@ describe("DemoDataProvider", () => {
       endsAt: "2026-07-11T18:00",
       publishAt: "2026-07-10T09:00",
       status: "scheduled",
+      isPinned: true,
+      imageUrl: "/static/img/example.jpg",
+      registrationLimitEnabled: true,
+      registrationLimit: 40,
+      registrationPriceCents: 200,
+      registrationIsDeposit: true,
+      summary: "Temporary summary",
     });
 
     const updated = await provider.updatePost(post.id, {
@@ -208,12 +234,42 @@ describe("DemoDataProvider", () => {
       endsAt: null,
       publishAt: null,
       status: "draft",
+      isPinned: false,
+      imageUrl: "",
+      registrationLimitEnabled: false,
+      registrationLimit: 0,
+      registrationPriceCents: 0,
+      registrationIsDeposit: false,
+      summary: "",
     });
     expect(updated).toMatchObject({
       eventKind: null,
       startsAt: null,
       endsAt: null,
       publishAt: null,
+      isPinned: false,
+      imageUrl: "",
+      registrationLimitEnabled: false,
+      registrationLimit: 0,
+      registrationPriceCents: 0,
+      registrationIsDeposit: false,
+      summary: "",
+      isActive: false,
     });
+  });
+
+  it("keeps every historical demo slug resolving after repeated explicit changes", async () => {
+    await provider.unlock("demo-admin");
+    const event = (await provider.getPublicPosts()).events[0];
+    const admin = (await provider.getAdminPosts()).items.find(
+      (item) => item.slug === event.slug,
+    );
+    if (!admin) return;
+    const original = admin.slug;
+    await provider.updatePostSlug(admin.id, `${original}-renamed`);
+    await provider.updatePostSlug(admin.id, `${original}-final`);
+    expect((await provider.getPublicPost(original)).slug).toBe(`${original}-final`);
+    expect((await provider.getPublicPost(`${original}-renamed`)).slug)
+      .toBe(`${original}-final`);
   });
 });

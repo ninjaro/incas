@@ -1,17 +1,17 @@
 import hashlib
 import json
 import secrets
-from datetime import datetime
 
 from flask import jsonify
 
 from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
-from app.models import AccessKey, db, get_configured_local_now
+from app.datetime_utils import parse_iso_to_utc, serialize_utc, utc_now
+from app.models import AccessKey, db
 from app.routes.helpers.access import ACCESS_LABELS
 
 
 def serialize_access_key(item):
-    now = get_configured_local_now()
+    now = utc_now()
     if item.revoked_at is not None:
         status = "revoked"
     elif item.expires_at <= now:
@@ -25,10 +25,10 @@ def serialize_access_key(item):
         "prefix": prefix,
         "scopes": item.scopes_list,
         "status": status,
-        "expiresAt": item.expires_at.isoformat(),
-        "revokedAt": item.revoked_at.isoformat() if item.revoked_at else None,
-        "lastUsedAt": item.last_used_at.isoformat() if item.last_used_at else None,
-        "createdAt": item.created_at.isoformat(),
+        "expiresAt": serialize_utc(item.expires_at),
+        "revokedAt": serialize_utc(item.revoked_at),
+        "lastUsedAt": serialize_utc(item.last_used_at),
+        "createdAt": serialize_utc(item.created_at),
     }
 
 
@@ -59,11 +59,11 @@ def api_admin_access_key_create():
     if unknown:
         errors["scopes"] = "One or more scopes are not available."
     try:
-        expires_at = datetime.fromisoformat((body.get("expiresAt") or "").strip())
+        expires_at = parse_iso_to_utc((body.get("expiresAt") or "").strip())
     except (TypeError, ValueError):
         expires_at = None
         errors["expiresAt"] = "Enter a valid expiration date and time."
-    if expires_at is not None and expires_at <= get_configured_local_now():
+    if expires_at is not None and expires_at <= utc_now():
         errors["expiresAt"] = "Expiration must be in the future."
     if errors:
         return validation_error(errors)
@@ -82,7 +82,7 @@ def api_admin_access_key_create():
     payload.update(
         {
             "secret": secret,
-            "unlockFragment": f"/admin/unlock/{secret}",
+            "unlockFragment": f"#access-key={secret}",
             "secretVisibleOnce": True,
         }
     )
@@ -96,7 +96,7 @@ def api_admin_access_key_revoke(key_id):
     if item is None:
         return api_error("not_found", "Access key not found.", status=404)
     if item.revoked_at is None:
-        item.revoked_at = get_configured_local_now()
+        item.revoked_at = utc_now()
         db.session.commit()
     return jsonify(serialize_access_key(item))
 
@@ -107,6 +107,6 @@ def api_admin_access_key_expire(key_id):
     item = db.session.get(AccessKey, key_id)
     if item is None:
         return api_error("not_found", "Access key not found.", status=404)
-    item.expires_at = get_configured_local_now()
+    item.expires_at = utc_now()
     db.session.commit()
     return jsonify(serialize_access_key(item))

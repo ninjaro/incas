@@ -124,7 +124,9 @@ function NavItem({
               }
             }}
           >
-            <span aria-hidden="true">⌄</span>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="m4 6 4 4 4-4" />
+            </svg>
           </button>
         </div>
         <div id={menuId} className="site-nav-group-menu" hidden={!isOpen}>

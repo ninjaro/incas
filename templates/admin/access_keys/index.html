@@ -108,7 +108,7 @@
                                             data-bs-target="#access-key-qr-modal"
                                             data-key="{{ item.key }}"
                                             data-key-state="{% if item.expires_at > now_local %}Active{% else %}Expired{% endif %}"
-                                            data-qr-link="{{ url_for('main.admin_unlock', phrase=item.key, _external=True) }}"
+                                            data-qr-link="{{ request.url_root.rstrip('/') }}/admin#access-key={{ item.key|urlencode }}"
                                         >
                                             Show QR
                                         </button>

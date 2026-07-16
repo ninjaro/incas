@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import type { Capability } from "../../api/types";
 import { useSession } from "../../auth/SessionContext";
@@ -72,6 +72,33 @@ function UnlockForm() {
 
 export function AdminLayout() {
   const session = useSession();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const handledActivation = useRef("");
+  const [activationMessage, setActivationMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const queryKey = new URLSearchParams(location.search).get("accessKey") ?? "";
+    const fragmentKey = window.location.hash.startsWith("#access-key=")
+      ? decodeURIComponent(window.location.hash.slice("#access-key=".length))
+      : "";
+    const key = queryKey || fragmentKey;
+    if (!key || handledActivation.current === key) return;
+
+    handledActivation.current = key;
+    void session.unlock(key)
+      .then((result) => {
+        setActivationMessage(
+          `Unlocked: ${(result.newScopes ?? []).join(", ") || "already active"}`,
+        );
+      })
+      .catch(() => {
+        setActivationMessage("This access key is invalid, expired, or rate limited.");
+      })
+      .finally(() => {
+        navigate("/admin", { replace: true });
+      });
+  }, [location.search, navigate, session]);
 
   return (
     <div className="admin-shell">
@@ -105,6 +132,9 @@ export function AdminLayout() {
         ) : null}
       </aside>
       <div>
+        {activationMessage ? (
+          <p className="notice notice-info" role="status">{activationMessage}</p>
+        ) : null}
         <Outlet />
       </div>
     </div>

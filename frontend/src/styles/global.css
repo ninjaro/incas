@@ -224,6 +224,21 @@ a {
   cursor: pointer;
 }
 
+.site-nav-group-disclosure svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: transform 160ms ease;
+}
+
+.site-nav-group-disclosure[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 /* React owns every visible disclosure state. Pointer hover updates the same
    state instead of using an independent CSS-only reveal. */
 .site-nav-group.is-open .site-nav-group-primary,
@@ -530,6 +545,23 @@ a {
   background: var(--paper);
 }
 
+.card-primary-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-primary-link:focus-visible {
+  outline: 3px solid var(--incas-orange);
+  outline-offset: 4px;
+  border-radius: calc(var(--radius-lg) - 3px);
+}
+
+.section-card > .card-primary-link {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
 .section-card h3,
 .section-related h2 {
   margin-top: 0;
@@ -538,12 +570,6 @@ a {
 .section-card p,
 .section-related span {
   color: var(--ink-soft);
-}
-
-.section-card a {
-  margin-top: auto;
-  color: var(--incas-orange-deep);
-  font-weight: 700;
 }
 
 .section-related > div {
@@ -609,6 +635,13 @@ a {
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.offers-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .offers-page .offers-card.is-featured {
   border-top: 4px solid var(--incas-orange);
 }
@@ -635,18 +668,6 @@ a {
   font-size: 1.45rem;
 }
 
-.offers-card-copy h2 a,
-.offers-card-more {
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.offers-card-copy h2 a:focus-visible,
-.offers-card-more:focus-visible {
-  outline: 3px solid var(--incas-orange);
-  outline-offset: 4px;
-}
-
 .offers-card-copy > p {
   color: var(--ink-soft);
 }
@@ -663,11 +684,6 @@ a {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: auto;
-}
-
-.offers-card-more {
-  color: var(--incas-orange-deep);
-  font-weight: 700;
 }
 
 .offers-actions {
@@ -703,11 +719,15 @@ a {
 }
 
 .contact-options a:hover,
-.contact-options a:focus-visible,
 .contact-options a.is-active {
   border-color: var(--incas-orange);
   background: var(--incas-orange-soft);
-  outline: none;
+}
+
+.contact-options a:focus-visible {
+  border-color: var(--incas-orange);
+  outline: 3px solid var(--incas-orange);
+  outline-offset: 3px;
 }
 
 .contact-form-panel {
@@ -1318,12 +1338,16 @@ a {
 
 .calendar-board-item {
   grid-column: span 6;
+  min-height: 220px;
+  background: var(--paper);
+}
+
+.calendar-board-link {
   display: grid;
   grid-template-columns: 5rem 1fr;
   gap: 1.25rem;
-  min-height: 220px;
+  min-height: inherit;
   padding: clamp(1.25rem, 3vw, 2.25rem);
-  background: var(--paper);
 }
 
 .calendar-board-item:nth-child(3n + 1) {
@@ -1651,7 +1675,13 @@ a {
   position: relative;
 }
 
-.event-card > img {
+.event-card-main {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.event-card-main > img {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -1677,12 +1707,7 @@ a {
   gap: 0.7rem;
 }
 
-.event-card-title-row a {
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.event-card-title-row a:hover {
+.event-card-main:hover .event-title {
   color: var(--incas-orange-deep);
 }
 
@@ -1831,6 +1856,37 @@ a {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.scroll-indicator:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 5px;
+  border-radius: var(--radius);
+}
+
+.tandem-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.slug-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-warm);
+}
+
+.slug-editor small {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
 }
 
 .landing-about-offers {
@@ -1895,9 +1951,9 @@ a {
   padding: 1.25rem;
 }
 
-.post-card h3 a,
-.post-card > a {
-  color: var(--ink);
+.post-card-main {
+  display: block;
+  height: 100%;
 }
 
 .editorial-feature {
@@ -2539,9 +2595,20 @@ a {
   }
 
   .calendar-board-item {
-    grid-template-columns: 3.25rem 1fr;
     min-height: 0;
+  }
+
+  .calendar-board-link {
+    grid-template-columns: 3.25rem 1fr;
     padding: 1rem;
+  }
+
+  .slug-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .slug-editor small {
+    grid-column: auto;
   }
 
   .calendar-board-date strong {

@@ -78,7 +78,7 @@
         },
         {
           "title": "Kontakt / Fragen",
-          "to": "/contact"
+          "to": "/contact?form=general"
         }
       ],
       "pages": [
@@ -469,7 +469,7 @@
         },
         {
           "title": "Contact / Questions",
-          "to": "/contact"
+          "to": "/contact?form=general"
         }
       ],
       "pages": [

@@ -26,6 +26,7 @@ export function mapPublicFormError(error: unknown, locale: Locale): PublicFormEr
       event_unknown: ["This event is no longer available.", "Diese Veranstaltung ist nicht mehr verfügbar."],
       registration_closed: ["Registration is closed.", "Die Anmeldung ist geschlossen."],
       capacity_reached: ["No place can be reserved right now.", "Aktuell kann kein Platz reserviert werden."],
+      registration_conflict: ["A new registration could not be created with these details.", "Mit diesen Angaben konnte keine neue Anmeldung erstellt werden."],
     };
     const pair = messages[error.code];
     const base = pair?.[de ? 1 : 0] ?? (de

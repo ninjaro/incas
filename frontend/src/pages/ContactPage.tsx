@@ -78,15 +78,18 @@ export function ContactPage() {
   const copy = COPY[locale];
   const de = locale === "de";
   const [params] = useSearchParams();
-  const selected = params.get("form");
+  const requestedForm = params.get("form");
+  const selected = requestedForm === "general" || requestedForm === "suggest-event"
+    ? requestedForm
+    : null;
   const kind = params.get("kind") === "breakfast" ? "breakfast" : "country_evening";
 
   return (
     <>
       <PageHeader kicker={copy.kicker} title={copy.title} sub={copy.sub} />
       <nav className="contact-options" aria-label={de ? "Kontaktmöglichkeiten" : "Contact options"}>
-        <Link className={selected === "general" ? "is-active" : ""} to="/contact?form=general"><strong>{de ? "Allgemeine Nachricht" : "General message"}</strong><span>{de ? "Fragen, Feedback oder eine Nachricht an das Team." : "Questions, feedback, or a message for the team."}</span></Link>
-        <Link className={selected === "suggest-event" ? "is-active" : ""} to="/contact?form=suggest-event"><strong>{de ? "Event vorschlagen" : "Suggest an event"}</strong><span>{de ? "Schlage ein Land oder eine Kultur für ein Event vor." : "Propose a country or culture for a future event."}</span></Link>
+        <Link aria-current={selected === "general" ? "page" : undefined} className={selected === "general" ? "is-active" : ""} to="/contact?form=general"><strong>{de ? "Allgemeine Nachricht" : "General message"}</strong><span>{de ? "Fragen, Feedback oder eine Nachricht an das Team." : "Questions, feedback, or a message for the team."}</span></Link>
+        <Link aria-current={selected === "suggest-event" ? "page" : undefined} className={selected === "suggest-event" ? "is-active" : ""} to="/contact?form=suggest-event"><strong>{de ? "Event vorschlagen" : "Suggest an event"}</strong><span>{de ? "Schlage ein Land oder eine Kultur für ein Event vor." : "Propose a country or culture for a future event."}</span></Link>
         <Link to="/tandem"><strong>{de ? "Sprachtandem" : "Language Tandem"}</strong><span>{de ? "Öffne die ausführliche Tandem-Anmeldung." : "Open the longer Tandem application."}</span></Link>
       </nav>
       {selected === "general" ? <section className="contact-form-panel" aria-label={de ? "Allgemeines Kontaktformular" : "General contact form"}><ContactForm /></section> : null}

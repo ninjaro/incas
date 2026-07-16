@@ -1,11 +1,10 @@
 import json
 import re
 from datetime import datetime, time, timedelta
-from zoneinfo import ZoneInfo
 
-from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 
+from app.datetime_utils import local_now, to_utc_naive, utc_now, utc_to_local
 from app.event_kinds import EVENT_KINDS, get_event_kind
 
 db = SQLAlchemy()
@@ -86,19 +85,7 @@ BOARD_GAMES_TUESDAY_RE = re.compile(r"\s*[·:-]?\s*tuesday\s*$", re.IGNORECASE)
 
 
 def get_configured_local_now():
-    timezone_name = "Europe/Berlin"
-
-    try:
-        timezone_name = current_app.config.get("LOCAL_TIMEZONE", timezone_name)
-    except RuntimeError:
-        pass
-
-    try:
-        timezone = ZoneInfo(timezone_name)
-    except Exception:
-        timezone = ZoneInfo("Europe/Berlin")
-
-    return datetime.now(timezone).replace(tzinfo=None)
+    return local_now()
 
 
 def _strip_event_prefix(value, prefix):
@@ -241,8 +228,8 @@ class Post(db.Model):
             return self.ends_at_override
         if self.duration_minutes:
             return self.starts_at + timedelta(minutes=self.duration_minutes)
-        next_day = (self.starts_at + timedelta(days=1)).date()
-        return datetime.combine(next_day, time(6, 0, 0))
+        next_day = (utc_to_local(self.starts_at) + timedelta(days=1)).date()
+        return to_utc_naive(datetime.combine(next_day, time(6, 0, 0)))
 
     @property
     def event_kind_config(self):
@@ -281,7 +268,7 @@ class Post(db.Model):
             return False
         if self.publish_at is None:
             return True
-        return get_configured_local_now() >= self.publish_at
+        return utc_now() >= self.publish_at
 
     @property
     def publication_status(self):
@@ -304,7 +291,7 @@ class Post(db.Model):
             return "scheduled"
         if not self.is_event:
             return "live"
-        return "live" if get_configured_local_now() < self.ends_at else "archived"
+        return "live" if utc_now() < self.ends_at else "archived"
 
     @property
     def is_live(self):
@@ -312,7 +299,7 @@ class Post(db.Model):
             return False
         if not self.is_event:
             return True
-        return get_configured_local_now() < self.ends_at
+        return utc_now() < self.ends_at
 
     @property
     def event_public_id(self):
@@ -394,6 +381,15 @@ class Post(db.Model):
         if not self.has_registration_queue:
             return False
         return self.registration_reserved_count < (self.registration_limit or 0)
+
+
+class PostSlugRedirect(db.Model):
+    __tablename__ = "post_slug_redirects"
+
+    id = db.Column(db.Integer, primary_key=True)
+    old_slug = db.Column(db.String(160), nullable=False, unique=True, index=True)
+    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now)
 
 
 class InstagramConnection(db.Model):
@@ -514,6 +510,7 @@ class EventRegistration(db.Model):
         default=EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
         index=True,
     )
+    payment_expires_at = db.Column(db.DateTime, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime,
@@ -610,7 +607,17 @@ class AccessKey(db.Model):
 
     @property
     def is_active(self):
-        return self.revoked_at is None and self.expires_at > get_configured_local_now()
+        return self.revoked_at is None and self.expires_at > utc_now()
+
+
+class AccessUnlockAttempt(db.Model):
+    __tablename__ = "access_unlock_attempts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    source_hash = db.Column(db.String(64), nullable=False, index=True)
+    session_audit_id = db.Column(db.String(32), nullable=False, index=True)
+    succeeded = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
 
 
 POST_STATUS_DRAFT = "draft"
@@ -714,6 +721,13 @@ KARAOKE_QUEUE_STATUSES = {
 
 class KaraokeSongRequest(db.Model):
     __tablename__ = "karaoke_song_requests"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "post_id",
+            "position",
+            name="uq_karaoke_queue_post_position",
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
@@ -801,6 +815,7 @@ class PaymentTransaction(db.Model):
     provider_session_id = db.Column(db.String(128), nullable=False, default="")
     is_simulated = db.Column(db.Boolean, nullable=False, default=True)
     error_message = db.Column(db.Text, nullable=False, default="")
+    expires_at = db.Column(db.DateTime, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

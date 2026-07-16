@@ -1,11 +1,11 @@
 import hashlib
 import hmac
-from datetime import datetime
 from uuid import uuid4
 
 from flask import current_app, flash, redirect, session, url_for
 
-from app.models import AccessKey, db, get_configured_local_now
+from app.datetime_utils import parse_iso_to_utc, serialize_utc, utc_now
+from app.models import AccessKey, db
 
 ACCESS_TARGETS = {
     "posts": "main.admin_posts",
@@ -65,7 +65,7 @@ def prune_expired_scopes():
     if not scopes or not expires_by_scope:
         return
 
-    now_local = get_configured_local_now()
+    now = utc_now()
     active_scopes = []
     active_expires = {}
     changed = False
@@ -74,7 +74,7 @@ def prune_expired_scopes():
         key_id = key_ids_by_scope.get(scope)
         if key_id:
             item = db.session.get(AccessKey, key_id)
-            if item is None or item.revoked_at is not None or item.expires_at <= now_local:
+            if item is None or item.revoked_at is not None or item.expires_at <= now:
                 changed = True
                 continue
         raw_expires_at = expires_by_scope.get(scope)
@@ -83,12 +83,12 @@ def prune_expired_scopes():
             continue
 
         try:
-            expires_at = datetime.fromisoformat(raw_expires_at)
+            expires_at = parse_iso_to_utc(raw_expires_at)
         except ValueError:
             changed = True
             continue
 
-        if expires_at <= now_local:
+        if expires_at <= now:
             changed = True
             continue
 
@@ -151,7 +151,7 @@ def grant_scopes(scopes, expires_at=None, key_id=None):
     current = list(get_access_scopes())
     scope_expires = dict(session.get("access_scope_expires", {}))
     key_ids_by_scope = dict(session.get("access_scope_key_ids", {}))
-    expires_value = expires_at.isoformat(timespec="minutes") if expires_at else None
+    expires_value = serialize_utc(expires_at, timespec="minutes") if expires_at else None
 
     for scope in scopes:
         if scope not in current:
@@ -194,11 +194,11 @@ def resolve_access_grant_by_phrase(phrase):
         if hmac.compare_digest(digest, expected_digest):
             return {"scopes": [scope], "expires_at": None, "key_id": None}
 
-    now_local = get_configured_local_now()
+    now = utc_now()
 
     items = (
         AccessKey.query
-        .filter(AccessKey.expires_at > now_local)
+        .filter(AccessKey.expires_at > now)
         .filter(AccessKey.revoked_at.is_(None))
         .order_by(AccessKey.created_at.desc())
         .all()

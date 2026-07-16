@@ -13,7 +13,7 @@ from app.models import Post, db, get_configured_local_now
         ("/content/country-evening-poland", "/events/country-evening-poland"),
         ("/events/country-evening-poland", "/events/country-evening-poland"),
         ("/offers/language-tandem", "/offers/language-tandem"),
-        ("/contact-form", "/contact"),
+        ("/contact-form", "/contact?form=general"),
         ("/contacts", "/contact"),
         ("/suggest-event", "/suggest-event"),
         ("/language-tandem", "/tandem"),
@@ -63,6 +63,12 @@ def test_primary_frontend_uses_stable_urls_and_legacy_redirects(tmp_path):
     legacy = client.get("/events?month=2026-07")
     assert legacy.status_code == 308
     assert legacy.headers["Location"].endswith("/calendar?month=2026-07")
+    legacy_contact = client.get("/contact-form")
+    assert legacy_contact.status_code == 308
+    assert legacy_contact.headers["Location"].endswith("/contact?form=general")
+    contacts = client.get("/contacts")
+    assert contacts.status_code == 308
+    assert contacts.headers["Location"].endswith("/contact")
     assert client.get("/app").headers["Location"] == "/"
 
     with app.app_context():

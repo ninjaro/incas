@@ -1,9 +1,10 @@
 import json
-from datetime import datetime
 
 from flask import jsonify, request
+from sqlalchemy.exc import IntegrityError
 
 from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.datetime_utils import parse_iso_to_utc, serialize_utc
 from app.event_kinds import get_event_kind
 from app.models import (
     POST_STATUS_DRAFT,
@@ -11,12 +12,14 @@ from app.models import (
     POST_STATUS_SCHEDULED,
     POST_STATUSES,
     Post,
+    PostSlugRedirect,
     PostTemplate,
     SocialPublication,
     db,
     get_configured_local_now,
 )
-from app.routes.helpers.content import unique_slug
+from app.routes.helpers.content import slugify, unique_slug
+from app.security_policy import image_url_is_allowed
 from app.social import (
     SOCIAL_PROVIDERS,
     publish_post_to_channels,
@@ -33,10 +36,10 @@ def serialize_admin_post(item):
         "summary": item.summary,
         "body": item.body,
         "eventKind": item.event_kind,
-        "startsAt": item.starts_at.isoformat() if item.starts_at else None,
-        "endsAt": item.ends_at_override.isoformat() if item.ends_at_override else None,
+        "startsAt": serialize_utc(item.starts_at),
+        "endsAt": serialize_utc(item.ends_at_override),
         "durationMinutes": item.duration_minutes,
-        "publishAt": item.publish_at.isoformat() if item.publish_at else None,
+        "publishAt": serialize_utc(item.publish_at),
         "status": item.publication_status,
         "storedStatus": item.status,
         "isActive": bool(item.is_active),
@@ -60,8 +63,8 @@ def serialize_admin_post(item):
         "destinationLongitude": item.destination_longitude,
         "mapConfig": item.map_config_dict,
         "featureFlags": item.feature_flags_list,
-        "createdAt": item.created_at.isoformat() if item.created_at else None,
-        "updatedAt": item.updated_at.isoformat() if item.updated_at else None,
+        "createdAt": serialize_utc(item.created_at),
+        "updatedAt": serialize_utc(item.updated_at),
     }
 
 
@@ -69,7 +72,7 @@ def parse_datetime_field(value, field, errors):
     if value in (None, ""):
         return None
     try:
-        return datetime.fromisoformat(value)
+        return parse_iso_to_utc(value)
     except (TypeError, ValueError):
         errors[field] = "Enter a valid date and time."
         return None
@@ -82,7 +85,8 @@ def apply_post_fields(item, body, errors, *, creating=False):
             errors["title"] = "Title is required."
         else:
             item.title = title
-            item.slug = unique_slug(title, current_id=item.id)
+            if creating:
+                item.slug = unique_slug(title)
 
     for source, attr in (
         ("summary", "summary"),
@@ -91,6 +95,8 @@ def apply_post_fields(item, body, errors, *, creating=False):
     ):
         if source in body:
             setattr(item, attr, (body.get(source) or "").strip())
+    if not image_url_is_allowed(item.image_url):
+        errors["imageUrl"] = "Use a local image or an approved remote image host."
 
     if "eventKind" in body:
         event_kind = (body.get("eventKind") or "").strip() or None
@@ -123,26 +129,25 @@ def apply_post_fields(item, body, errors, *, creating=False):
     if "registrationLimitEnabled" in body:
         item.registration_limit_enabled = bool(body.get("registrationLimitEnabled"))
     if "registrationLimit" in body:
-        raw_limit = body.get("registrationLimit")
-        if raw_limit in (None, ""):
-            item.registration_limit = None
-        else:
-            try:
-                item.registration_limit = max(int(raw_limit), 0)
-            except (TypeError, ValueError):
-                errors["registrationLimit"] = "Enter a whole number."
+        _apply_optional_integer(
+            item,
+            body.get("registrationLimit"),
+            "registration_limit",
+            "registrationLimit",
+            errors,
+            minimum=0,
+            maximum=10_000,
+        )
     if "registrationPriceCents" in body:
-        raw_price = body.get("registrationPriceCents")
-        if raw_price in (None, ""):
-            item.registration_price_cents = None
-        else:
-            try:
-                price = int(raw_price)
-                if price < 0:
-                    raise ValueError
-                item.registration_price_cents = price
-            except (TypeError, ValueError):
-                errors["registrationPriceCents"] = "Enter a non-negative amount in cents."
+        _apply_optional_integer(
+            item,
+            body.get("registrationPriceCents"),
+            "registration_price_cents",
+            "registrationPriceCents",
+            errors,
+            minimum=0,
+            maximum=10_000_000,
+        )
     if "registrationIsDeposit" in body:
         item.registration_is_deposit = bool(body.get("registrationIsDeposit"))
 
@@ -205,13 +210,7 @@ def apply_post_fields(item, body, errors, *, creating=False):
 
     if item.ends_at_override and item.starts_at and item.ends_at_override <= item.starts_at:
         errors["endsAt"] = "End time must be after the start time."
-    item.registration_mode = item.registration_mode or "none"
-    if item.registration_mode not in {"none", "queue", "karaoke"}:
-        errors["registrationMode"] = "Use none, queue, or karaoke."
-    if item.registration_limit_enabled and (item.registration_limit or 0) <= 0:
-        errors["registrationLimit"] = "A registration queue needs at least one place."
-    if item.registration_is_deposit and not item.registration_price_cents:
-        errors["registrationPriceCents"] = "A deposit event needs a positive amount."
+    _validate_registration_fields(item, errors, include_mode=True)
     if item.country_code:
         item.country_code = item.country_code.upper()
         if len(item.country_code) != 2:
@@ -220,6 +219,43 @@ def apply_post_fields(item, body, errors, *, creating=False):
         errors["latitude"] = "Latitude must be between -90 and 90."
     if item.longitude is not None and not -180 <= item.longitude <= 180:
         errors["longitude"] = "Longitude must be between -180 and 180."
+
+
+def _apply_optional_integer(
+    item,
+    raw_value,
+    attribute,
+    field,
+    errors,
+    *,
+    minimum,
+    maximum,
+):
+    if raw_value in (None, ""):
+        setattr(item, attribute, None)
+        return
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        errors[field] = "Enter a whole number."
+        return
+    if value < minimum or value > maximum:
+        errors[field] = f"Enter a value from {minimum} to {maximum}."
+        return
+    setattr(item, attribute, value)
+
+
+def _validate_registration_fields(item, errors, *, include_mode=False):
+    if item.event_kind and get_event_kind(item.event_kind) is None:
+        errors["eventKind"] = "Unknown event kind."
+    if include_mode:
+        item.registration_mode = item.registration_mode or "none"
+        if item.registration_mode not in {"none", "queue", "karaoke"}:
+            errors["registrationMode"] = "Use none, queue, or karaoke."
+    if item.registration_limit_enabled and (item.registration_limit or 0) <= 0:
+        errors["registrationLimit"] = "A registration queue needs at least one place."
+    if item.registration_is_deposit and not item.registration_price_cents:
+        errors["registrationPriceCents"] = "A deposit event needs a positive amount."
 
 
 def apply_post_status(item, body, errors):
@@ -327,6 +363,39 @@ def api_admin_post_update(post_id):
     return jsonify(serialize_admin_post(item))
 
 
+@api_bp.patch("/admin/posts/<int:post_id>/slug")
+@require_capability("posts")
+def api_admin_post_slug_update(post_id):
+    item = db.session.get(Post, post_id)
+    if item is None:
+        return api_error("not_found", "Post not found.", status=404)
+    requested = (get_json_body().get("slug") or "").strip().lower()
+    normalized = slugify(requested)
+    if not requested or requested != normalized:
+        return validation_error(
+            {"slug": "Use lowercase letters, numbers, and single hyphens."}
+        )
+    if requested == item.slug:
+        return jsonify(serialize_admin_post(item))
+    if (
+        Post.query.filter(Post.slug == requested, Post.id != item.id).first()
+        or PostSlugRedirect.query.filter_by(old_slug=requested).first()
+    ):
+        return validation_error({"slug": "This URL slug is already in use."})
+
+    old_slug = item.slug
+    item.slug = requested
+    redirect = PostSlugRedirect.query.filter_by(old_slug=old_slug).first()
+    if redirect is None:
+        db.session.add(PostSlugRedirect(old_slug=old_slug, post_id=item.id))
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return validation_error({"slug": "This URL slug is already in use."})
+    return jsonify(serialize_admin_post(item))
+
+
 @api_bp.post("/admin/posts/<int:post_id>/social")
 @require_capability("posts")
 def api_admin_post_social_publish(post_id):
@@ -397,7 +466,7 @@ def serialize_template(template):
         "registrationIsDeposit": bool(template.registration_is_deposit),
         "imageUrl": template.image_url,
         "socialSettings": template.social_settings_dict,
-        "updatedAt": template.updated_at.isoformat() if template.updated_at else None,
+        "updatedAt": serialize_utc(template.updated_at),
     }
 
 
@@ -423,15 +492,35 @@ def apply_template_fields(template, body, errors, *, creating=False):
     if "registrationLimitEnabled" in body:
         template.registration_limit_enabled = bool(body.get("registrationLimitEnabled"))
     if "registrationLimit" in body:
-        raw_limit = body.get("registrationLimit")
-        template.registration_limit = int(raw_limit) if raw_limit not in (None, "") else None
+        _apply_optional_integer(
+            template,
+            body.get("registrationLimit"),
+            "registration_limit",
+            "registrationLimit",
+            errors,
+            minimum=0,
+            maximum=10_000,
+        )
     if "registrationPriceCents" in body:
-        raw_price = body.get("registrationPriceCents")
-        template.registration_price_cents = int(raw_price) if raw_price not in (None, "") else None
+        _apply_optional_integer(
+            template,
+            body.get("registrationPriceCents"),
+            "registration_price_cents",
+            "registrationPriceCents",
+            errors,
+            minimum=0,
+            maximum=10_000_000,
+        )
     if "registrationIsDeposit" in body:
         template.registration_is_deposit = bool(body.get("registrationIsDeposit"))
-    if "socialSettings" in body and isinstance(body.get("socialSettings"), dict):
-        template.social_settings = json.dumps(body["socialSettings"])
+    if "socialSettings" in body:
+        if isinstance(body.get("socialSettings"), dict):
+            template.social_settings = json.dumps(body["socialSettings"])
+        else:
+            errors["socialSettings"] = "Social settings must be an object."
+    if not image_url_is_allowed(template.image_url):
+        errors["imageUrl"] = "Use a local image or an approved remote image host."
+    _validate_registration_fields(template, errors)
 
 
 @api_bp.get("/admin/post-templates")

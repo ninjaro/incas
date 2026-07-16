@@ -23,20 +23,21 @@ export function OffersPage() {
           const schedule = kind?.schedule;
           return (
             <article key={page.to} className={`offers-card${page.featured ? " is-featured" : ""}`}>
-              <EventIcon icon={page.icon} />
-              <div className="offers-card-copy">
-                <h2><Link to={page.to}>{page.title}</Link></h2>
-                <p>{page.description}</p>
-                {schedule ? (
-                  <p className="offers-card-meta">
-                    {de ? "Typischer Start" : "Typical start"}: {weekdayNames[schedule.weekday]} · {schedule.time}
-                  </p>
-                ) : null}
-              </div>
-              <div className="offers-card-footer">
-                <Link className="offers-card-more" to={page.to}>{de ? "Mehr erfahren" : "Learn more"} <span aria-hidden="true">-&gt;</span></Link>
+              <Link className="offers-card-main card-primary-link" to={page.to} aria-label={page.title}>
+                <EventIcon icon={page.icon} />
+                <div className="offers-card-copy">
+                  <h2>{page.title}</h2>
+                  <p>{page.description}</p>
+                  {schedule ? (
+                    <p className="offers-card-meta">
+                      {de ? "Typischer Start" : "Typical start"}: {weekdayNames[schedule.weekday]} · {schedule.time}
+                    </p>
+                  ) : null}
+                </div>
+              </Link>
+              {page.secondaryAction ? <div className="offers-card-footer">
                 {page.secondaryAction ? <Link className="btn btn-outline btn-sm" to={page.secondaryAction.to}>{page.secondaryAction.title}</Link> : null}
-              </div>
+              </div> : null}
             </article>
           );
         })}

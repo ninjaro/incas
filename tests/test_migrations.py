@@ -30,13 +30,23 @@ def test_fresh_database_upgrades_to_current_schema(tmp_path):
         inspector = sa.inspect(db.engine)
         assert {
             "posts",
+            "post_slug_redirects",
             "event_registrations",
             "payment_transactions",
             "access_keys",
+            "access_unlock_attempts",
             "alembic_version",
         } <= set(inspector.get_table_names())
         post_columns = {column["name"] for column in inspector.get_columns("posts")}
         assert {"ends_at", "registration_mode", "map_config", "feature_flags"} <= post_columns
+        registration_columns = {
+            column["name"] for column in inspector.get_columns("event_registrations")
+        }
+        payment_columns = {
+            column["name"] for column in inspector.get_columns("payment_transactions")
+        }
+        assert "payment_expires_at" in registration_columns
+        assert "expires_at" in payment_columns
 
 
 def test_legacy_database_reconciles_without_losing_rows(tmp_path):

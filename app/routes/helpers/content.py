@@ -1,7 +1,8 @@
 import calendar
 from datetime import datetime, timedelta
 
-from app.models import Post, get_configured_local_now
+from app.datetime_utils import to_utc_naive, utc_to_local
+from app.models import Post, PostSlugRedirect, get_configured_local_now
 
 
 def slugify(value):
@@ -31,7 +32,10 @@ def unique_slug(title, current_id=None):
         query = Post.query.filter_by(slug=slug)
         if current_id is not None:
             query = query.filter(Post.id != current_id)
-        if query.first() is None:
+        if (
+            query.first() is None
+            and PostSlugRedirect.query.filter_by(old_slug=slug).first() is None
+        ):
             return slug
         slug = f"{base}-{index}"
         index += 1
@@ -41,7 +45,7 @@ def parse_datetime_local(value):
     value = (value or "").strip()
     if not value:
         return None
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M")
+    return to_utc_naive(datetime.strptime(value, "%Y-%m-%dT%H:%M"))
 
 
 def parse_starts_at(value):
@@ -55,7 +59,7 @@ def parse_publish_at(value):
 def format_datetime_local(value):
     if value is None:
         return ""
-    return value.strftime("%Y-%m-%dT%H:%M")
+    return utc_to_local(value).strftime("%Y-%m-%dT%H:%M")
 
 
 def get_default_event_start(event_kind=""):
@@ -66,7 +70,9 @@ def get_default_event_start(event_kind=""):
         "trip": (9, 30),
     }
     hour, minute = time_by_kind.get((event_kind or "").strip(), (20, 0))
-    return datetime(default_date.year, default_date.month, default_date.day, hour, minute)
+    return to_utc_naive(
+        datetime(default_date.year, default_date.month, default_date.day, hour, minute)
+    )
 
 
 def parse_month_value(raw_value, fallback=None):
@@ -93,7 +99,11 @@ def build_monthly_overview_title(year, month):
 
 def build_monthly_overview_publish_at(year, month):
     month_start = datetime(year, month, 1, 0, 5)
-    return month_start if month_start > get_configured_local_now() else None
+    return (
+        to_utc_naive(month_start)
+        if month_start > get_configured_local_now()
+        else None
+    )
 
 
 def build_monthly_overview_body(year, month, items, refreshed_at=None):
@@ -112,14 +122,15 @@ def build_monthly_overview_body(year, month, items, refreshed_at=None):
 
     current_day = None
     for item in items:
-        item_day = item.starts_at.date()
+        local_start = utc_to_local(item.starts_at)
+        item_day = local_start.date()
         if item_day != current_day:
             if current_day is not None:
                 lines.append("")
-            lines.append(item.starts_at.strftime("%A, %d %B"))
+            lines.append(local_start.strftime("%A, %d %B"))
             current_day = item_day
 
-        lines.append(f"- {item.starts_at.strftime('%H:%M')} {item.display_title}")
+        lines.append(f"- {local_start.strftime('%H:%M')} {item.display_title}")
         if item.summary:
             lines.append(f"  {item.summary}")
 

@@ -19,9 +19,10 @@ export function AboutPage() {
         <div className="section-card-grid">
           {topics.map((topic) => (
             <article key={topic.path} className="section-card">
-              <h3>{topic.title}</h3>
-              <p>{topic.summary}</p>
-              <Link to={topic.path}>{de ? "Mehr lesen" : "Read more"} <span aria-hidden="true">-&gt;</span></Link>
+              <Link className="card-primary-link" to={topic.path} aria-label={topic.title}>
+                <h3>{topic.title}</h3>
+                <p>{topic.summary}</p>
+              </Link>
             </article>
           ))}
         </div>
