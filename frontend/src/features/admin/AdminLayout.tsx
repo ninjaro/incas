@@ -76,6 +76,7 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const handledActivation = useRef("");
   const [activationMessage, setActivationMessage] = useState<string | null>(null);
+  const [locking, setLocking] = useState(false);
 
   useEffect(() => {
     const queryKey = new URLSearchParams(location.search).get("accessKey") ?? "";
@@ -100,38 +101,60 @@ export function AdminLayout() {
       });
   }, [location.search, navigate, session]);
 
+  const lock = async () => {
+    setLocking(true);
+    setActivationMessage(null);
+    try {
+      await session.lock();
+      navigate("/", { replace: true });
+    } catch (error) {
+      setActivationMessage(error instanceof Error ? error.message : "Admin access could not be cleared.");
+    } finally {
+      setLocking(false);
+    }
+  };
+
   return (
     <div className="admin-shell">
       <aside>
-        <nav className="admin-sidenav" aria-label="Admin navigation">
-          {ADMIN_NAV.map((item) => {
-            const locked = item.capability !== null && !session.hasCapability(item.capability);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/admin"}
-                className={locked ? "is-locked" : undefined}
-                aria-disabled={locked}
-                title={locked ? "Requires an additional access key" : undefined}
-              >
-                {item.label}
-              </NavLink>
-            );
-          })}
-        </nav>
-        <UnlockForm />
-        {session.capabilities.length > 0 ? (
-          <div className="capability-chips" aria-label="Active capabilities">
-            {session.capabilities.map((capability) => (
-              <span key={capability} className="badge badge-brand">
-                {session.capabilityLabels[capability] ?? capability}
-              </span>
-            ))}
-          </div>
-        ) : null}
+        <div className="admin-sidebar-inner">
+          {session.capabilities.length > 0 ? (
+            <button type="button" className="btn btn-outline btn-sm admin-lock" disabled={locking} onClick={() => void lock()}>
+              {locking ? "Locking…" : "Lock admin"}
+            </button>
+          ) : null}
+          <nav className="admin-sidenav" aria-label="Admin navigation">
+            {ADMIN_NAV.map((item) => {
+              const locked = item.capability !== null && !session.hasCapability(item.capability);
+              return locked ? (
+                <span
+                  key={item.to}
+                  className="admin-nav-disabled"
+                  aria-disabled="true"
+                  title="Requires an additional access key"
+                >
+                  {item.label}<small>locked</small>
+                </span>
+              ) : (
+                <NavLink key={item.to} to={item.to} end={item.to === "/admin"}>
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </nav>
+          <UnlockForm />
+          {session.capabilities.length > 0 ? (
+            <div className="capability-chips" aria-label="Active capabilities">
+              {session.capabilities.map((capability) => (
+                <span key={capability} className="badge badge-brand">
+                  {session.capabilityLabels[capability] ?? capability}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </aside>
-      <div>
+      <div className="admin-content">
         {activationMessage ? (
           <p className="notice notice-info" role="status">{activationMessage}</p>
         ) : null}

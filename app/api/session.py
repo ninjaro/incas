@@ -18,11 +18,14 @@ from app.routes.helpers.access import (
 
 
 def serialize_session():
+    capabilities = sorted(get_capabilities())
+    expiry_values = session.get("access_scope_expires", {}).values()
     return {
-        "capabilities": sorted(get_capabilities()),
+        "capabilities": capabilities,
         "capabilityLabels": ACCESS_LABELS,
         "sessionAuditId": get_session_audit_id(),
         "hasAccessKeys": has_any_access_key(),
+        "nextExpiryAt": min(expiry_values, default=None),
     }
 
 
@@ -80,6 +83,14 @@ def api_access_unlock():
     payload["unlockedScopes"] = grant["scopes"]
     payload["newScopes"] = new_scopes
     return jsonify(payload)
+
+
+@api_bp.post("/access/lock")
+def api_access_lock():
+    session.pop("access_scopes", None)
+    session.pop("access_scope_expires", None)
+    session.pop("access_scope_key_ids", None)
+    return jsonify(serialize_session())
 
 
 def _record_unlock_attempt(source, session_audit_id, *, succeeded, commit=True):

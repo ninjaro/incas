@@ -22,6 +22,7 @@ export type SessionInfo = {
   capabilityLabels: Record<string, string>;
   sessionAuditId: string;
   hasAccessKeys: boolean;
+  nextExpiryAt: string | null;
   newScopes?: string[];
 };
 
@@ -198,6 +199,7 @@ export type AdminPost = {
   createdAt: string | null;
   updatedAt: string | null;
   social?: SocialPublication[];
+  templateSocialSettings?: Record<string, unknown>;
 };
 
 export type AdminPostsResponse = {
@@ -252,6 +254,8 @@ export type PostTemplateInfo = {
   registrationLimit: number | null;
   registrationPriceCents: number | null;
   registrationIsDeposit: boolean;
+  registrationMode: "none" | "queue" | "karaoke";
+  depositExplanation: string;
   imageUrl: string;
   socialSettings: Record<string, unknown>;
   updatedAt: string | null;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { ApiError } from "../../api/client";
@@ -21,35 +21,43 @@ const PREVIEW_ROUTES: Partial<Record<PageId, string>> = {
   admin_dashboard: "/admin",
 };
 
-function formatRemaining(untilIso: string): string {
-  const ms = new Date(untilIso).getTime() - Date.now();
+export function formatRemaining(untilIso: string, now = Date.now()): string {
+  const ms = new Date(untilIso).getTime() - now;
   if (ms <= 0) return "now";
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.round((ms % 3600000) / 60000);
+  const totalMinutes = Math.ceil(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 function ThemePageCard({
   page,
   canForce,
+  now,
   onVote,
   onForce,
 }: {
   page: ThemePageInfo;
   canForce: boolean;
+  now: number;
   onVote: (page: PageId, theme: string) => void;
   onForce: (page: PageId, theme: string) => void;
 }) {
   const previewRoute = PREVIEW_ROUTES[page.pageId];
+  const isForceLocked = Boolean(
+    page.forceLock.isLocked
+    && page.forceLock.lockedUntil
+    && new Date(page.forceLock.lockedUntil).getTime() > now,
+  );
 
   return (
     <section className="card" aria-label={page.name}>
       <div className="page-header-row">
         <h3 style={{ margin: 0 }}>{page.name}</h3>
         <div>
-          {page.forceLock.isLocked && page.forceLock.lockedUntil ? (
+          {isForceLocked && page.forceLock.lockedUntil ? (
             <span className="badge badge-warn" title={`Next change at ${page.forceLock.lockedUntil}`}>
-              Force locked · {formatRemaining(page.forceLock.lockedUntil)} left
+              Force locked · {formatRemaining(page.forceLock.lockedUntil, now)} left
             </span>
           ) : null}
         </div>
@@ -95,9 +103,9 @@ function ThemePageCard({
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
-                    disabled={page.forceLock.isLocked}
+                    disabled={isForceLocked}
                     title={
-                      page.forceLock.isLocked
+                      isForceLocked
                         ? "A theme can only be forced once per 24 hours"
                         : "Make this the public theme"
                     }
@@ -117,7 +125,7 @@ function ThemePageCard({
 
 function AuditList() {
   const data = useData();
-  const audit = useAsync(() => data.getThemeAudit(), []);
+  const audit = useAsync(() => data.getThemeAudit(), [data]);
 
   if (audit.loading) return <Loading />;
   if (audit.error) return <ErrorState error={audit.error} onRetry={audit.reload} />;
@@ -126,7 +134,7 @@ function AuditList() {
   if (entries.length === 0) return <EmptyState>No theme changes yet.</EmptyState>;
 
   return (
-    <table className="table">
+    <div className="table-wrap"><table className="table">
       <thead>
         <tr>
           <th>When</th>
@@ -151,16 +159,22 @@ function AuditList() {
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   );
 }
 
 export function ThemesPanel() {
   const data = useData();
-  const themes = useAsync(() => data.getAdminThemes(), []);
+  const themes = useAsync(() => data.getAdminThemes(), [data]);
   const [tab, setTab] = useState<"themes" | "audit">("themes");
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [pendingForce, setPendingForce] = useState<{ page: PageId; theme: string } | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const vote = async (page: PageId, theme: string) => {
     setNotice(null);
@@ -229,6 +243,7 @@ export function ThemesPanel() {
             key={page.pageId}
             page={page}
             canForce={payload?.canForce ?? false}
+            now={now}
             onVote={vote}
             onForce={(pageId, theme) => setPendingForce({ page: pageId, theme })}
           />

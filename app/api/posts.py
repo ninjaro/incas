@@ -20,6 +20,7 @@ from app.models import (
 )
 from app.routes.helpers.content import slugify, unique_slug
 from app.security_policy import image_url_is_allowed
+from app.sanitize import sanitize_rich_html
 from app.social import (
     SOCIAL_PROVIDERS,
     publish_post_to_channels,
@@ -363,6 +364,12 @@ def api_admin_post_update(post_id):
     return jsonify(serialize_admin_post(item))
 
 
+@api_bp.post("/admin/posts/preview")
+@require_capability("posts")
+def api_admin_post_preview():
+    return jsonify({"bodyHtml": sanitize_rich_html(get_json_body().get("body") or "")})
+
+
 @api_bp.patch("/admin/posts/<int:post_id>/slug")
 @require_capability("posts")
 def api_admin_post_slug_update(post_id):
@@ -464,6 +471,8 @@ def serialize_template(template):
         "registrationLimit": template.registration_limit,
         "registrationPriceCents": template.registration_price_cents,
         "registrationIsDeposit": bool(template.registration_is_deposit),
+        "registrationMode": template.registration_mode,
+        "depositExplanation": template.deposit_explanation,
         "imageUrl": template.image_url,
         "socialSettings": template.social_settings_dict,
         "updatedAt": serialize_utc(template.updated_at),
@@ -513,6 +522,10 @@ def apply_template_fields(template, body, errors, *, creating=False):
         )
     if "registrationIsDeposit" in body:
         template.registration_is_deposit = bool(body.get("registrationIsDeposit"))
+    if "registrationMode" in body:
+        template.registration_mode = (body.get("registrationMode") or "none").strip()
+    if "depositExplanation" in body:
+        template.deposit_explanation = (body.get("depositExplanation") or "").strip()
     if "socialSettings" in body:
         if isinstance(body.get("socialSettings"), dict):
             template.social_settings = json.dumps(body["socialSettings"])
@@ -520,7 +533,7 @@ def apply_template_fields(template, body, errors, *, creating=False):
             errors["socialSettings"] = "Social settings must be an object."
     if not image_url_is_allowed(template.image_url):
         errors["imageUrl"] = "Use a local image or an approved remote image host."
-    _validate_registration_fields(template, errors)
+    _validate_registration_fields(template, errors, include_mode=True)
 
 
 @api_bp.get("/admin/post-templates")
@@ -587,6 +600,8 @@ def api_admin_template_duplicate(template_id):
         registration_limit=template.registration_limit,
         registration_price_cents=template.registration_price_cents,
         registration_is_deposit=template.registration_is_deposit,
+        registration_mode=template.registration_mode,
+        deposit_explanation=template.deposit_explanation,
         image_url=template.image_url,
         social_settings=template.social_settings,
     )
@@ -615,10 +630,14 @@ def api_admin_post_from_template():
         registration_limit=template.registration_limit,
         registration_price_cents=template.registration_price_cents,
         registration_is_deposit=template.registration_is_deposit,
+        registration_mode=template.registration_mode,
+        deposit_explanation=template.deposit_explanation,
         image_url=template.image_url,
         status=POST_STATUS_DRAFT,
         is_active=False,
     )
     db.session.add(item)
     db.session.commit()
-    return jsonify(serialize_admin_post(item)), 201
+    payload = serialize_admin_post(item)
+    payload["templateSocialSettings"] = template.social_settings_dict
+    return jsonify(payload), 201

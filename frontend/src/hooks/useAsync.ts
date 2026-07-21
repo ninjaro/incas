@@ -14,12 +14,15 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[] = []): Async
   const [error, setError] = useState<unknown>(null);
   const [tick, setTick] = useState(0);
   const loadRef = useRef(load);
+  const resolvedKeyRef = useRef<unknown[] | null>(null);
   loadRef.current = load;
+  const requestKey = [tick, ...deps];
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setData(null);
     loadRef
       .current()
       .then((result) => {
@@ -29,7 +32,10 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[] = []): Async
         if (!cancelled) setError(err);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          resolvedKeyRef.current = requestKey;
+          setLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -38,6 +44,14 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[] = []): Async
   }, [tick, ...deps]);
 
   const reload = useCallback(() => setTick((value) => value + 1), []);
+  const isCurrent = resolvedKeyRef.current !== null
+    && resolvedKeyRef.current.length === requestKey.length
+    && resolvedKeyRef.current.every((value, index) => Object.is(value, requestKey[index]));
 
-  return { data, loading, error, reload };
+  return {
+    data: isCurrent ? data : null,
+    loading: loading || !isCurrent,
+    error: isCurrent ? error : null,
+    reload,
+  };
 }

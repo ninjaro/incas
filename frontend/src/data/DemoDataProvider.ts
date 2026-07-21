@@ -41,6 +41,7 @@ import { PAGE_THEMES } from "../features/themes/registry";
 import { ApiError } from "../api/client";
 import type { DataProvider } from "./DataProvider";
 import { KARAOKE_TRACKING_BATCH_SIZE, trackKaraokeInBatches } from "./karaokeTracking";
+import { sanitizeRichHtml } from "../utils/sanitize";
 import {
   DEMO_KEYS,
   buildDemoAdminPosts,
@@ -209,11 +210,16 @@ export class DemoDataProvider implements DataProvider {
 
   private session(): SessionInfo {
     this.refreshCapabilities();
+    const expirations = [...this.generatedUnlocks]
+      .map((secret) => this.generatedKeys.get(secret)?.item.expiresAt)
+      .filter((value): value is string => Boolean(value))
+      .sort();
     return {
       capabilities: [...this.capabilities].sort(),
       capabilityLabels: CAPABILITY_LABELS,
       sessionAuditId: "demo-session",
       hasAccessKeys: true,
+      nextExpiryAt: expirations[0] ?? null,
     };
   }
 
@@ -253,6 +259,12 @@ export class DemoDataProvider implements DataProvider {
     }
     const scopes = staticScopes ?? generated!.scopes;
     return { ...this.session(), newScopes: scopes };
+  }
+
+  async lock() {
+    this.staticUnlockedScopes.clear();
+    this.generatedUnlocks.clear();
+    return this.session();
   }
 
   async getPublicConfig() {
@@ -517,6 +529,10 @@ export class DemoDataProvider implements DataProvider {
     return post;
   }
 
+  async previewPost(body: string) {
+    return { bodyHtml: sanitizeRichHtml(body) };
+  }
+
   async getTemplates() {
     this.require("posts");
     return { items: this.templates };
@@ -531,12 +547,14 @@ export class DemoDataProvider implements DataProvider {
       summary: input.summary ?? "",
       body: input.body ?? "",
       eventKind: input.eventKind ?? null,
-      registrationLimitEnabled: false,
-      registrationLimit: null,
-      registrationPriceCents: null,
-      registrationIsDeposit: false,
-      imageUrl: "",
-      socialSettings: {},
+      registrationLimitEnabled: input.registrationLimitEnabled ?? false,
+      registrationLimit: input.registrationLimit ?? null,
+      registrationPriceCents: input.registrationPriceCents ?? null,
+      registrationIsDeposit: input.registrationIsDeposit ?? false,
+      registrationMode: input.registrationMode ?? "none",
+      depositExplanation: input.depositExplanation ?? "",
+      imageUrl: input.imageUrl ?? "",
+      socialSettings: input.socialSettings ?? {},
       updatedAt: new Date().toISOString(),
     };
     this.templates.unshift(template);
@@ -569,13 +587,22 @@ export class DemoDataProvider implements DataProvider {
     this.require("posts");
     const template = this.templates.find((entry) => entry.id === templateId);
     if (!template) throw new DemoError("not_found", "Template not found.", 404);
-    return this.createPost({
+    const post = await this.createPost({
       title: template.titlePattern || template.name,
       summary: template.summary,
       body: template.body,
       eventKind: template.eventKind ?? undefined,
+      registrationLimitEnabled: template.registrationLimitEnabled,
+      registrationLimit: template.registrationLimit,
+      registrationPriceCents: template.registrationPriceCents,
+      registrationIsDeposit: template.registrationIsDeposit,
+      registrationMode: template.registrationMode,
+      depositExplanation: template.depositExplanation,
+      imageUrl: template.imageUrl,
       status: "draft",
     });
+    post.templateSocialSettings = template.socialSettings;
+    return post;
   }
 
   async publishSocial(postId: number, channels: string[]) {

@@ -57,6 +57,10 @@ export class ApiDataProvider implements DataProvider {
     return http.post<SessionInfo>("/access/unlock", { key });
   }
 
+  lock() {
+    return http.post<SessionInfo>("/access/lock");
+  }
+
   getPublicConfig() {
     return http.get<PublicConfig>("/public/config");
   }
@@ -160,6 +164,10 @@ export class ApiDataProvider implements DataProvider {
 
   updatePostSlug(id: number, slug: string) {
     return http.patch<AdminPost>(`/admin/posts/${id}/slug`, { slug });
+  }
+
+  previewPost(body: string) {
+    return http.post<{ bodyHtml: string }>("/admin/posts/preview", { body });
   }
 
   getTemplates() {

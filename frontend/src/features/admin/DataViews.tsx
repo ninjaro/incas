@@ -42,7 +42,7 @@ export function DataViews<T>({
   return (
     <>
       <div className="view-switcher" role="group" aria-label="View mode">
-        {(["table", "grid", "list"] as const).map((mode) => <button key={mode} type="button" className="btn btn-ghost btn-sm" aria-pressed={view === mode} onClick={() => chooseView(mode)}>{mode}</button>)}
+        {(["table", "grid", "list"] as const).map((mode) => <button key={mode} type="button" className={`btn btn-sm ${view === mode ? "btn-primary" : "btn-ghost"}`} aria-pressed={view === mode} onClick={() => chooseView(mode)}>{mode}</button>)}
       </div>
       {!items.length ? <div className="state-box">{empty}</div> : view === "table" ? (
         <div className="table-wrap"><table className="data-table"><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={keyFor(item)}>{renderCells(item).map((cell, index) => <td key={columns[index] ?? index}>{cell}</td>)}</tr>)}</tbody></table></div>

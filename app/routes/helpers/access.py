@@ -151,7 +151,7 @@ def grant_scopes(scopes, expires_at=None, key_id=None):
     current = list(get_access_scopes())
     scope_expires = dict(session.get("access_scope_expires", {}))
     key_ids_by_scope = dict(session.get("access_scope_key_ids", {}))
-    expires_value = serialize_utc(expires_at, timespec="minutes") if expires_at else None
+    expires_value = serialize_utc(expires_at, timespec="seconds") if expires_at else None
 
     for scope in scopes:
         if scope not in current:

@@ -60,6 +60,12 @@ function renderLayout(initialPath = "/") {
 }
 
 describe("PublicLayout About navigation", () => {
+  it("hides Admin when keys exist but this session has no active capability", async () => {
+    renderLayout("/");
+    await screen.findByRole("link", { name: "About Us" });
+    expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+  });
+
   it("keeps overview navigation separate from submenu disclosure", async () => {
     const user = userEvent.setup();
     renderLayout("/");

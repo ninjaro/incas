@@ -55,6 +55,7 @@ export interface DataProvider {
 
   getSession(): Promise<SessionInfo>;
   unlock(key: string): Promise<SessionInfo>;
+  lock(): Promise<SessionInfo>;
 
   getPublicConfig(): Promise<PublicConfig>;
   getPublicPosts(): Promise<PublicPostsResponse>;
@@ -84,6 +85,7 @@ export interface DataProvider {
   createPost(input: PostInput): Promise<AdminPost>;
   updatePost(id: number, input: PostInput): Promise<AdminPost>;
   updatePostSlug(id: number, slug: string): Promise<AdminPost>;
+  previewPost(body: string): Promise<{ bodyHtml: string }>;
   getTemplates(): Promise<{ items: PostTemplateInfo[] }>;
   createTemplate(input: Partial<PostTemplateInfo>): Promise<PostTemplateInfo>;
   updateTemplate(id: number, input: Partial<PostTemplateInfo>): Promise<PostTemplateInfo>;

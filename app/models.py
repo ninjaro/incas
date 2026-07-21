@@ -646,6 +646,8 @@ class PostTemplate(db.Model):
     registration_limit = db.Column(db.Integer, nullable=True)
     registration_price_cents = db.Column(db.Integer, nullable=True)
     registration_is_deposit = db.Column(db.Boolean, nullable=False, default=False)
+    registration_mode = db.Column(db.String(32), nullable=False, default="none")
+    deposit_explanation = db.Column(db.String(500), nullable=False, default="")
     image_url = db.Column(db.String(500), nullable=False, default="")
     social_settings = db.Column(db.Text, nullable=False, default="{}")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

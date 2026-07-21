@@ -343,7 +343,7 @@ export function PublicLayout() {
                   onClose={closeGroup}
                 />
               ))}
-            {session.hasAccessKeys ? (
+            {session.capabilities.length > 0 ? (
                 <NavLink to="/admin" onClick={closeGroup}>
                   {t("nav.admin")}
                 </NavLink>

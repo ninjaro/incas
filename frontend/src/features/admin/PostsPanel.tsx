@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBlocker } from "react-router-dom";
 
 import { ApiError } from "../../api/client";
 import type { AdminPost, PostInput, PostStatus, PostTemplateInfo } from "../../api/types";
@@ -114,8 +115,8 @@ function editorFromPost(post: AdminPost): EditorState {
     destinationLongitude: post.destinationLongitude?.toString() ?? "",
     featureFlags: post.featureFlags.join(", "),
     isPinned: post.isPinned,
-    socialFacebook: false,
-    socialInstagram: false,
+    socialFacebook: post.templateSocialSettings?.facebook === true,
+    socialInstagram: post.templateSocialSettings?.instagram === true,
   };
 }
 
@@ -160,18 +161,16 @@ export function nextScheduledStart(
 ): string {
   if (!schedule) return "";
 
-  const [hours, minutes] = schedule.time.split(":").map(Number);
   const targetDay = (schedule.weekday + 1) % 7;
-  const candidate = new Date(now);
-  candidate.setHours(hours, minutes, 0, 0);
-  let daysAhead = (targetDay - candidate.getDay() + 7) % 7;
-  if (daysAhead === 0 && candidate <= now) daysAhead = 7;
-  candidate.setDate(candidate.getDate() + daysAhead);
-
-  const year = candidate.getFullYear();
-  const month = String(candidate.getMonth() + 1).padStart(2, "0");
-  const day = String(candidate.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}T${schedule.time}`;
+  const localNow = toDateTimeLocal(now);
+  const [datePart, currentTime] = localNow.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  let daysAhead = (targetDay - candidate.getUTCDay() + 7) % 7;
+  if (daysAhead === 0 && schedule.time <= currentTime) daysAhead = 7;
+  candidate.setUTCDate(candidate.getUTCDate() + daysAhead);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${candidate.getUTCFullYear()}-${pad(candidate.getUTCMonth() + 1)}-${pad(candidate.getUTCDate())}T${schedule.time}`;
 }
 
 function PostEditor({
@@ -180,27 +179,40 @@ function PostEditor({
   onClose,
 }: {
   post: AdminPost | null;
-  onSaved: () => void;
+  onSaved: (post: AdminPost) => void;
   onClose: () => void;
 }) {
   const data = useData();
+  const [currentPost, setCurrentPost] = useState(post);
   const [editor, setEditor] = useState<EditorState>(post ? editorFromPost(post) : EMPTY_EDITOR);
   const [dirty, setDirty] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [slug, setSlug] = useState(post?.slug ?? "");
+  const [savedSlug, setSavedSlug] = useState(post?.slug ?? "");
   const [slugBusy, setSlugBusy] = useState(false);
+  const hasUnsavedChanges = dirty || slug !== savedSlug;
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    hasUnsavedChanges
+    && `${currentLocation.pathname}${currentLocation.search}` !== `${nextLocation.pathname}${nextLocation.search}`,
+  );
 
-  // Unsaved-change protection when leaving the browser tab.
   useEffect(() => {
-    if (!dirty) return;
+    if (!hasUnsavedChanges) return;
     const handler = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") setConfirmDiscard(true);
+  }, [blocker.state]);
 
   const set = <K extends keyof EditorState>(key: K, value: EditorState[K]) => {
     setEditor((current) => ({ ...current, [key]: value }));
@@ -233,21 +245,38 @@ function PostEditor({
     setNotice(null);
     try {
       const input = editorToInput(editor);
-      const saved = post
-        ? await data.updatePost(post.id, input)
+      const wasNew = currentPost === null;
+      const saved = currentPost
+        ? await data.updatePost(currentPost.id, input)
         : await data.createPost(input);
+      let adopted: AdminPost = { ...saved, social: currentPost?.social ?? saved.social ?? [] };
+      setCurrentPost(adopted);
+      setSavedSlug(saved.slug);
+      setSlug(saved.slug);
+      setDirty(false);
+      onSaved(adopted);
 
       const channels = [
         ...(editor.socialFacebook ? ["facebook"] : []),
         ...(editor.socialInstagram ? ["instagram"] : []),
       ];
       if (channels.length > 0 && saved.status !== "draft") {
-        await data.publishSocial(saved.id, channels);
+        try {
+          const published = await data.publishSocial(saved.id, channels);
+          adopted = { ...adopted, social: published.results };
+          setCurrentPost(adopted);
+          setEditor((current) => ({ ...current, socialFacebook: false, socialInstagram: false }));
+          onSaved(adopted);
+        } catch (error) {
+          setNotice({
+            tone: "bad",
+            text: `Post saved, but social publishing failed: ${error instanceof Error ? error.message : "unknown error"}`,
+          });
+          return;
+        }
       }
 
-      setDirty(false);
-      setNotice({ tone: "ok", text: post ? "Post updated." : "Post created." });
-      onSaved();
+      setNotice({ tone: "ok", text: wasNew ? "Post created." : "Post updated." });
     } catch (error) {
       if (error instanceof ApiError && Object.keys(error.fields).length > 0) {
         setFieldErrors(error.fields);
@@ -272,6 +301,13 @@ function PostEditor({
         summary: editor.summary,
         body: editor.body,
         eventKind: editor.eventKind || null,
+        registrationLimitEnabled: editor.registrationLimitEnabled,
+        registrationLimit: editor.registrationLimit ? Number(editor.registrationLimit) : null,
+        registrationPriceCents: editor.registrationPriceCents ? Number(editor.registrationPriceCents) : null,
+        registrationIsDeposit: editor.registrationIsDeposit,
+        registrationMode: editor.registrationMode,
+        depositExplanation: editor.depositExplanation,
+        imageUrl: editor.imageUrl,
         socialSettings: {
           facebook: editor.socialFacebook,
           instagram: editor.socialInstagram,
@@ -286,14 +322,17 @@ function PostEditor({
   };
 
   const changeSlug = async () => {
-    if (!post) return;
+    if (!currentPost) return;
     setSlugBusy(true);
     setFieldErrors((current) => ({ ...current, slug: "" }));
     try {
-      const updated = await data.updatePostSlug(post.id, slug);
+      const updated = await data.updatePostSlug(currentPost.id, slug);
+      const adopted = { ...currentPost, ...updated };
+      setCurrentPost(adopted);
       setSlug(updated.slug);
+      setSavedSlug(updated.slug);
       setNotice({ tone: "ok", text: "Post URL updated. The previous URL now redirects here." });
-      onSaved();
+      onSaved(adopted);
     } catch (error) {
       if (error instanceof ApiError && error.fields.slug) {
         setFieldErrors((current) => ({ ...current, slug: error.fields.slug }));
@@ -306,20 +345,37 @@ function PostEditor({
   };
 
   const close = () => {
-    if (dirty) {
+    if (hasUnsavedChanges) {
       setConfirmDiscard(true);
       return;
     }
     onClose();
   };
 
+  const togglePreview = async () => {
+    if (preview) {
+      setPreview(false);
+      return;
+    }
+    setPreviewBusy(true);
+    setPreviewError(null);
+    try {
+      setPreviewHtml((await data.previewPost(editor.body)).bodyHtml);
+      setPreview(true);
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "Preview could not be rendered.");
+    } finally {
+      setPreviewBusy(false);
+    }
+  };
+
   return (
     <div className="card">
       <div className="page-header-row">
-        <h3 style={{ margin: 0 }}>{post ? `Edit: ${post.title}` : "New post"}</h3>
+        <h3 style={{ margin: 0 }}>{currentPost ? `Edit: ${currentPost.title}` : "New post"}</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview(!preview)}>
-            {preview ? "Back to editing" : "Preview"}
+          <button type="button" className="btn btn-ghost btn-sm" disabled={previewBusy} onClick={() => void togglePreview()}>
+            {preview ? "Back to editing" : previewBusy ? "Rendering…" : "Preview"}
           </button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={close}>
             Close
@@ -327,12 +383,13 @@ function PostEditor({
         </div>
       </div>
       {notice ? <p className={`notice notice-${notice.tone}`}>{notice.text}</p> : null}
+      {previewError ? <p className="notice notice-bad" role="alert">{previewError}</p> : null}
 
       {preview ? (
         <div>
           <h2 style={{ fontFamily: "var(--font-display)" }}>{editor.title || "Untitled"}</h2>
           <p style={{ color: "var(--ink-soft)" }}>{editor.summary}</p>
-          <div style={{ whiteSpace: "pre-wrap" }}>{editor.body}</div>
+          <div className="site-content" dangerouslySetInnerHTML={{ __html: previewHtml }} />
         </div>
       ) : (
         <>
@@ -340,7 +397,7 @@ function PostEditor({
           <Field label="Title" error={fieldErrors.title}>
             <input value={editor.title} onChange={(event) => set("title", event.target.value)} />
           </Field>
-          {post ? <div className="slug-editor"><Field label="URL slug" error={fieldErrors.slug}><input value={slug} onChange={(event) => setSlug(event.target.value)} /></Field><button type="button" className="btn btn-outline btn-sm" disabled={slugBusy || slug === post.slug} onClick={changeSlug}>{slugBusy ? "Updating…" : "Change URL"}</button><small>Title edits keep this URL unchanged. Changing it creates a redirect from the previous URL.</small></div> : null}
+          {currentPost ? <div className="slug-editor"><Field label="URL slug" error={fieldErrors.slug}><input value={slug} onChange={(event) => setSlug(event.target.value)} /></Field><button type="button" className="btn btn-outline btn-sm" disabled={slugBusy || slug === savedSlug} onClick={changeSlug}>{slugBusy ? "Updating…" : "Change URL"}</button><small>Title edits keep this URL unchanged. Changing it creates a redirect from the previous URL.</small></div> : null}
           <Field label="Summary">
             <input value={editor.summary} onChange={(event) => set("summary", event.target.value)} maxLength={256} />
           </Field>
@@ -356,14 +413,14 @@ function PostEditor({
                 {Object.values(EVENT_KINDS).map((kind) => <option key={kind.id} value={kind.id}>{kind.label.en}</option>)}
               </select>
             </Field>
-            <Field label="Starts at" error={fieldErrors.startsAt}>
+            <Field label="Starts at (Europe/Berlin)" error={fieldErrors.startsAt}>
               <input
                 type="datetime-local"
                 value={editor.startsAt}
                 onChange={(event) => set("startsAt", event.target.value)}
               />
             </Field>
-            <Field label="Ends at" error={fieldErrors.endsAt}>
+            <Field label="Ends at (Europe/Berlin)" error={fieldErrors.endsAt}>
               <input type="datetime-local" value={editor.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
             </Field>
             <Field label="Duration (minutes)" error={fieldErrors.durationMinutes}>
@@ -479,9 +536,9 @@ function PostEditor({
               <label htmlFor="social-ig">Publish to Instagram</label>
             </div>
           </div>
-          {post?.social?.length ? (
+          {currentPost?.social?.length ? (
             <div>
-              {post.social.map((publication) => (
+              {currentPost.social.map((publication) => (
                 <p key={publication.id} style={{ margin: "4px 0", fontSize: "0.88rem" }}>
                   {publication.provider}: <StatusBadge status={publication.status} />{" "}
                   {publication.isSimulated ? <span className="badge badge-warn">simulated</span> : null}{" "}
@@ -494,7 +551,13 @@ function PostEditor({
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
-                      onClick={() => data.retrySocial(publication.id).then(onSaved)}
+                      onClick={() => void data.retrySocial(publication.id)
+                        .then(() => data.getAdminPost(currentPost.id))
+                        .then((updated) => {
+                          setCurrentPost(updated);
+                          onSaved(updated);
+                        })
+                        .catch((error) => setNotice({ tone: "bad", text: error instanceof Error ? error.message : "Retry failed." }))}
                     >
                       Retry
                     </button>
@@ -511,7 +574,7 @@ function PostEditor({
             <button type="button" className="btn btn-outline" onClick={saveAsTemplate} disabled={busy}>
               Save as template
             </button>
-            {dirty ? <span className="badge badge-warn">Unsaved changes</span> : null}
+            {hasUnsavedChanges ? <span className="badge badge-warn">Unsaved changes</span> : null}
           </div>
         </>
       )}
@@ -521,8 +584,19 @@ function PostEditor({
         body="Your edits have not been saved."
         confirmLabel="Discard"
         danger
-        onConfirm={onClose}
-        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          if (blocker.state === "blocked") {
+            setDirty(false);
+            blocker.proceed();
+          } else {
+            onClose();
+          }
+        }}
+        onCancel={() => {
+          setConfirmDiscard(false);
+          if (blocker.state === "blocked") blocker.reset();
+        }}
       />
     </div>
   );
@@ -557,7 +631,7 @@ function TemplatesTab({ onUse }: { onUse: (post: AdminPost) => void }) {
           No templates yet. Open a post in the editor and use “Save as template”.
         </EmptyState>
       ) : (
-        <table className="table">
+        <div className="table-wrap"><table className="table">
           <thead>
             <tr>
               <th>Template</th>
@@ -609,7 +683,7 @@ function TemplatesTab({ onUse }: { onUse: (post: AdminPost) => void }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
       <ConfirmDialog
         open={confirmDelete !== null}
@@ -679,7 +753,7 @@ export function PostsPanel() {
             <TemplatesTab onUse={(post) => setEditing(post)} />
           ) : (
             <>
-              <div style={{ marginBottom: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div className="filter-buttons" role="group" aria-label="Post status">
                 {STATUS_FILTERS.map((status) => (
                   <button
                     key={status}
@@ -698,7 +772,7 @@ export function PostsPanel() {
               ) : (posts.data?.items.length ?? 0) === 0 ? (
                 <EmptyState>No posts with this status.</EmptyState>
               ) : (
-                <table className="table">
+                <div className="table-wrap"><table className="table">
                   <thead>
                     <tr>
                       <th>Post</th>
@@ -736,7 +810,7 @@ export function PostsPanel() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </>
           )}
