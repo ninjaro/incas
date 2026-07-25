@@ -121,6 +121,7 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
   const [form, setForm] = useState<TandemSubmission>(EMPTY_FORM);
   const formErrors = usePublicFormErrors(locale);
   const [step, setStep] = useState(0);
+  const [highestUnlockedStep, setHighestUnlockedStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -155,12 +156,14 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
   };
 
   const moveToStep = (nextStep: number) => {
+    if (nextStep > highestUnlockedStep && nextStep !== step + 1) return;
     if (nextStep > step) {
       const validation = validateStep(step);
       if (Object.keys(validation).length) {
         formErrors.show(validation, (field) => setStep(fieldStep(field)));
         return;
       }
+      setHighestUnlockedStep((current) => Math.max(current, nextStep));
     }
     setStep(nextStep);
   };
@@ -183,7 +186,7 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
   return (
     <form ref={formErrors.formRef} className="card public-form tandem-form" onSubmit={submit} noValidate>
       {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
-      {variant === "steps" ? <><p id="tandem-step-progress" className="form-progress" role="status">{de ? `Schritt ${step + 1} von 3` : `Step ${step + 1} of 3`}</p><nav className="tabs tandem-stepper" aria-label={de ? "Formularschritte" : "Form steps"} aria-describedby="tandem-step-progress">{[de ? "Profil" : "Profile", de ? "Sprachen" : "Languages", de ? "Präferenzen" : "Preferences"].map((label, index) => <button type="button" key={label} aria-current={step === index ? "step" : undefined} onClick={() => moveToStep(index)}>{index + 1}. {label}</button>)}</nav></> : null}
+      {variant === "steps" ? <><p id="tandem-step-progress" className="form-progress" role="status">{de ? `Schritt ${step + 1} von 3` : `Step ${step + 1} of 3`}</p><nav className="tabs tandem-stepper" aria-label={de ? "Formularschritte" : "Form steps"} aria-describedby="tandem-step-progress">{[de ? "Profil" : "Profile", de ? "Sprachen" : "Languages", de ? "Präferenzen" : "Preferences"].map((label, index) => <button type="button" key={label} aria-current={step === index ? "step" : undefined} disabled={index > highestUnlockedStep} onClick={() => moveToStep(index)}>{index + 1}. {label}</button>)}</nav></> : null}
       {(variant === "classic" || step === 0) ? <ProfileFields {...props} /> : null}
       {(variant === "classic" || step === 1) ? <LanguageFields {...props} /> : null}
       {(variant === "classic" || step === 2) ? <PreferenceFields form={form} setForm={setForm} errors={formErrors.errors} de={de} clearField={formErrors.clearField} /> : null}

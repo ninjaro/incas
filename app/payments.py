@@ -14,13 +14,19 @@ import os
 import secrets
 from abc import ABC, abstractmethod
 
+from flask import current_app
+
+from app.datetime_utils import serialize_utc, utc_now
 from app.models import (
     EVENT_REGISTRATION_STATUS_APPROVED,
+    EVENT_REGISTRATION_STATUS_CANCELLED,
     EVENT_REGISTRATION_STATUS_WAITING_PAYMENT,
+    PAYMENT_STATUS_CANCELLED,
     PAYMENT_STATUS_FAILED,
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
     EventRegistration,
+    PaymentStatusAudit,
     PaymentTransaction,
     Post,
     db,
@@ -34,6 +40,9 @@ class PaymentProvider(ABC):
     def create_checkout_session(self, transaction) -> dict: ...
 
     @abstractmethod
+    def resume_checkout_session(self, transaction) -> dict: ...
+
+    @abstractmethod
     def handle_webhook(self, payload) -> PaymentTransaction | None: ...
 
 
@@ -42,8 +51,12 @@ class MockPaymentProvider(PaymentProvider):
 
     def create_checkout_session(self, transaction) -> dict:
         transaction.provider = self.name
-        transaction.provider_session_id = f"mock_cs_{transaction.public_id}"
+        if not transaction.provider_session_id:
+            transaction.provider_session_id = f"mock_cs_{transaction.public_id}"
         transaction.is_simulated = True
+        return self.resume_checkout_session(transaction)
+
+    def resume_checkout_session(self, transaction) -> dict:
         return {
             "checkoutUrl": f"/pay/simulated/{transaction.public_id}",
             "simulated": True,
@@ -55,24 +68,53 @@ class MockPaymentProvider(PaymentProvider):
         transaction = PaymentTransaction.query.filter_by(public_id=public_id).first()
         if transaction is None or not transaction.is_simulated:
             return None
+        previous_status = transaction.status
         if event == "checkout.completed":
             mark_paid(transaction)
         elif event == "checkout.failed" and transaction.status == PAYMENT_STATUS_PENDING:
             transaction.status = PAYMENT_STATUS_FAILED
             transaction.error_message = (payload or {}).get("message", "Simulated failure")
+        record_payment_transition(
+            transaction,
+            previous_status,
+            actor="provider:mock",
+            note=f"Mock webhook: {event or 'unknown event'}",
+        )
         return transaction
 
 
-def get_payment_provider() -> PaymentProvider:
-    provider_name = os.getenv("PAYMENT_PROVIDER", "").strip().lower()
+def get_payment_provider(provider_name=None) -> PaymentProvider:
+    if provider_name is None:
+        try:
+            provider_name = current_app.config.get("PAYMENT_PROVIDER", "mock")
+        except RuntimeError:
+            provider_name = os.getenv("PAYMENT_PROVIDER", "mock")
+    provider_name = (provider_name or "mock").strip().lower()
+    if provider_name == "mock":
+        return MockPaymentProvider()
     if provider_name == "stripe" and os.getenv("STRIPE_SECRET_KEY"):
         # Real Stripe adapter goes here behind the same interface.
         raise NotImplementedError("Stripe adapter not implemented yet; unset PAYMENT_PROVIDER to use mock mode.")
-    return MockPaymentProvider()
+    raise RuntimeError(f"Unsupported payment provider mode: {provider_name}")
 
 
 def new_payment_public_id():
     return f"PAY-{secrets.token_urlsafe(16)}"
+
+
+def record_payment_transition(transaction, previous_status, *, actor, note=""):
+    """Persist one audit row when a provider or application changes status."""
+    if transaction.status == previous_status:
+        return
+    db.session.add(
+        PaymentStatusAudit(
+            payment_id=transaction.id,
+            previous_status=previous_status,
+            new_status=transaction.status,
+            actor=actor,
+            note=note,
+        )
+    )
 
 
 def create_transaction(post, registration=None):
@@ -86,6 +128,7 @@ def create_transaction(post, registration=None):
         registration_id=registration.id if registration is not None else None,
         amount_cents=amount_cents,
         status=PAYMENT_STATUS_PENDING,
+        expires_at=registration.payment_expires_at if registration is not None else None,
     )
     db.session.add(transaction)
     return transaction
@@ -111,6 +154,17 @@ def mark_paid(transaction):
         transaction.status = PAYMENT_STATUS_FAILED
         transaction.error_message = "Registration is no longer eligible for payment."
         return False
+    if registration.payment_expires_at and registration.payment_expires_at <= utc_now():
+        from app.routes.helpers.event_registrations import promote_waiting_list_for_post
+
+        transaction.status = PAYMENT_STATUS_CANCELLED
+        transaction.error_message = "Payment reservation expired."
+        registration.status = EVENT_REGISTRATION_STATUS_CANCELLED
+        registration.payment_expires_at = None
+        post = Post.query.filter_by(id=registration.post_id).with_for_update().first()
+        if post is not None:
+            promote_waiting_list_for_post(post)
+        return False
     post = Post.query.filter_by(id=registration.post_id).with_for_update().first()
     if post is None or not post.has_registration_queue or not post.is_live:
         transaction.status = PAYMENT_STATUS_FAILED
@@ -124,6 +178,7 @@ def mark_paid(transaction):
     transaction.status = PAYMENT_STATUS_PAID
     transaction.error_message = ""
     registration.status = EVENT_REGISTRATION_STATUS_APPROVED
+    registration.payment_expires_at = None
     return True
 
 
@@ -136,5 +191,6 @@ def serialize_transaction(transaction):
         "provider": transaction.provider,
         "isSimulated": bool(transaction.is_simulated),
         "errorMessage": transaction.error_message,
-        "createdAt": transaction.created_at.isoformat() if transaction.created_at else None,
+        "expiresAt": serialize_utc(transaction.expires_at),
+        "createdAt": serialize_utc(transaction.created_at),
     }

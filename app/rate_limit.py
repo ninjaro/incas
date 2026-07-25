@@ -2,7 +2,7 @@
 
 import hashlib
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import request
 from sqlalchemy import delete
@@ -15,14 +15,15 @@ def _client_identifier():
     return request.remote_addr or "unknown"
 
 
-def consume_rate_limit(scope, limit, window_seconds, *, now_epoch=None):
+def consume_rate_limit(scope, limit, window_seconds, *, now_epoch=None, identifier=None):
     now_epoch = time.time() if now_epoch is None else now_epoch
     window = int(now_epoch // window_seconds)
-    raw_key = f"{scope}\0{_client_identifier()}\0{window}".encode("utf-8")
+    identifier = identifier or _client_identifier()
+    raw_key = f"{scope}\0{identifier}\0{window}".encode("utf-8")
     bucket_key = hashlib.sha256(raw_key).hexdigest()
     expires_epoch = (window + 1) * window_seconds
-    now_datetime = datetime.fromtimestamp(now_epoch)
-    expires_at = datetime.fromtimestamp(expires_epoch)
+    now_datetime = datetime.fromtimestamp(now_epoch, timezone.utc).replace(tzinfo=None)
+    expires_at = datetime.fromtimestamp(expires_epoch, timezone.utc).replace(tzinfo=None)
 
     # Expired rows cannot be reused because the window is part of the key.
     # Opportunistic cleanup keeps the shared table bounded without a worker.

@@ -18,7 +18,7 @@ import { TandemEmbeddedForm } from "./TandemFormPage";
 const LEGACY_PATH_MAP: Record<string, string> = {
   "/events": "/calendar",
   "/contacts": "/contact",
-  "/contact-form": "/contact",
+  "/contact-form": "/contact?form=general",
   "/language-tandem": "/tandem",
 };
 

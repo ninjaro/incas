@@ -5,12 +5,12 @@ from flask import jsonify, request
 from sqlalchemy import or_, update
 
 from app.api import api_bp, api_error, get_json_body, require_capability
+from app.datetime_utils import serialize_utc, utc_now
 from app.models import (
     PageThemeAudit,
     PageThemeSelection,
     PageThemeVote,
     db,
-    get_configured_local_now,
 )
 from app.routes.helpers.access import get_session_audit_id, has_capability
 from app.themes_registry import (
@@ -27,11 +27,11 @@ def get_force_lock_info(selection):
     if selection is None or selection.last_forced_at is None:
         return {"lockedUntil": None, "isLocked": False}
     available_at = selection.last_forced_at + timedelta(hours=THEME_FORCE_COOLDOWN_HOURS)
-    now = get_configured_local_now()
+    now = utc_now()
     return {
-        "lockedUntil": available_at.isoformat() if available_at > now else None,
+        "lockedUntil": serialize_utc(available_at) if available_at > now else None,
         "isLocked": available_at > now,
-        "lastForcedAt": selection.last_forced_at.isoformat(),
+        "lastForcedAt": serialize_utc(selection.last_forced_at),
     }
 
 
@@ -116,7 +116,7 @@ def api_admin_theme_force():
     if not is_valid_theme(page_id, theme_id):
         return api_error("theme_unknown", "Unknown or disabled theme.", status=422)
 
-    now = get_configured_local_now()
+    now = utc_now()
     cutoff = now - timedelta(hours=THEME_FORCE_COOLDOWN_HOURS)
     selection = PageThemeSelection.query.filter_by(page_id=page_id).first()
 
@@ -164,8 +164,10 @@ def api_admin_theme_force():
         {
             "page": page_id,
             "publicTheme": theme_id,
-            "forcedAt": now.isoformat(),
-            "nextChangeAt": (now + timedelta(hours=THEME_FORCE_COOLDOWN_HOURS)).isoformat(),
+            "forcedAt": serialize_utc(now),
+            "nextChangeAt": serialize_utc(
+                now + timedelta(hours=THEME_FORCE_COOLDOWN_HOURS)
+            ),
         }
     )
 
@@ -179,7 +181,7 @@ def _force_locked_error(page_id):
         "theme_force_locked",
         "This page theme cannot be changed yet.",
         status=409,
-        details={"availableAt": available_at.isoformat() if available_at else None},
+        details={"availableAt": serialize_utc(available_at)},
     )
 
 
@@ -204,7 +206,7 @@ def api_admin_theme_audit():
                     "action": entry.action,
                     "actor": entry.actor,
                     "note": entry.note,
-                    "createdAt": entry.created_at.isoformat(),
+                    "createdAt": serialize_utc(entry.created_at),
                 }
                 for entry in entries
             ]

@@ -203,6 +203,21 @@ a {
   cursor: pointer;
 }
 
+.site-nav-group-disclosure svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: transform 160ms ease;
+}
+
+.site-nav-group-disclosure[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 /* React owns every visible disclosure state. Pointer hover updates the same
    state instead of using an independent CSS-only reveal. */
 .site-nav-group.is-open .site-nav-group-primary,
@@ -488,6 +503,23 @@ a {
   background: var(--paper);
 }
 
+.card-primary-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-primary-link:focus-visible {
+  outline: 3px solid var(--incas-orange);
+  outline-offset: 4px;
+  border-radius: calc(var(--radius-lg) - 3px);
+}
+
+.section-card > .card-primary-link {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
 .section-card h3,
 .section-related h2 {
   margin-top: 0;
@@ -496,12 +528,6 @@ a {
 .section-card p,
 .section-related span {
   color: var(--ink-soft);
-}
-
-.section-card a {
-  margin-top: auto;
-  color: var(--incas-orange-deep);
-  font-weight: 700;
 }
 
 .section-related > div {
@@ -567,6 +593,13 @@ a {
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.offers-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .offers-page .offers-card.is-featured {
   border-top: 4px solid var(--incas-orange);
 }
@@ -593,18 +626,6 @@ a {
   font-size: 1.45rem;
 }
 
-.offers-card-copy h2 a,
-.offers-card-more {
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.offers-card-copy h2 a:focus-visible,
-.offers-card-more:focus-visible {
-  outline: 3px solid var(--incas-orange);
-  outline-offset: 4px;
-}
-
 .offers-card-copy > p {
   color: var(--ink-soft);
 }
@@ -621,11 +642,6 @@ a {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: auto;
-}
-
-.offers-card-more {
-  color: var(--incas-orange-deep);
-  font-weight: 700;
 }
 
 .offers-actions {
@@ -661,11 +677,15 @@ a {
 }
 
 .contact-options a:hover,
-.contact-options a:focus-visible,
 .contact-options a.is-active {
   border-color: var(--incas-orange);
   background: var(--incas-orange-soft);
-  outline: none;
+}
+
+.contact-options a:focus-visible {
+  border-color: var(--incas-orange);
+  outline: 3px solid var(--incas-orange);
+  outline-offset: 3px;
 }
 
 .contact-form-panel {
@@ -762,6 +782,13 @@ a {
 
 .card + .card {
   margin-top: 16px;
+}
+
+.admin-data-grid > .card + .card,
+.admin-data-list > .card + .card,
+.theme-page-grid > .card + .card,
+.event-grid > .card + .card {
+  margin-top: 0;
 }
 
 .card h2,
@@ -1217,12 +1244,16 @@ a {
 
 .calendar-board-item {
   grid-column: span 6;
+  min-height: 220px;
+  background: var(--paper);
+}
+
+.calendar-board-link {
   display: grid;
   grid-template-columns: 5rem 1fr;
   gap: 1.25rem;
-  min-height: 220px;
+  min-height: inherit;
   padding: clamp(1.25rem, 3vw, 2.25rem);
-  background: var(--paper);
 }
 
 .calendar-board-item:nth-child(3n + 1) {
@@ -1320,24 +1351,36 @@ a {
 
 .admin-shell {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-.admin-sidenav {
+.admin-sidebar-inner {
   position: sticky;
   top: 76px;
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1px 2px 12px;
+}
+
+.admin-sidenav {
   display: grid;
   gap: 2px;
 }
 
-.admin-sidenav a {
+.admin-sidenav a,
+.admin-nav-disabled {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
   text-decoration: none;
   color: var(--ink-soft);
   padding: 8px 14px;
   border-radius: var(--radius);
   font-weight: 500;
+  min-width: 0;
 }
 
 .admin-sidenav a[aria-current="page"] {
@@ -1345,13 +1388,25 @@ a {
   color: var(--on-orange);
 }
 
-.admin-sidenav a.is-locked {
+.admin-nav-disabled {
   color: var(--ink-faint);
+  cursor: not-allowed;
 }
 
-.admin-sidenav a.is-locked::after {
-  content: " (locked)";
+.admin-nav-disabled small {
   font-size: 0.8em;
+}
+
+.admin-content,
+.admin-shell > *,
+.admin-content > * {
+  min-width: 0;
+}
+
+.admin-lock {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.75rem;
 }
 
 @media (max-width: 800px) {
@@ -1359,8 +1414,13 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .admin-sidenav {
+  .admin-sidebar-inner {
     position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .admin-sidenav {
     display: flex;
     flex-wrap: wrap;
   }
@@ -1371,6 +1431,12 @@ a {
   gap: 6px;
   flex-wrap: wrap;
   margin: 8px 0 0;
+}
+
+.capability-chips .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .queue-row {
@@ -1550,7 +1616,13 @@ a {
   position: relative;
 }
 
-.event-card > img {
+.event-card-main {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.event-card-main > img {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
@@ -1576,12 +1648,7 @@ a {
   gap: 0.7rem;
 }
 
-.event-card-title-row a {
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.event-card-title-row a:hover {
+.event-card-main:hover .event-title {
   color: var(--incas-orange-deep);
 }
 
@@ -1686,6 +1753,27 @@ a {
 
 /* ---------- complete landing variants ---------- */
 
+.tandem-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.slug-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-warm);
+}
+
+.slug-editor small {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+}
+
 .landing-about-offers {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1748,9 +1836,9 @@ a {
   padding: 1.25rem;
 }
 
-.post-card h3 a,
-.post-card > a {
-  color: var(--ink);
+.post-card-main {
+  display: block;
+  height: 100%;
 }
 
 .editorial-feature {
@@ -2058,7 +2146,7 @@ a {
   max-width: 820px;
 }
 
-.public-form input,
+.public-form input:not([type="checkbox"]):not([type="radio"]),
 .public-form textarea,
 .public-form select,
 .admin-filterbar input,
@@ -2142,8 +2230,27 @@ a {
   border-radius: var(--radius);
 }
 
+.view-switcher .btn[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
 .admin-filterbar > * {
   flex: 1 1 160px;
+}
+
+.admin-filterbar label {
+  min-width: 0;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.75rem;
+}
+
+.admin-filterbar .filter-buttons {
+  margin: 0;
 }
 
 .view-switcher {
@@ -2157,6 +2264,11 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
+}
+
+.admin-data-grid > *,
+.admin-data-list > * {
+  min-width: 0;
 }
 
 .admin-data-list {
@@ -2178,6 +2290,21 @@ a {
   max-height: 420px;
   background: #111;
   border-radius: var(--radius);
+}
+
+.qr-scanner video[hidden] {
+  display: none;
+}
+
+.scope-grid input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: auto;
+  margin-top: 0.2rem;
+}
+
+.table-wrap > .table,
+.table-wrap > .data-table {
+  min-width: 640px;
 }
 
 .tandem-match-group {
@@ -2342,7 +2469,8 @@ a {
     margin-bottom: 1rem;
   }
 
-  .admin-sidenav a {
+  .admin-sidenav a,
+  .admin-nav-disabled {
     white-space: nowrap;
   }
 }
@@ -2387,9 +2515,20 @@ a {
   }
 
   .calendar-board-item {
-    grid-template-columns: 3.25rem 1fr;
     min-height: 0;
+  }
+
+  .calendar-board-link {
+    grid-template-columns: 3.25rem 1fr;
     padding: 1rem;
+  }
+
+  .slug-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .slug-editor small {
+    grid-column: auto;
   }
 
   .calendar-board-date strong {

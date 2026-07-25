@@ -1,8 +1,10 @@
 import secrets
 
 from flask import jsonify, request
+from sqlalchemy.exc import IntegrityError
 
 from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
+from app.datetime_utils import serialize_utc
 from app.models import (
     KARAOKE_QUEUE_STATUSES,
     KARAOKE_STATUS_APPROVED,
@@ -73,7 +75,7 @@ def serialize_admin(item):
             "note": item.note,
             "contact": item.contact,
             "position": item.position,
-            "createdAt": item.created_at.isoformat() if item.created_at else None,
+            "createdAt": serialize_utc(item.created_at),
         }
     )
     return payload
@@ -91,12 +93,19 @@ def audit(item, action, detail=""):
 
 
 def next_queue_position(post_id):
-    current_max = (
-        db.session.query(db.func.max(KaraokeSongRequest.position))
+    Post.query.filter_by(id=post_id).with_for_update().first()
+    queue = (
+        KaraokeSongRequest.query
         .filter(KaraokeSongRequest.post_id == post_id)
-        .scalar()
+        .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .with_for_update()
+        .all()
     )
-    return (current_max or 0) + 1
+    current_max = max(
+        (entry.position or 0 for entry in queue),
+        default=0,
+    )
+    return current_max + 1
 
 
 def resolve_event(slug_or_none, *, required=False):
@@ -214,7 +223,7 @@ def api_admin_karaoke_list():
         {
             "items": [serialize_admin(item) for item in items],
             "events": [
-                {"slug": event.slug, "title": event.display_title, "startsAt": event.starts_at.isoformat() if event.starts_at else None}
+                {"slug": event.slug, "title": event.display_title, "startsAt": serialize_utc(event.starts_at)}
                 for event in events
             ],
         }
@@ -227,7 +236,12 @@ def api_admin_karaoke_action(request_id, action):
     if action not in TRANSITIONS:
         return api_error("action_unknown", "Unknown queue action.", status=404)
 
-    item = db.session.get(KaraokeSongRequest, request_id)
+    item = (
+        KaraokeSongRequest.query
+        .filter_by(id=request_id)
+        .with_for_update()
+        .first()
+    )
     if item is None:
         return api_error("not_found", "Request not found.", status=404)
 
@@ -247,7 +261,15 @@ def api_admin_karaoke_action(request_id, action):
         item.position = None
 
     audit(item, action, detail=f"{previous} -> {target}")
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return api_error(
+            "queue_changed",
+            "The queue changed while approving this request. Reload and try again.",
+            status=409,
+        )
     return jsonify(serialize_admin(item))
 
 
@@ -258,11 +280,18 @@ def api_admin_karaoke_reorder():
     order = body.get("order")
     if not isinstance(order, list) or not all(isinstance(entry, int) for entry in order):
         return validation_error({"order": "Provide the full ordered list of request ids."})
+    if not order or len(order) != len(set(order)):
+        return api_error(
+            "queue_changed",
+            "The queue changed while reordering. Reload and try again.",
+            status=409,
+        )
 
     items = (
         KaraokeSongRequest.query
         .filter(KaraokeSongRequest.id.in_(order))
         .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .with_for_update()
         .all()
     )
     items_by_id = {item.id: item for item in items}
@@ -283,12 +312,43 @@ def api_admin_karaoke_reorder():
             status=409,
         )
 
+    event_id = next(iter(event_ids))
+    Post.query.filter_by(id=event_id).with_for_update().first()
+    complete_queue = (
+        KaraokeSongRequest.query
+        .filter(KaraokeSongRequest.post_id == event_id)
+        .filter(KaraokeSongRequest.status.in_(KARAOKE_QUEUE_STATUSES))
+        .with_for_update()
+        .all()
+    )
+    if {item.id for item in complete_queue} != set(order):
+        return api_error(
+            "queue_changed",
+            "The queue changed while reordering. Reload and try again.",
+            status=409,
+        )
+
+    # Move every row out of the final position range first. A direct reversal
+    # can otherwise violate the unique (post_id, position) constraint halfway
+    # through the UPDATE sequence even though the final order is valid.
+    temporary_base = max((item.position or 0 for item in complete_queue), default=0) + len(order)
+    for offset, request_id in enumerate(order, start=1):
+        items_by_id[request_id].position = temporary_base + offset
+    db.session.flush()
+
     for position, request_id in enumerate(order, start=1):
         item = items_by_id[request_id]
-        if item.position != position:
-            item.position = position
-            audit(item, "reorder", detail=f"position {position}")
-    db.session.commit()
+        item.position = position
+        audit(item, "reorder", detail=f"position {position}")
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return api_error(
+            "queue_changed",
+            "The queue changed while reordering. Reload and try again.",
+            status=409,
+        )
 
     ordered = sorted(items_by_id.values(), key=lambda entry: entry.position or 0)
     return jsonify({"items": [serialize_admin(item) for item in ordered]})
@@ -308,7 +368,7 @@ def api_admin_karaoke_audit():
                     "action": entry.action,
                     "detail": entry.detail,
                     "actor": entry.actor,
-                    "createdAt": entry.created_at.isoformat(),
+                    "createdAt": serialize_utc(entry.created_at),
                 }
                 for entry in entries
             ]

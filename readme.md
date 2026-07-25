@@ -69,12 +69,15 @@ Every protected endpoint enforces capabilities server-side and returns 403.
 
 Both integrations are adapter-based and run in **mock mode** without
 credentials: simulated provider responses, flagged `isSimulated`, no network
-calls. Environment variables for real adapters (never commit tokens):
+calls. The production adapters are not implemented yet, so selecting
+`PAYMENT_PROVIDER=stripe` or `SOCIAL_PROVIDER_MODE=graph` fails fast instead
+of silently behaving like a real integration. See
+[`docs/integrations.md`](docs/integrations.md) for the adapter contracts.
 
 ```bash
-FACEBOOK_PAGE_ACCESS_TOKEN=…  FACEBOOK_PAGE_ID=…
-INSTAGRAM_ACCESS_TOKEN=…      INSTAGRAM_USER_ID=…
-PAYMENT_PROVIDER=stripe       STRIPE_SECRET_KEY=…
+PAYMENT_PROVIDER=mock
+SOCIAL_PROVIDER_MODE=mock
+PAYMENT_RESERVATION_MINUTES=20
 ```
 
 ## Backend tests
@@ -145,9 +148,10 @@ docker compose up --build
 http://127.0.0.1:5000
 ```
 
-The image entrypoint runs `flask db upgrade` before Gunicorn starts. A separate
-`social-worker` service processes scheduled publications every 30 seconds with
-bounded retries; publication does not depend on web traffic.
+The image entrypoint runs `flask db upgrade` before Gunicorn starts. Separate
+`social-worker` and `reservation-worker` services process scheduled
+publications and expired unpaid registrations every 30 seconds. Publication,
+capacity release, and waiting-list promotion do not depend on web traffic.
 
 Useful environment overrides:
 
@@ -167,13 +171,10 @@ To remove the Postgres data volume as well:
 docker compose down -v
 ```
 
-## Optional local Postgres deps
+## Local PostgreSQL
 
-The Docker image installs these automatically. Install them locally only if you want to run without Docker while pointing `DATABASE_URL` at Postgres.
-
-```bash
-pip install --no-cache-dir -r requirements-docker.txt
-```
+The standard requirements include the PostgreSQL driver. Point `DATABASE_URL`
+at PostgreSQL and run migrations before starting the application.
 
 ## Database migrations
 

@@ -5,6 +5,7 @@ from flask import jsonify, request
 from sqlalchemy import func, or_
 
 from app.api import api_bp, get_json_body, rate_limited, require_capability, validation_error
+from app.datetime_utils import serialize_utc
 from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, db
 from app.routes.helpers.tandem_form import (
     get_country_options,
@@ -210,7 +211,7 @@ def _serialize_contact(item):
         "kind": "",
         "status": item.status,
         "isViewed": bool(item.is_viewed),
-        "createdAt": item.created_at.isoformat(),
+        "createdAt": serialize_utc(item.created_at),
     }
 
 
@@ -227,7 +228,7 @@ def _serialize_suggestion(item):
         "kind": item.kind,
         "status": item.status,
         "isViewed": bool(item.is_viewed),
-        "createdAt": item.created_at.isoformat(),
+        "createdAt": serialize_utc(item.created_at),
     }
 
 

@@ -118,7 +118,7 @@ def test_paid_registration_transitions_follow_payment_and_refund_state(client, a
     assert client.get(f"/api/v1/public/registrations/{second['publicId']}").get_json()["status"] == "waiting_payment"
 
     with app.app_context():
-        assert PaymentStatusAudit.query.count() == 2
+        assert PaymentStatusAudit.query.count() == 3
 
 
 def test_free_registration_cancellation_promotes_and_reopen_requeues(client, app):

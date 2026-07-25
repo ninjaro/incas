@@ -76,8 +76,19 @@ test("field errors are associated with their controls", async ({ page }) => {
 
 test("Tandem step validation keeps the first error visible and focused", async ({ page }) => {
   await page.goto("/#/tandem");
+  await expect(page.getByRole("button", { name: "3. Preferences" })).toBeDisabled();
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Step 1 of 3")).toBeVisible();
   await expect(page.getByLabel("First name")).toBeFocused();
   await expect(page.getByLabel("First name")).toHaveAttribute("aria-invalid", "true");
+});
+
+test("Contact selected and focused states remain semantically distinct", async ({ page }) => {
+  await page.goto("/#/contact?form=general");
+  const general = page.getByRole("link", { name: /General message/ });
+  await expect(general).toHaveAttribute("aria-current", "page");
+  await general.focus();
+  await expect(general).toBeFocused();
+  const outline = await general.evaluate((element) => getComputedStyle(element).outlineStyle);
+  expect(outline).not.toBe("none");
 });

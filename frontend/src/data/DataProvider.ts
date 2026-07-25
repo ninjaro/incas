@@ -55,6 +55,7 @@ export interface DataProvider {
 
   getSession(): Promise<SessionInfo>;
   unlock(key: string): Promise<SessionInfo>;
+  lock(): Promise<SessionInfo>;
 
   getPublicConfig(): Promise<PublicConfig>;
   getPublicPosts(): Promise<PublicPostsResponse>;
@@ -68,6 +69,7 @@ export interface DataProvider {
   submitTandem(input: TandemSubmission): Promise<{ submissionId: string }>;
   registerForEvent(slug: string, input: EventRegistrationInput): Promise<RegistrationRecord>;
   getRegistration(publicId: string): Promise<RegistrationRecord>;
+  recoverRegistration(eventSlug: string, email: string): Promise<{ accepted: true; message: string }>;
 
   getAdminThemes(): Promise<AdminThemesResponse>;
   voteTheme(page: PageId, theme: string): Promise<{ myVote: string; votes: Record<string, number> }>;
@@ -82,6 +84,8 @@ export interface DataProvider {
   getAdminPost(id: number): Promise<AdminPost>;
   createPost(input: PostInput): Promise<AdminPost>;
   updatePost(id: number, input: PostInput): Promise<AdminPost>;
+  updatePostSlug(id: number, slug: string): Promise<AdminPost>;
+  previewPost(body: string): Promise<{ bodyHtml: string }>;
   getTemplates(): Promise<{ items: PostTemplateInfo[] }>;
   createTemplate(input: Partial<PostTemplateInfo>): Promise<PostTemplateInfo>;
   updateTemplate(id: number, input: Partial<PostTemplateInfo>): Promise<PostTemplateInfo>;

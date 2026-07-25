@@ -6,6 +6,14 @@ import { useLocale } from "../i18n/LocaleContext";
 
 type SectionItem = { path: string; title: string; summary?: string };
 
+export function relatedOfferItems(items: SectionItem[], currentPath: string) {
+  const currentIndex = items.findIndex((item) => item.path === currentPath);
+  if (currentIndex < 0) return [];
+  return [items[currentIndex - 1], items[currentIndex + 1]].filter(
+    (item): item is SectionItem => Boolean(item),
+  );
+}
+
 function SectionPager({ items, currentIndex, de }: { items: SectionItem[]; currentIndex: number; de: boolean }) {
   if (currentIndex < 0) return null;
   const previous = items[currentIndex - 1];
@@ -57,7 +65,7 @@ export function OffersLayout() {
   ];
   const currentIndex = items.findIndex((item) => item.path === location.pathname);
   const related = currentIndex > 0
-    ? items.filter((_, index) => index > 0 && index !== currentIndex).slice(Math.max(0, currentIndex - 1), Math.max(0, currentIndex - 1) + 2)
+    ? relatedOfferItems(items.slice(1), location.pathname)
     : [];
   return (
     <section className="section-layout offers-section">

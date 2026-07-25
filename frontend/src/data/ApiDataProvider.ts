@@ -44,6 +44,7 @@ import type {
   ThemeAuditEntry,
 } from "../api/types";
 import type { DataProvider } from "./DataProvider";
+import { trackKaraokeInBatches } from "./karaokeTracking";
 
 export class ApiDataProvider implements DataProvider {
   readonly isDemo = false;
@@ -54,6 +55,10 @@ export class ApiDataProvider implements DataProvider {
 
   unlock(key: string) {
     return http.post<SessionInfo>("/access/unlock", { key });
+  }
+
+  lock() {
+    return http.post<SessionInfo>("/access/lock");
   }
 
   getPublicConfig() {
@@ -107,6 +112,13 @@ export class ApiDataProvider implements DataProvider {
     return http.get<RegistrationRecord>(`/public/registrations/${encodeURIComponent(publicId)}`);
   }
 
+  recoverRegistration(eventSlug: string, email: string) {
+    return http.post<{ accepted: true; message: string }>("/public/registrations/recover", {
+      eventSlug,
+      email,
+    });
+  }
+
   getAdminThemes() {
     return http.get<AdminThemesResponse>("/admin/themes");
   }
@@ -148,6 +160,14 @@ export class ApiDataProvider implements DataProvider {
 
   updatePost(id: number, input: PostInput) {
     return http.put<AdminPost>(`/admin/posts/${id}`, input);
+  }
+
+  updatePostSlug(id: number, slug: string) {
+    return http.patch<AdminPost>(`/admin/posts/${id}/slug`, { slug });
+  }
+
+  previewPost(body: string) {
+    return http.post<{ bodyHtml: string }>("/admin/posts/preview", { body });
   }
 
   getTemplates() {
@@ -307,9 +327,12 @@ export class ApiDataProvider implements DataProvider {
   }
 
   trackKaraokeRequests(publicIds: string[]) {
-    return http.post<{ items: KaraokePublicEntry[]; missing: string[] }>(
-      "/public/karaoke/requests/track",
-      { publicIds },
+    return trackKaraokeInBatches(
+      publicIds,
+      (batch) => http.post<{ items: KaraokePublicEntry[]; missing: string[] }>(
+        "/public/karaoke/requests/track",
+        { publicIds: batch },
+      ),
     );
   }
 

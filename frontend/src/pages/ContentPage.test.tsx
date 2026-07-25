@@ -119,6 +119,27 @@ describe("ContentPage", () => {
     await waitFor(() => expect(screen.getByText("Calendar route reached")).toBeInTheDocument());
   });
 
+  it("maps an authored /contact-form link to the general React contact form", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataProviderProvider provider={new DemoDataProvider()}>
+        <LocaleProvider>
+          <MemoryRouter initialEntries={["/offers/international-tuesday"]}>
+            <Routes>
+              <Route path="/offers/:slug" element={<ContentPage />} />
+              <Route path="/contact" element={<div>General contact route reached</div>} />
+            </Routes>
+          </MemoryRouter>
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+
+    const link = await screen.findByRole("link", { name: /contact us/i });
+    expect(link).toHaveAttribute("href", "/contact-form");
+    await user.click(link);
+    expect(await screen.findByText("General contact route reached")).toBeInTheDocument();
+  });
+
   it("keeps authored fragment navigation inside the current HashRouter route", async () => {
     const user = userEvent.setup();
     const scrollIntoView = HTMLElement.prototype.scrollIntoView;

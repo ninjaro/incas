@@ -10,11 +10,11 @@
 import hashlib
 import hmac
 import json
-from datetime import datetime
 
 from flask import current_app, jsonify, request
 
 from app.api import api_bp, api_error, get_json_body, require_capability, validation_error
+from app.datetime_utils import serialize_utc, utc_now
 from app.matching import build_match_groups
 from app.duplicate_review import build_duplicate_candidates, canonicalize_duplicate_pair
 from app.models import (
@@ -60,7 +60,7 @@ def serialize_blind(item):
         "sameGenderOnly": bool(item.same_gender_only),
         "preferredGender": item.preferred_gender,
         "isViewed": bool(item.is_viewed),
-        "createdAt": item.created_at.isoformat() if item.created_at else None,
+        "createdAt": serialize_utc(item.created_at),
     }
 
 
@@ -145,8 +145,8 @@ def api_admin_tandem_matches(ref):
             "review": {
                 "hidden": bool(review and review.is_hidden),
                 "shortlisted": bool(review and review.is_shortlisted),
-                "contactedAt": review.contacted_at.isoformat() if review and review.contacted_at else None,
-                "finalPairAt": review.final_pair_at.isoformat() if review and review.final_pair_at else None,
+                "contactedAt": serialize_utc(review.contacted_at) if review else None,
+                "finalPairAt": serialize_utc(review.final_pair_at) if review else None,
             },
         }
 
@@ -250,11 +250,11 @@ def api_admin_tandem_match_review(source_ref, candidate_ref):
     elif action == "unshortlist":
         state.is_shortlisted = False
     elif action == "contacted":
-        state.contacted_at = datetime.utcnow()
+        state.contacted_at = utc_now()
     elif action == "uncontacted":
         state.contacted_at = None
     elif action == "final_pair":
-        state.final_pair_at = datetime.utcnow()
+        state.final_pair_at = utc_now()
         state.is_shortlisted = True
     elif action == "unpair":
         state.final_pair_at = None
@@ -263,8 +263,8 @@ def api_admin_tandem_match_review(source_ref, candidate_ref):
         {
             "hidden": bool(state.is_hidden),
             "shortlisted": bool(state.is_shortlisted),
-            "contactedAt": state.contacted_at.isoformat() if state.contacted_at else None,
-            "finalPairAt": state.final_pair_at.isoformat() if state.final_pair_at else None,
+            "contactedAt": serialize_utc(state.contacted_at),
+            "finalPairAt": serialize_utc(state.final_pair_at),
         }
     )
 

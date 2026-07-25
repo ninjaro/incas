@@ -378,21 +378,23 @@ export function EventCard({ event, locale, compact = false }: { event: PublicPos
   const imageUrl = assetUrl(event.imageUrl);
   return (
     <article className={`event-card${compact ? " is-compact" : ""}`}>
-      {imageUrl && !compact ? <img src={imageUrl} alt="" loading="lazy" /> : null}
-      <div className="event-card-body">
-        <div className="event-card-title-row">
-          <EventMarker eventKind={event.eventKind} />
-          <Link to={`/events/${event.slug}`}><EventTitle title={event.title} /></Link>
+      <Link className="event-card-main card-primary-link" to={`/events/${event.slug}`} aria-label={event.title.full}>
+        {imageUrl && !compact ? <img src={imageUrl} alt="" loading="lazy" /> : null}
+        <div className="event-card-body">
+          <div className="event-card-title-row">
+            <EventMarker eventKind={event.eventKind} />
+            <EventTitle title={event.title} />
+          </div>
+          {event.startsAt ? <EventDate start={event.startsAt} end={event.endsAt} locale={locale} /> : null}
+          {!compact && event.summary ? <p>{event.summary}</p> : null}
+          <div className="event-card-flags">
+            {event.isPinned ? <PinnedBadge locale={locale} /> : null}
+            {event.publicationState === "archived" ? <ArchivedBadge locale={locale} /> : null}
+            {event.registration ? <EventAvailability registration={event.registration} locale={locale} /> : null}
+          </div>
+          {event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}
         </div>
-        {event.startsAt ? <EventDate start={event.startsAt} end={event.endsAt} locale={locale} /> : null}
-        {!compact && event.summary ? <p>{event.summary}</p> : null}
-        <div className="event-card-flags">
-          {event.isPinned ? <PinnedBadge locale={locale} /> : null}
-          {event.publicationState === "archived" ? <ArchivedBadge locale={locale} /> : null}
-          {event.registration ? <EventAvailability registration={event.registration} locale={locale} /> : null}
-        </div>
-        {event.registration ? <EventPaymentNotice registration={event.registration} locale={locale} /> : null}
-      </div>
+      </Link>
     </article>
   );
 }

@@ -31,7 +31,7 @@ jobs:
         run: npm run test:e2e
 
   backend:
-    name: Backend (pytest)
+    name: Backend (SQLite)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,4 +45,40 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: "sqlite://"
+        run: pytest tests/ -q
+
+  backend-postgres:
+    name: Backend (PostgreSQL migrations and tests)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: incas_test
+          POSTGRES_USER: incas
+          POSTGRES_PASSWORD: incas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U incas -d incas_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql+psycopg://incas:incas@127.0.0.1:5432/incas_test
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+      - name: Apply migrations to an empty PostgreSQL database
+        env:
+          AUTO_CREATE_SCHEMA: "0"
+          SEED_DEMO_DATA: "0"
+        run: flask --app run:app db upgrade
+      - name: Run backend and PostgreSQL concurrency tests
         run: pytest tests/ -q

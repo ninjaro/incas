@@ -29,6 +29,8 @@ describe("DataViews", () => {
     await user.click(gridButtons[0]);
     expect(gridButtons[0]).toHaveAttribute("aria-pressed", "true");
     expect(gridButtons[1]).toHaveAttribute("aria-pressed", "true");
+    expect(gridButtons[0]).toHaveClass("btn-primary");
+    expect(gridButtons[1]).toHaveClass("btn-primary");
     expect(document.querySelectorAll(".admin-data-grid")).toHaveLength(2);
   });
 });

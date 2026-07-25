@@ -37,6 +37,40 @@ describe("public form UX", () => {
     expect(screen.getByText("Tandem workflow")).toBeInTheDocument();
   });
 
+  it("normalizes an unknown Contact form value to the hub state", async () => {
+    render(
+      <DataProviderProvider provider={new DemoDataProvider()}>
+        <LocaleProvider>
+          <MemoryRouter initialEntries={["/contact?form=unknown"]}>
+            <ContactPage />
+          </MemoryRouter>
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+    expect(await screen.findByText(/Choose an option above/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Message")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Country or culture")).not.toBeInTheDocument();
+  });
+
+  it("exposes the selected Contact option and preserves visible keyboard focus", async () => {
+    const user = userEvent.setup();
+    render(
+      <DataProviderProvider provider={new DemoDataProvider()}>
+        <LocaleProvider>
+          <MemoryRouter initialEntries={["/contact?form=general"]}>
+            <ContactPage />
+          </MemoryRouter>
+        </LocaleProvider>
+      </DataProviderProvider>,
+    );
+    const selected = await screen.findByRole("link", { name: /General message/ });
+    expect(selected).toHaveAttribute("aria-current", "page");
+    selected.focus();
+    expect(selected).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("link", { name: /Suggest an event/ })).toHaveFocus();
+  });
+
   it("syncs a pristine Suggest Event type but preserves edited input", async () => {
     const user = userEvent.setup();
     const view = render(<Providers><SuggestEventForm initialKind="country_evening" /></Providers>);

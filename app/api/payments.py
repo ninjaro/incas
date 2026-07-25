@@ -1,6 +1,7 @@
 from flask import jsonify, request
 
 from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
+from app.datetime_utils import serialize_utc
 from app.models import (
     PAYMENT_STATUS_CANCELLED,
     PAYMENT_STATUS_FAILED,
@@ -22,9 +23,13 @@ from app.payments import (
     create_transaction,
     get_payment_provider,
     mark_paid,
+    record_payment_transition,
     serialize_transaction,
 )
-from app.routes.helpers.event_registrations import promote_waiting_list_for_post
+from app.routes.helpers.event_registrations import (
+    expire_waiting_payment_registrations,
+    promote_waiting_list_for_post,
+)
 from app.routes.helpers.access import get_session_audit_id
 
 
@@ -43,6 +48,10 @@ def api_payments_checkout():
     if not item.is_live:
         return api_error("registration_closed", "Registration is closed.", status=409)
 
+    expired, _promoted = expire_waiting_payment_registrations(post_id=item.id)
+    if expired:
+        db.session.flush()
+
     registration_public_id = (body.get("registrationPublicId") or "").strip()
     if not registration_public_id:
         return validation_error(
@@ -56,12 +65,6 @@ def api_payments_checkout():
     )
     if registration is None or registration.post_id != item.id:
         return validation_error({"registrationPublicId": "Unknown registration."})
-    if registration.status != EVENT_REGISTRATION_STATUS_WAITING_PAYMENT:
-        return api_error(
-            "registration_not_payable",
-            "This registration is not waiting for payment.",
-            status=409,
-        )
     existing = (
         PaymentTransaction.query
         .filter_by(registration_id=registration.id)
@@ -69,11 +72,17 @@ def api_payments_checkout():
         .first()
     )
     if existing is not None:
+        payload = serialize_transaction(existing)
+        if existing.status == PAYMENT_STATUS_PENDING:
+            payload.update(
+                get_payment_provider(existing.provider).resume_checkout_session(existing)
+            )
+        return jsonify(payload)
+    if registration.status != EVENT_REGISTRATION_STATUS_WAITING_PAYMENT:
         return api_error(
-            "payment_exists",
-            "This registration already has an active payment.",
+            "registration_not_payable",
+            "This registration is not waiting for payment.",
             status=409,
-            details={"publicId": existing.public_id},
         )
 
     transaction = create_transaction(item, registration)
@@ -106,6 +115,7 @@ def api_payments_simulate(public_id):
         return api_error("payment_finalized", "This payment is already finalized.", status=409)
 
     outcome = (get_json_body().get("outcome") or "success").strip()
+    previous_status = transaction.status
     if outcome == "success":
         mark_paid(transaction)
     elif outcome == "failure":
@@ -113,9 +123,26 @@ def api_payments_simulate(public_id):
         transaction.error_message = "Simulated payment failure"
     elif outcome == "cancel":
         transaction.status = PAYMENT_STATUS_CANCELLED
+        registration = (
+            db.session.get(EventRegistration, transaction.registration_id)
+            if transaction.registration_id
+            else None
+        )
+        if registration is not None:
+            registration.status = EVENT_REGISTRATION_STATUS_CANCELLED
+            registration.payment_expires_at = None
+            post = Post.query.filter_by(id=registration.post_id).with_for_update().first()
+            if post is not None:
+                promote_waiting_list_for_post(post)
     else:
         return validation_error({"outcome": "Use success, failure, or cancel."})
 
+    record_payment_transition(
+        transaction,
+        previous_status,
+        actor="simulation",
+        note=f"Simulated checkout outcome: {outcome}",
+    )
     db.session.commit()
     return jsonify(serialize_transaction(transaction))
 
@@ -148,7 +175,7 @@ def serialize_admin_payment(transaction):
                     "newStatus": entry.new_status,
                     "actor": entry.actor,
                     "note": entry.note,
-                    "createdAt": entry.created_at.isoformat(),
+                    "createdAt": serialize_utc(entry.created_at),
                 }
                 for entry in (
                     PaymentStatusAudit.query

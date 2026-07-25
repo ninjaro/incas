@@ -7,6 +7,7 @@ from contextlib import nullcontext
 from flask import Response, current_app, jsonify, request
 
 from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
+from app.datetime_utils import serialize_utc
 from app.models import (
     EVENT_REGISTRATION_CAPACITY_STATUSES,
     EVENT_REGISTRATION_STATUS_APPROVED,
@@ -21,11 +22,15 @@ from app.models import (
     Post,
     db,
 )
+from app.payments import get_payment_provider, serialize_transaction
+from app.registration_recovery import get_registration_recovery_mailer
 from app.routes.helpers.event_registrations import (
+    assign_payment_deadline,
     allowed_registration_transitions,
     apply_registration_transition,
     build_event_registration_public_id,
     determine_initial_registration_status,
+    expire_waiting_payment_registrations,
     get_waiting_list_position,
     latest_registration_payment,
     promote_waiting_list_for_post,
@@ -64,13 +69,10 @@ def _payment_for_registration(item):
     )
     if payment is None:
         return None
-    return {
-        "publicId": payment.public_id,
-        "status": payment.status,
-        "amountCents": payment.amount_cents,
-        "currency": payment.currency,
-        "isSimulated": bool(payment.is_simulated),
-    }
+    payload = serialize_transaction(payment)
+    if payment.status == "pending":
+        payload.update(get_payment_provider(payment.provider).resume_checkout_session(payment))
+    return payload
 
 
 def serialize_registration(item, post=None, *, private=False):
@@ -84,16 +86,17 @@ def serialize_registration(item, post=None, *, private=False):
         "event": {
             "slug": post.slug,
             "title": post.display_title,
-            "startsAt": post.starts_at.isoformat() if post.starts_at else None,
+            "startsAt": serialize_utc(post.starts_at),
             "capacity": post.registration_limit,
             "placesRemaining": post.registration_places_remaining,
             "priceCents": post.registration_price_cents,
             "isDeposit": bool(post.registration_is_deposit),
         },
         "payment": _payment_for_registration(item),
+        "paymentExpiresAt": serialize_utc(item.payment_expires_at),
         "trackingPath": f"/registrations/{item.public_id}",
-        "createdAt": item.created_at.isoformat(),
-        "updatedAt": item.updated_at.isoformat(),
+        "createdAt": serialize_utc(item.created_at),
+        "updatedAt": serialize_utc(item.updated_at),
     }
     if private:
         payload.update(
@@ -127,6 +130,10 @@ def _create_public_event_registration(slug):
     if not post.is_live:
         return api_error("registration_closed", "Registration is closed.", status=409)
 
+    expired, _promoted = expire_waiting_payment_registrations(post_id=post.id)
+    if expired:
+        db.session.flush()
+
     body = get_json_body()
     values = {
         "firstName": (body.get("firstName") or "").strip(),
@@ -158,12 +165,12 @@ def _create_public_event_registration(slug):
     )
     if duplicate is not None:
         return api_error(
-            "registration_exists",
-            "This email address already has an active registration.",
+            "registration_conflict",
+            "A new registration cannot be created with these details. You can request the existing link by email.",
             status=409,
-            details={"publicId": duplicate.public_id},
         )
 
+    initial_status = determine_initial_registration_status(post)
     item = EventRegistration(
         public_id=build_event_registration_public_id(),
         post_id=post.id,
@@ -173,8 +180,9 @@ def _create_public_event_registration(slug):
         occupation=values["occupation"][:120],
         diet_preference=values["dietPreference"],
         comment=values["comment"][:10000],
-        status=determine_initial_registration_status(post),
+        status=initial_status,
     )
+    assign_payment_deadline(item, post)
     db.session.add(item)
     db.session.commit()
     return jsonify(serialize_registration(item, post)), 201
@@ -186,7 +194,58 @@ def api_public_registration_status(public_id):
     item = EventRegistration.query.filter_by(public_id=public_id).first()
     if item is None:
         return api_error("not_found", "Registration not found.", status=404)
+    expired, _promoted = expire_waiting_payment_registrations(post_id=item.post_id)
+    if expired:
+        db.session.commit()
+        item = EventRegistration.query.filter_by(public_id=public_id).first()
     return jsonify(serialize_registration(item))
+
+
+@api_bp.post("/public/registrations/recover")
+@rate_limited("registration.recover", limit=5)
+def api_public_registration_recover():
+    body = get_json_body()
+    slug = (body.get("eventSlug") or "").strip()
+    email = (body.get("email") or "").strip().lower()
+    if not slug or not EMAIL_RE.match(email):
+        return validation_error(
+            {
+                **({"eventSlug": "Select an event."} if not slug else {}),
+                **({"email": "Enter a valid email address."} if not EMAIL_RE.match(email) else {}),
+            }
+        )
+
+    post = Post.query.filter_by(slug=slug).first()
+    registration = None
+    if post is not None:
+        registration = (
+            EventRegistration.query
+            .filter_by(post_id=post.id, email=email)
+            .filter(EventRegistration.status != EVENT_REGISTRATION_STATUS_CANCELLED)
+            .first()
+        )
+    if registration is not None:
+        tracking_url = (
+            f"{request.url_root.rstrip('/')}/registrations/{registration.public_id}"
+        )
+        try:
+            get_registration_recovery_mailer().send_tracking_link(
+                registration.email,
+                post.display_title,
+                tracking_url,
+            )
+        except Exception:
+            current_app.logger.exception("Registration recovery delivery failed.")
+
+    return (
+        jsonify(
+            {
+                "accepted": True,
+                "message": "If a matching active registration exists, its private link will be sent to that email address.",
+            }
+        ),
+        202,
+    )
 
 
 def _serialize_event_queue(post):
@@ -194,7 +253,7 @@ def _serialize_event_queue(post):
         "postId": post.id,
         "slug": post.slug,
         "title": post.display_title,
-        "startsAt": post.starts_at.isoformat() if post.starts_at else None,
+        "startsAt": serialize_utc(post.starts_at),
         "capacity": post.registration_limit or 0,
         "confirmedCount": EventRegistration.query.filter_by(post_id=post.id, status=EVENT_REGISTRATION_STATUS_APPROVED).count(),
         "reservedCount": post.registration_reserved_count,
@@ -209,6 +268,9 @@ def _serialize_event_queue(post):
 @api_bp.get("/admin/event-registrations")
 @require_capability("event_registrations")
 def api_admin_event_registration_queues():
+    expired, _promoted = expire_waiting_payment_registrations()
+    if expired:
+        db.session.commit()
     posts = (
         Post.query
         .filter(Post.registration_limit_enabled.is_(True))
@@ -224,6 +286,9 @@ def api_admin_event_registrations(post_id):
     post = db.session.get(Post, post_id)
     if post is None or not post.has_registration_queue:
         return api_error("not_found", "Event queue not found.", status=404)
+    expired, _promoted = expire_waiting_payment_registrations(post_id=post.id)
+    if expired:
+        db.session.commit()
     query = search_event_registrations(request.args.get("q", ""), post_id=post.id)
     status = request.args.get("status", "").strip()
     if status:
@@ -245,6 +310,9 @@ def api_admin_event_registration_update(registration_id):
     if item is None:
         return api_error("not_found", "Registration not found.", status=404)
     post = Post.query.filter_by(id=item.post_id).with_for_update().first()
+    expired, _promoted = expire_waiting_payment_registrations(post_id=post.id)
+    if expired:
+        db.session.flush()
     body = get_json_body()
     target = (body.get("status") or "").strip()
     if target not in STATUSES:

@@ -12,7 +12,7 @@ import { useLocale } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
 function PostCard({ post, de }: { post: PublicPost; de: boolean }) {
-  return <article className="post-card">{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3><Link to={`/events/${post.slug}`}>{post.title.full}</Link></h3><p>{post.summary}</p><Link to={`/events/${post.slug}`}>{de ? "Weiterlesen" : "Read more"}</Link></article>;
+  return <article className="post-card"><Link className="post-card-main card-primary-link" to={`/events/${post.slug}`} aria-label={post.title.full}>{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3>{post.title.full}</h3><p>{post.summary}</p></Link></article>;
 }
 
 function Upcoming({ events, locale, limit = 6 }: { events: PublicPost[]; locale: string; limit?: number }) {

@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   ArchivedBadge,
@@ -29,10 +30,17 @@ export function EventDescription({ bodyHtml, summary }: { bodyHtml: string; summ
 
 export function EventDetailPage() {
   const { slug = "" } = useParams();
+  const navigate = useNavigate();
   const data = useData();
   const { locale } = useLocale();
   const de = locale === "de";
   const post = useAsync(() => data.getPublicPost(slug), [data, slug]);
+
+  useEffect(() => {
+    if (post.data && post.data.slug !== slug) {
+      navigate(`/events/${post.data.slug}`, { replace: true });
+    }
+  }, [navigate, post.data, slug]);
 
   if (post.loading) return <Loading />;
   if (post.error || !post.data) return <ErrorState error={post.error} onRetry={post.reload} />;
@@ -75,7 +83,7 @@ export function EventDetailPage() {
             </dl>
             {event.registration ? <><EventPaymentNotice registration={event.registration} locale={locale} /><p>{event.registration.nonCancelledCount} {de ? "aktive Anmeldungen" : "non-cancelled applications"}</p></> : null}
           </div>
-          {event.socialLinks.length ? <div className="card"><h2>{de ? "Geteilt auf" : "Also published on"}</h2>{event.socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noreferrer">{link.provider}</a>)}</div> : null}
+          {event.socialLinks.length ? <div className="card"><h2>{de ? "Geteilt auf" : "Also published on"}</h2>{event.socialLinks.map((link) => <a key={link.url} href={link.url} target="_blank" rel="noreferrer">{link.provider}{link.isSimulated ? ` (${de ? "simuliert" : "simulated"})` : ""}</a>)}</div> : null}
         </aside>
       </div>
     </article>

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { ApiError } from "../../api/client";
 import type { EventRegistrationInput, PublicPost } from "../../api/types";
 import { EventAvailability, EventPaymentNotice } from "../../components/events";
 import { Field } from "../../components/ui";
@@ -20,11 +21,17 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
   const [form, setForm] = useState(EMPTY);
   const formErrors = usePublicFormErrors(locale);
   const [busy, setBusy] = useState(false);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
   const registration = event.registration;
   if (!registration) return null;
 
   const change = <K extends keyof EventRegistrationInput>(field: K, value: EventRegistrationInput[K]) => {
     formErrors.clearField(field);
+    if (field === "email") {
+      setRecoveryAvailable(false);
+      setRecoveryMessage("");
+    }
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -35,6 +42,23 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
     try {
       const result = await data.registerForEvent(event.slug, form);
       navigate(`/registrations/${result.publicId}`);
+    } catch (error) {
+      setRecoveryAvailable(error instanceof ApiError && error.code === "registration_conflict");
+      formErrors.report(error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const recover = async () => {
+    setBusy(true);
+    try {
+      const result = await data.recoverRegistration(event.slug, form.email);
+      setRecoveryMessage(
+        de
+          ? "Falls eine passende aktive Anmeldung existiert, wird der private Link per E-Mail gesendet."
+          : result.message,
+      );
     } catch (error) {
       formErrors.report(error);
     } finally {
@@ -54,6 +78,8 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
       <EventPaymentNotice registration={registration} locale={locale} />
       {registration.availability === "waiting_list" ? <p className="notice notice-info">{de ? "Die Plätze sind reserviert. Neue Anmeldungen kommen auf die Warteliste." : "All places are reserved. New registrations join the waiting list."}</p> : null}
       {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
+      {recoveryAvailable ? <p className="notice notice-info">{de ? "Du hast den Link verloren?" : "Lost your existing link?"} <button className="link-button" type="button" onClick={recover} disabled={busy}>{de ? "Link per E-Mail anfordern" : "Email my registration link"}</button></p> : null}
+      {recoveryMessage ? <p className="notice notice-ok" role="status">{recoveryMessage}</p> : null}
       <form ref={formErrors.formRef} className="card public-form" onSubmit={submit} noValidate>
         <div className="form-grid">
           <Field label={de ? "Vorname" : "First name"} error={formErrors.errors.firstName}><input name="firstName" required autoComplete="given-name" value={form.firstName} onChange={(e) => change("firstName", e.target.value)} /></Field>

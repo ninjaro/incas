@@ -17,13 +17,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+from flask import current_app
+
+from app.datetime_utils import serialize_utc, utc_now
 from app.models import (
     SOCIAL_STATUS_FAILED,
     SOCIAL_STATUS_PUBLISHED,
     SOCIAL_STATUS_SCHEDULED,
     SocialPublication,
     db,
-    get_configured_local_now,
 )
 
 SOCIAL_PROVIDERS = ("facebook", "instagram")
@@ -40,6 +42,7 @@ class PublishResult:
     error_code: str = ""
     error_message: str = ""
     simulated: bool = False
+    retryable: bool = True
     extra: dict = field(default_factory=dict)
 
 
@@ -96,14 +99,22 @@ def has_real_credentials(provider):
 def get_publisher(provider) -> SocialPublisher:
     if provider not in SOCIAL_PROVIDERS:
         raise ValueError(f"Unknown social provider: {provider}")
-    # A real Graph API adapter can be slotted in here once credentials exist;
-    # until then every environment gets the mock so no network calls happen.
-    return MockSocialPublisher(provider)
+    try:
+        mode = current_app.config.get("SOCIAL_PROVIDER_MODE", "mock")
+    except RuntimeError:
+        mode = os.getenv("SOCIAL_PROVIDER_MODE", "mock")
+    if mode == "mock":
+        return MockSocialPublisher(provider)
+    if mode == "graph" and has_real_credentials(provider):
+        raise NotImplementedError(
+            "Graph API adapters are not implemented yet; use SOCIAL_PROVIDER_MODE=mock."
+        )
+    raise RuntimeError(f"Unsupported social provider mode: {mode}")
 
 
 def _apply_result(publication, result):
     publication.attempt_count = (publication.attempt_count or 0) + 1
-    publication.last_attempt_at = get_configured_local_now()
+    publication.last_attempt_at = utc_now()
     publication.is_simulated = result.simulated
     if result.ok:
         publication.status = SOCIAL_STATUS_PUBLISHED
@@ -117,7 +128,7 @@ def _apply_result(publication, result):
         publication.status = SOCIAL_STATUS_FAILED
         publication.error_code = result.error_code or "publish_failed"
         publication.error_message = result.error_message
-        if publication.attempt_count < SOCIAL_MAX_ATTEMPTS:
+        if result.retryable and publication.attempt_count < SOCIAL_MAX_ATTEMPTS:
             delay = SOCIAL_RETRY_BASE_SECONDS * (2 ** (publication.attempt_count - 1))
             publication.scheduled_for = publication.last_attempt_at + timedelta(seconds=delay)
         else:
@@ -181,7 +192,7 @@ def process_due_social_publications():
     remain idempotent by post/provider and failed attempts use bounded
     exponential backoff while staying visible in the admin panel.
     """
-    now = get_configured_local_now()
+    now = utc_now()
     due = (
         SocialPublication.query
         .filter(SocialPublication.status.in_([SOCIAL_STATUS_SCHEDULED, SOCIAL_STATUS_FAILED]))
@@ -223,6 +234,6 @@ def serialize_publication(publication):
         "errorMessage": publication.error_message,
         "attemptCount": publication.attempt_count,
         "isSimulated": bool(publication.is_simulated),
-        "scheduledFor": publication.scheduled_for.isoformat() if publication.scheduled_for else None,
-        "lastAttemptAt": publication.last_attempt_at.isoformat() if publication.last_attempt_at else None,
+        "scheduledFor": serialize_utc(publication.scheduled_for),
+        "lastAttemptAt": serialize_utc(publication.last_attempt_at),
     }

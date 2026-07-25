@@ -38,6 +38,23 @@ const BADGE_TONES: Record<string, string> = {
   cancelled: "badge-bad",
   failed: "badge-bad",
   paid: "badge-ok",
+  active: "badge-ok",
+  expired: "badge-warn",
+  revoked: "badge-bad",
+  refund_pending: "badge-warn",
+  refunded: "badge-ok",
+  waiting_payment: "badge-warn",
+  waiting_list: "badge-info",
+  waiting_refund: "badge-warn",
+  viewed: "badge-info",
+  new: "badge-brand",
+  in_progress: "badge-info",
+  resolved: "badge-ok",
+  full: "badge-ok",
+  partial: "badge-info",
+  weak: "badge-warn",
+  exact: "badge-bad",
+  likely: "badge-warn",
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {

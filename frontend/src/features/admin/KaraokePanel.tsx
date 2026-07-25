@@ -66,7 +66,7 @@ function AuditTab() {
   if (entries.length === 0) return <EmptyState>No audit entries yet.</EmptyState>;
 
   return (
-    <table className="table">
+    <div className="table-wrap"><table className="table">
       <thead>
         <tr>
           <th>When</th>
@@ -89,7 +89,7 @@ function AuditTab() {
           </tr>
         ))}
       </tbody>
-    </table>
+    </table></div>
   );
 }
 
@@ -103,12 +103,21 @@ export function KaraokePanel() {
   const [eventSlug, setEventSlug] = useState("");
 
   const overview = useAsync(() => data.getAdminKaraoke(), [data]);
-  const activeEvent = eventSlug || overview.data?.events[0]?.slug || "";
+  const activeEvent = eventSlug
+    || overview.data?.items.find((item) => item.eventSlug)?.eventSlug
+    || overview.data?.events[0]?.slug
+    || "";
   const list = useAsync(
     () => activeEvent
       ? data.getAdminKaraoke(filter === "all" ? undefined : filter, activeEvent)
       : Promise.resolve({ items: [], events: [] }),
     [data, filter, activeEvent],
+  );
+  const fullQueue = useAsync(
+    () => activeEvent
+      ? data.getAdminKaraoke(undefined, activeEvent)
+      : Promise.resolve({ items: [], events: [] }),
+    [data, activeEvent],
   );
 
   const runAction = async (entry: KaraokeAdminEntry, action: KaraokeAction) => {
@@ -125,13 +134,14 @@ export function KaraokePanel() {
     try {
       await data.karaokeAction(entry.id, action);
       list.reload();
+      fullQueue.reload();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Action failed.");
       list.reload();
     }
   };
 
-  const queueItems = (list.data?.items ?? []).filter(
+  const queueItems = (fullQueue.data?.items ?? []).filter(
     (item) => item.status === "approved" || item.status === "performing",
   );
 
@@ -149,6 +159,7 @@ export function KaraokePanel() {
     try {
       await data.reorderKaraoke(order);
       list.reload();
+      fullQueue.reload();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Reorder failed.");
       list.reload();
@@ -166,6 +177,12 @@ export function KaraokePanel() {
     setDragId(null);
     void reorder(order);
   };
+
+  if (overview.loading) return <Loading label="Loading Karaoke events…" />;
+  if (overview.error || !overview.data) return <ErrorState error={overview.error} onRetry={overview.reload} />;
+  if (!overview.data.events.length) {
+    return <><PageHeader kicker="Live event" title="Karaoke Queue" sub="Approve and order requests for a Karaoke event." /><EmptyState>No Karaoke events are available.</EmptyState></>;
+  }
 
   return (
     <>
@@ -187,11 +204,11 @@ export function KaraokePanel() {
         <AuditTab />
       ) : (
         <>
-          <div style={{ marginBottom: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <select aria-label="Karaoke event" value={activeEvent} onChange={(event) => setEventSlug(event.target.value)}>
+          <div className="admin-filterbar">
+            <label><span className="sr-only">Karaoke event</span><select aria-label="Karaoke event" value={activeEvent} onChange={(event) => setEventSlug(event.target.value)}>
               {(overview.data?.events ?? []).map((event) => <option key={event.slug} value={event.slug}>{event.title} ({event.startsAt?.slice(0, 10)})</option>)}
-            </select>
-            {STATUS_FILTERS.map((status) => (
+            </select></label>
+            <div className="filter-buttons" role="group" aria-label="Request status">{STATUS_FILTERS.map((status) => (
               <button
                 key={status}
                 type="button"
@@ -200,7 +217,7 @@ export function KaraokePanel() {
               >
                 {status}
               </button>
-            ))}
+            ))}</div>
           </div>
           {list.loading ? (
             <Loading />
@@ -211,6 +228,7 @@ export function KaraokePanel() {
           ) : (
             (list.data?.items ?? []).map((entry) => {
               const inQueue = entry.status === "approved" || entry.status === "performing";
+              const queueIndex = queueItems.findIndex((item) => item.id === entry.id);
               return (
                 <div
                   key={entry.id}
@@ -237,6 +255,7 @@ export function KaraokePanel() {
                         type="button"
                         className="btn btn-ghost btn-sm"
                         aria-label={`Move ${entry.songTitle} up`}
+                        disabled={fullQueue.loading || queueIndex <= 0}
                         onClick={() => move(entry, -1)}
                       >
                         ↑
@@ -245,6 +264,7 @@ export function KaraokePanel() {
                         type="button"
                         className="btn btn-ghost btn-sm"
                         aria-label={`Move ${entry.songTitle} down`}
+                        disabled={fullQueue.loading || queueIndex < 0 || queueIndex === queueItems.length - 1}
                         onClick={() => move(entry, 1)}
                       >
                         ↓

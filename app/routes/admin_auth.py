@@ -1,7 +1,7 @@
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
-from flask import abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import abort, current_app, flash, jsonify, redirect, render_template, request, session, url_for
 from app.models import ContactRequest, EventRegistration, EventSuggestion, Post
 from app.routes import bp
 from app.routes.helpers.access import (
@@ -37,25 +37,26 @@ def extract_event_registration_public_id(raw_value):
     return None
 
 
-def extract_unlock_url(raw_value):
+def extract_unlock_fragment_key(raw_value):
     value = (raw_value or "").strip()
     if not value:
         return None
 
     parsed = urlparse(value)
-    if parsed.path.rstrip("/") != "/admin/unlock":
-        return None
-
     if parsed.netloc and parsed.netloc != request.host:
         return None
 
-    query = parse_qs(parsed.query or "")
-    phrase_values = query.get("phrase") or []
-    if not phrase_values:
-        return None
+    fragment = parsed.fragment or ""
+    if fragment.startswith("access-key="):
+        return unquote(fragment.removeprefix("access-key=").strip())
+    if fragment.startswith("/admin?"):
+        values = parse_qs(fragment.partition("?")[2]).get("accessKey") or []
+        return values[0].strip() if values else None
+    return None
 
-    phrase = phrase_values[0].strip()
-    return url_for("main.admin_unlock", phrase=phrase)
+
+def access_activation_url(phrase):
+    return f"{url_for('main.admin_login')}#access-key={quote(phrase, safe='')}"
 
 
 def build_admin_scan_resolution(raw_value):
@@ -66,12 +67,12 @@ def build_admin_scan_resolution(raw_value):
             "message": "No QR code content was detected.",
         }
 
-    unlock_url = extract_unlock_url(value)
-    if unlock_url:
+    fragment_key = extract_unlock_fragment_key(value)
+    if fragment_key:
         return {
             "ok": True,
             "kind": "access_unlock_url",
-            "target_url": unlock_url,
+            "target_url": access_activation_url(fragment_key),
             "message": "Access-key unlock link detected.",
         }
 
@@ -80,7 +81,7 @@ def build_admin_scan_resolution(raw_value):
         return {
             "ok": True,
             "kind": "access_phrase",
-            "target_url": url_for("main.admin_unlock", phrase=value),
+            "target_url": access_activation_url(value),
             "message": "Access phrase detected.",
         }
 
@@ -132,6 +133,10 @@ def prune_access_session():
 @bp.route("/admin", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
+        if current_app.config.get("REACT_PRIMARY_FRONTEND"):
+            # Production unlocks are handled only by the rate-limited JSON
+            # endpoint, with the secret in the request body.
+            return redirect(url_for("main.admin_login"), code=303)
         phrase = request.form.get("phrase", "").strip()
         grant = resolve_access_grant_by_phrase(phrase)
         scopes = grant["scopes"]
@@ -153,19 +158,7 @@ def admin_login():
 
 @bp.route("/admin/unlock")
 def admin_unlock():
-    phrase = request.args.get("phrase", "").strip()
-    grant = resolve_access_grant_by_phrase(phrase)
-    scopes = grant["scopes"]
-
-    if scopes:
-        grant_scopes(scopes, expires_at=grant["expires_at"])
-        return redirect(url_for("main.admin_corridor"))
-
-    flash("Invalid or expired access key.")
-
-    if has_any_access():
-        return redirect(url_for("main.admin_corridor"))
-
+    flash("Access keys must be activated through the secure admin form or QR fragment.")
     return redirect(url_for("main.admin_login"))
 
 
@@ -178,6 +171,8 @@ def admin_scope_access(scope):
         return redirect(get_scope_target(scope))
 
     if request.method == "POST":
+        if current_app.config.get("REACT_PRIMARY_FRONTEND"):
+            return redirect(url_for("main.admin_login"), code=303)
         phrase = request.form.get("phrase", "").strip()
         grant = resolve_access_grant_by_phrase(phrase)
         resolved_scopes = grant["scopes"]
