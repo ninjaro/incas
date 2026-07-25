@@ -27,6 +27,9 @@ import { LandingPage } from "../pages/LandingPage";
 import { OffersPage } from "../pages/OffersPage";
 import { RegistrationStatusPage } from "../pages/RegistrationStatusPage";
 import { SuggestEventPage } from "../pages/SuggestEventPage";
+import { EventsPage } from "../pages/EventsPage";
+import { KaraokePage } from "../pages/KaraokePage";
+import { JoinPage } from "../pages/JoinPage";
 import { TandemFormPage } from "../pages/TandemFormPage";
 import { TeamPage } from "../pages/TeamPage";
 import { useLocale } from "../i18n/LocaleContext";
@@ -76,6 +79,9 @@ const routes = [
       { path: "/events/:slug", element: <EventDetailPage /> },
       { path: "/team", element: <Navigate to="/about/team" replace /> },
       { path: "/tandem", element: <TandemFormPage /> },
+      { path: "/join", element: <JoinPage /> },
+      { path: "/events", element: <EventsPage /> },
+      { path: "/karaoke", element: <KaraokePage /> },
       {
         path: "/about",
         element: <AboutLayout />,

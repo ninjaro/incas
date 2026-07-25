@@ -27,29 +27,8 @@
   --radius: 10px;
   --radius-lg: 16px;
   --shadow: 0 1px 2px rgba(30, 27, 24, 0.06), 0 4px 16px rgba(30, 27, 24, 0.07);
-  --font-body: "Source Sans 3", "Helvetica Neue", sans-serif;
+  --font-body: "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
   --font-display: "Playfair Display", Georgia, serif;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --ink: #f2ede6;
-  --ink-soft: #c3bcb2;
-  --ink-faint: #aaa197;
-  --paper: #1a1714;
-  --paper-warm: #211d19;
-  --line: #4d443b;
-  --incas-orange-deep: #ff9a57;
-  --incas-orange-soft: #3a2416;
-  --ok: #7cdd96;
-  --ok-soft: #173d25;
-  --warn: #ffd166;
-  --warn-soft: #43350f;
-  --bad: #ff9991;
-  --bad-soft: #471f1c;
-  --info: #9dc1ff;
-  --info-soft: #1b3157;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -309,22 +288,6 @@ a {
   color: var(--on-orange);
 }
 
-.appearance-toggle {
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--ink-soft);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.appearance-toggle svg,
 .site-footer-socials svg {
   width: 18px;
   height: 18px;
@@ -338,11 +301,6 @@ a {
 .site-footer-socials a:first-child svg {
   fill: currentColor;
   stroke: none;
-}
-
-.appearance-toggle:hover {
-  border-color: var(--incas-orange);
-  color: var(--incas-orange-deep);
 }
 
 .site-footer {
@@ -982,36 +940,6 @@ a {
 
 /* ---------- landing themes ---------- */
 
-.landing-hero {
-  background: linear-gradient(160deg, #241d17 0%, #3a2417 55%, #57300f 100%);
-  color: #ffffff;
-  border-radius: var(--radius-lg);
-  padding: 72px 32px;
-  text-align: center;
-}
-
-.landing-hero h1 {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  margin: 0 0 12px;
-}
-
-.landing-hero h1 em {
-  color: var(--incas-orange);
-  font-style: normal;
-}
-
-.landing-hero p {
-  color: rgba(255, 255, 255, 0.82);
-  max-width: 56ch;
-  margin: 0 auto 24px;
-}
-
-.landing-hero .btn-outline {
-  border-color: rgba(255, 255, 255, 0.7);
-  color: #ffffff;
-}
-
 .landing-section {
   margin-top: 48px;
 }
@@ -1117,12 +1045,6 @@ a {
   color: var(--incas-orange);
 }
 
-.editorial-rule {
-  border: 0;
-  border-top: 3px solid var(--ink);
-  margin: 32px 0;
-}
-
 .editorial-event {
   display: grid;
   grid-template-columns: 90px 1fr auto;
@@ -1167,29 +1089,6 @@ a {
 .eventfirst-head h1 {
   font-family: var(--font-display);
   margin: 0;
-}
-
-.eventfirst-next {
-  background: var(--incas-orange);
-  color: var(--on-orange);
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  display: grid;
-  gap: 6px;
-  text-decoration: none;
-}
-
-.eventfirst-next span {
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  opacity: 0.85;
-}
-
-.eventfirst-next strong {
-  font-family: var(--font-display);
-  font-size: 1.8rem;
 }
 
 /* ---------- calendar themes ---------- */
@@ -1786,52 +1685,6 @@ a {
 }
 
 /* ---------- complete landing variants ---------- */
-
-.landing-hero {
-  min-height: min(720px, calc(100vh - 116px));
-  display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.landing-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: radial-gradient(circle at 85% 20%, rgba(255, 102, 0, 0.34), transparent 28%), repeating-linear-gradient(118deg, transparent 0 42px, rgba(255,255,255,.035) 42px 43px);
-}
-
-.landing-hero > div {
-  max-width: 760px;
-}
-
-.landing-hero .page-kicker {
-  color: #ffb27f;
-}
-
-.hero-actions {
-  display: flex;
-  justify-content: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.scroll-indicator {
-  position: absolute;
-  bottom: 1.35rem;
-  left: 50%;
-  translate: -50% 0;
-  color: #fff;
-  text-decoration: none;
-  display: grid;
-  gap: 0.15rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
 
 .landing-about-offers {
   display: grid;
@@ -2503,11 +2356,6 @@ a {
 @media (max-width: 520px) {
   .shell-main {
     padding-inline: 12px;
-  }
-
-  .landing-hero {
-    min-height: calc(100vh - 88px);
-    padding: 3rem 1rem 5rem;
   }
 
   .landing-offer-links,

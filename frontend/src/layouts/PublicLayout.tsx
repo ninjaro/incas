@@ -8,22 +8,7 @@ import { localizedAboutItems } from "../domain/publicSections";
 import { useLocale, useT } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
 
-const APPEARANCE_KEY = "incas.appearance";
 const routeScrollPositions = new Map<string, number>();
-
-function initialAppearance(): "light" | "dark" {
-  const stored = globalThis.localStorage?.getItem?.(APPEARANCE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function AppearanceIcon({ appearance }: { appearance: "light" | "dark" }) {
-  return appearance === "dark" ? (
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg>
-  );
-}
 
 function SocialIcon({ platform }: { platform: string }) {
   if (platform === "instagram") {
@@ -55,6 +40,7 @@ function NavItem({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
   const hoverTimerRef = useRef<number | null>(null);
+  const hoverOpenedAtRef = useRef(0);
   const menuId = `site-nav-submenu-${useId().replaceAll(":", "")}`;
   const location = useLocation();
   const configuredChildren = item.section === "about"
@@ -75,7 +61,10 @@ function NavItem({
         className={`site-nav-group${isOpen ? " is-open" : ""}${isSectionActive ? " is-section-active" : ""}`}
         onPointerEnter={(event) => {
           if (event.pointerType === "mouse") {
-            hoverTimerRef.current = window.setTimeout(() => onOpen(item.label), 120);
+            hoverTimerRef.current = window.setTimeout(() => {
+              hoverOpenedAtRef.current = Date.now();
+              onOpen(item.label);
+            }, 120);
           }
         }}
         onPointerLeave={(event) => {
@@ -107,6 +96,13 @@ function NavItem({
             onClick={() => {
               if (hoverTimerRef.current !== null) window.clearTimeout(hoverTimerRef.current);
               hoverTimerRef.current = null;
+              // If the hover timer opened the menu a moment before this click,
+              // the click's intent was "open": keep it open instead of toggling.
+              if (isOpen && Date.now() - hoverOpenedAtRef.current < 400) {
+                hoverOpenedAtRef.current = 0;
+                onOpen(item.label);
+                return;
+              }
               onToggle(item.label);
             }}
             onKeyDown={(event) => {
@@ -147,9 +143,8 @@ function NavItem({
 export function PublicLayout() {
   const data = useData();
   const session = useSession();
-  const { locale, setLocale, site } = useLocale();
+  const { locale, site } = useLocale();
   const t = useT();
-  const [appearance, setAppearance] = useState<"light" | "dark">(initialAppearance);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
@@ -158,11 +153,6 @@ export function PublicLayout() {
   const location = useLocation();
   const navigationType = useNavigationType();
   const routePathKey = `path:${location.pathname}${location.search}`;
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", appearance);
-    globalThis.localStorage?.setItem?.(APPEARANCE_KEY, appearance);
-  }, [appearance]);
 
   useEffect(() => {
     const previous = window.history.scrollRestoration;
@@ -289,11 +279,27 @@ export function PublicLayout() {
   const toggleGroup = (label: string) =>
     setOpenGroup((prev) => (prev === label ? null : label));
 
-  const nav = site?.nav ?? [];
+  // Design-system navigation (INCAS Design System, Parchment Daylight):
+  // Home, Events (Discover/Register), Calendar, Karaoke, Team + Join us CTA.
+  const de = locale === "de";
+  const nav: SiteNavItem[] = [
+    { label: de ? "Start" : "Home", to: "/" },
+    {
+      label: "Events",
+      to: "/events",
+      children: [
+        { label: de ? "Events entdecken" : "Discover events", to: "/events#discover" },
+        { label: de ? "Für Events anmelden" : "Register for events", to: "/events#register" },
+      ],
+    },
+    { label: de ? "Kalender" : "Calendar", to: "/calendar" },
+    { label: "Karaoke", to: "/karaoke" },
+    { label: "Team", to: "/about/team" },
+  ] as SiteNavItem[];
   const footer = site?.footer;
 
   return (
-    <div className="shell">
+    <div className="shell theme-parchment">
       <a
         className="skip-link"
         href="#main-content"
@@ -307,7 +313,7 @@ export function PublicLayout() {
       </a>
       {data.isDemo ? (
         <div className="demo-banner" role="note">
-          <strong>{t("demo.banner_label")}</strong> — {t("demo.banner_body")}
+          <strong>{t("demo.banner_label")}</strong>: {t("demo.banner_body")}
         </div>
       ) : null}
       <nav className="site-nav" aria-label={t("aria.main_nav")} ref={navRef}>
@@ -348,27 +354,9 @@ export function PublicLayout() {
               ) : null}
             </div>
             <div className="site-nav-controls">
-              <div className="locale-switch" role="group" aria-label={t("aria.language")}>
-                {(["en", "de"] as Locale[]).map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    className={locale === code ? "is-active" : ""}
-                    aria-pressed={locale === code}
-                    onClick={() => setLocale(code)}
-                  >
-                    {code.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="appearance-toggle"
-                aria-label={t("aria.appearance")}
-                onClick={() => setAppearance((prev) => (prev === "dark" ? "light" : "dark"))}
-              >
-                <AppearanceIcon appearance={appearance} />
-              </button>
+              <NavLink to="/join" className="btn btn-outline btn-sm site-nav-cta" onClick={closeGroup}>
+                {locale === "de" ? "Mitmachen" : "Join us"}
+              </NavLink>
             </div>
           </div>
         </div>
@@ -379,6 +367,7 @@ export function PublicLayout() {
       {footer ? (
         <footer className="site-footer">
           <div className="site-footer-inner">
+            <span className="footer-coords" aria-hidden="true">50°46′ N · 6°05′ E</span>
             <p className="site-footer-copy">{footer.copy}</p>
             <div className="site-footer-socials" aria-label={t("aria.social")}>
               {footer.social
@@ -396,6 +385,12 @@ export function PublicLayout() {
                   <NavLink to={link.to}>{link.title}</NavLink>
                 </li>
               ))}
+              <li>
+                <NavLink to="/about">{de ? "Über INCAS" : "About INCAS"}</NavLink>
+              </li>
+              <li>
+                <NavLink to="/contact">{de ? "Kontakt" : "Contact"}</NavLink>
+              </li>
             </ul>
           </div>
         </footer>

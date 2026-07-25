@@ -94,7 +94,7 @@ export function DashboardPage() {
               <Link to={entry.to}>
                 <strong>{entry.title}</strong>
               </Link>{" "}
-              — {entry.description}
+              · {entry.description}
             </p>
           ))}
           {unlocked.length === 0 ? <p>No panels unlocked yet.</p> : null}
