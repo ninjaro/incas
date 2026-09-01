@@ -363,6 +363,11 @@ export function PublicLayout() {
           </div>
         </div>
       </nav>
+      <div
+        className={`m-scrim${mobileOpen ? " is-on" : ""}`}
+        aria-hidden="true"
+        onClick={() => setMobileOpen(false)}
+      />
       <main id="main-content" ref={mainRef} className="shell-main" tabIndex={-1}>
         <Outlet />
       </main>

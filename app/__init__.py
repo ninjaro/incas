@@ -96,7 +96,7 @@ def legacy_react_target(path):
 
 def is_canonical_react_path(path):
     exact = {
-        "/", "/calendar", "/tandem", "/join", "/events", "/karaoke", "/about", "/about/team",
+        "/", "/calendar", "/tandem", "/join", "/events", "/karaoke", "/wiki", "/about", "/about/team",
         "/about/working-groups", "/about/team-meetings", "/offers",
         "/contact", "/suggest-event", "/admin",
     }

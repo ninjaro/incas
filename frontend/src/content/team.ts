@@ -1,60 +1,119 @@
-/** Manually maintained organizational team content; no personal roster is fabricated. */
+/** Manually maintained organizational team content.
+ *  Structure follows the design system's team page (INCAS Design System,
+ *  explorations/Team.html): one section per working group, with placeholder
+ *  member slots ("Name" / "A line about this member.") that the team fills in
+ *  with real people and photos. No real roster is invented here.
+ */
 export type TeamText = { en: string; de: string };
 
-export type TeamMember = {
+export type TeamMemberSlot = {
   id: string;
   name: TeamText;
-  role: TeamText;
   description: TeamText;
+  /** Empty string renders the placeholder photo slot. */
   imagePath: string;
-  links?: { label: string; url: string }[];
 };
 
-export const DEFAULT_MEMBER_DESCRIPTION: TeamText = {
-  en: "Part of the INCAS team, helping international and local students meet in Aachen.",
-  de: "Teil des INCAS Teams und engagiert für Begegnungen zwischen internationalen und lokalen Studierenden in Aachen.",
+export type WorkingGroup = {
+  id: string;
+  /** Bootstrap Icons class for the group (design: .wg-icon). */
+  icon: string;
+  name: TeamText;
+  description: TeamText;
+  members: TeamMemberSlot[];
 };
 
-export const teamMembers: TeamMember[] = [
+const PLACEHOLDER_NAME: TeamText = { en: "Name", de: "Name" };
+const PLACEHOLDER_LINE: TeamText = {
+  en: "A line about this member.",
+  de: "Eine Zeile über dieses Mitglied.",
+};
+
+function memberSlots(groupId: string, count: number): TeamMemberSlot[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `${groupId}-${index}`,
+    name: PLACEHOLDER_NAME,
+    description: PLACEHOLDER_LINE,
+    imagePath: "",
+  }));
+}
+
+/** Groups and member counts from the design reference (Team.html). */
+export const workingGroups: WorkingGroup[] = [
   {
-    id: "board-chair",
-    name: { en: "INCAS Board", de: "INCAS Vorstand" },
-    role: { en: "Coordination", de: "Koordination" },
+    id: "coordination",
+    icon: "bi-compass",
+    name: { en: "Coordination", de: "Koordination" },
     description: {
-      en: "Coordinates the INCAS board, keeps the weekly programme running, and welcomes new members.",
-      de: "Koordiniert den Vorstand, hält das Wochenprogramm am Laufen und begrüßt neue Mitglieder.",
+      en: "Leads INCAS, runs the weekly team meeting, and represents us outwards.",
+      de: "Leitet INCAS, führt das wöchentliche Teamtreffen und vertritt uns nach außen.",
     },
-    imagePath: "/static/img/site/about-team.webp",
+    members: memberSlots("coordination", 2),
   },
   {
-    id: "events-lead",
-    name: { en: "International Tuesday Team", de: "International Tuesday Team" },
-    role: { en: "Events", de: "Veranstaltungen" },
-    description: {
-      en: "Plans country evenings, breakfasts, and the international weekend trips.",
-      de: "Plant Länderabende, Frühstücke und die International-Weekend-Ausflüge.",
+    id: "international-tuesday",
+    icon: "bi-globe-americas",
+    name: {
+      en: "International Tuesday & Café Lingua",
+      de: "International Tuesday & Café Lingua",
     },
-    imagePath: "",
+    description: {
+      en: "Runs the weekly Tuesday evening and the monthly Café Lingua language café.",
+      de: "Organisiert den wöchentlichen Dienstagabend und das monatliche Café Lingua.",
+    },
+    members: memberSlots("international-tuesday", 2),
   },
   {
-    id: "tandem-lead",
-    name: { en: "Language Tandem Team", de: "Sprachtandem-Team" },
-    role: { en: "Language exchange", de: "Sprachaustausch" },
+    id: "international-weekend",
+    icon: "bi-signpost-2",
+    name: { en: "International Weekend", de: "International Weekend" },
     description: {
-      en: "Reviews registrations and brings suitable tandem partners together.",
-      de: "Prüft Anmeldungen und bringt passende Tandempartner:innen zusammen.",
+      en: "Organizes the monthly day trip in Germany and to neighboring countries.",
+      de: "Organisiert den monatlichen Tagesausflug in Deutschland und in die Nachbarländer.",
     },
-    imagePath: "",
+    members: memberSlots("international-weekend", 2),
   },
   {
-    id: "communications",
-    name: { en: "Communications Team", de: "Kommunikationsteam" },
-    role: { en: "Communications", de: "Kommunikation" },
-    description: {
-      en: "Runs the newsletter and social channels and keeps the website up to date.",
-      de: "Betreut Newsletter und Social Media und hält die Website aktuell.",
+    id: "accommodation",
+    icon: "bi-house-heart",
+    name: {
+      en: "Accommodation Search & Service Hours",
+      de: "Wohnungssuche & Sprechstunden",
     },
-    imagePath: "",
-    links: [{ label: "Instagram", url: "https://www.instagram.com/incas_aachen/" }],
+    description: {
+      en: "Helps with housing and offers multilingual service hours in the office.",
+      de: "Hilft bei der Wohnungssuche und bietet mehrsprachige Sprechstunden im Büro.",
+    },
+    members: memberSlots("accommodation", 1),
+  },
+  {
+    id: "language-exchange",
+    icon: "bi-chat-dots",
+    name: { en: "Language Exchange", de: "Sprachaustausch" },
+    description: {
+      en: "Matches language tandem partners from the database.",
+      de: "Vermittelt passende Tandempartner:innen aus der Datenbank.",
+    },
+    members: memberSlots("language-exchange", 1),
+  },
+  {
+    id: "international-breakfast",
+    icon: "bi-egg-fried",
+    name: { en: "International Breakfast", de: "International Breakfast" },
+    description: {
+      en: "Prepares the international breakfast on the last Sunday of each month.",
+      de: "Bereitet das internationale Frühstück am letzten Sonntag im Monat vor.",
+    },
+    members: memberSlots("international-breakfast", 2),
+  },
+  {
+    id: "public-relations",
+    icon: "bi-megaphone",
+    name: { en: "Public Relations", de: "Öffentlichkeitsarbeit" },
+    description: {
+      en: "Website, social media, flyers: the public face of INCAS.",
+      de: "Website, Social Media, Flyer: das öffentliche Gesicht von INCAS.",
+    },
+    members: memberSlots("public-relations", 1),
   },
 ];

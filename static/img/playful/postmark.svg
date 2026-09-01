@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 90">
+<g fill="none" stroke="#7c6134" stroke-width="2" opacity="0.75">
+<circle cx="45" cy="45" r="40" stroke-dasharray="5 4"></circle>
+<circle cx="45" cy="45" r="32"></circle>
+<path d="M95 30 q10 6 20 0 q10 -6 20 0 M95 45 q10 6 20 0 q10 -6 20 0 M95 60 q10 6 20 0 q10 -6 20 0"></path>
+</g>
+<g fill="#7c6134" opacity="0.8" font-family="monospace" text-anchor="middle">
+<text x="45" y="40" font-size="11" letter-spacing="1">AACHEN</text>
+<text x="45" y="56" font-size="10">26·08·26</text>
+</g></svg>

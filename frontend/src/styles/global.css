@@ -1135,7 +1135,9 @@ a {
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* Design: repeat(7, 1fr); minmax(0, ...) keeps long chip titles from
+     stretching columns, with no visual difference. */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -1143,7 +1145,7 @@ a {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
   text-align: center;
   padding: 4px 0;
 }
@@ -1158,9 +1160,7 @@ a {
 }
 
 .cal-cell.is-outside {
-  opacity: 1;
-  color: var(--ink-soft);
-  background: var(--paper-warm);
+  opacity: 0.4;
 }
 
 .cal-grid-row {
@@ -1184,6 +1184,27 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Tiny save-to-calendar (.ics) link under an event chip (design: Calendar.html). */
+.cal-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--incas-orange-deep);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cal-save:hover {
+  text-decoration: underline;
 }
 
 .agenda-item {
@@ -1305,29 +1326,83 @@ a {
   display: block;
 }
 
-.team-avatar-fallback {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: var(--incas-orange);
-  color: var(--on-orange);
-  font-size: 2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-}
-
 .team-card h3 {
   margin: 0;
 }
 
-.team-role {
+/* Working-group icon chip (design system: .wg-icon). */
+.wg-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--incas-orange-soft);
+  border: 2px solid rgba(179, 71, 0, 0.35);
   color: var(--incas-orange-deep);
+  font-size: 1.15rem;
+}
+
+.team-desc {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* One section per working group (design system: Team.html). */
+.wg-section {
+  margin-top: 40px;
+}
+
+.wg-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.wg-head h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 2px;
+}
+
+.wg-head p {
+  color: var(--ink-soft);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.wg-people {
+  margin-top: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+/* 96px circular member photo, and its placeholder slot until a photo exists. */
+.team-portrait {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 10px;
+}
+
+.team-portrait-placeholder {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px dashed var(--ink-faint);
+  background: var(--paper-warm);
+  color: var(--ink-faint);
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 0.88rem;
-  margin: 2px 0 8px;
+}
+
+/* "Join a group" closing note under the team sections. */
+.wg-note {
+  margin-top: 40px;
+  max-width: 70ch;
+  color: var(--ink-soft);
 }
 
 .team-spotlight-row {
@@ -1895,18 +1970,10 @@ a {
   margin-top: 1rem;
 }
 
-/* ---------- stable calendar geometry ---------- */
+/* ---------- calendar behaviour on top of the design grid ---------- */
 
-.cal-controls {
-  flex-wrap: wrap;
-  padding: 0.75rem;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.cal-controls input,
-.cal-controls select,
+/* Utility inputs used by the admin views (the public calendar controls are
+   the design's bare prev / month / next bar and have no filter inputs). */
 .admin-filterbar input,
 .admin-filterbar select,
 .view-switcher select {
@@ -1919,64 +1986,6 @@ a {
   font: inherit;
 }
 
-.cal-grid {
-  grid-template-rows: 38px repeat(6, 112px);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.cal-grid-head {
-  background: var(--paper-warm);
-  padding: 0.6rem 0.25rem;
-  display: grid;
-  place-items: center;
-}
-
-.cal-cell {
-  min-height: 112px;
-  border: 0;
-  border-radius: 0;
-  overflow: hidden;
-  color: var(--ink);
-}
-
-.cal-cell:nth-of-type(7n + 6),
-.cal-cell:nth-of-type(7n + 7) {
-  background: color-mix(in srgb, var(--paper) 92%, var(--incas-orange-soft));
-}
-
-.cal-day-number {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.6rem;
-  min-height: 1.6rem;
-  font-weight: 700;
-}
-
-.cal-cell-events {
-  min-width: 0;
-}
-
-.cal-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.cal-chip .event-marker {
-  width: 0.48rem;
-  height: 0.48rem;
-}
-
-.cal-chip span:nth-child(2) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .cal-more {
   border: 0;
   background: transparent;
@@ -1986,11 +1995,28 @@ a {
   cursor: pointer;
 }
 
+/* The public-grid variant keeps its fused, table-like geometry. */
 .cal-grid.is-public-grid {
   grid-template-rows: 38px repeat(6, 96px);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.cal-grid.is-public-grid .cal-grid-head {
+  background: var(--paper-warm);
+  padding: 0.6rem 0.25rem;
+  display: grid;
+  place-items: center;
 }
 
 .cal-grid.is-public-grid .cal-cell {
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  color: var(--ink);
   cursor: pointer;
   text-align: left;
   font: inherit;
@@ -2433,21 +2459,17 @@ a {
     grid-column: 2;
   }
 
-  .cal-grid {
-    grid-template-rows: 30px repeat(6, 76px);
-  }
-
   .cal-cell {
-    min-height: 76px;
-    padding: 0.25rem;
+    min-height: 64px;
+    padding: 4px;
   }
 
   .cal-chip {
     padding: 2px 4px;
   }
 
-  .cal-chip span:nth-child(2),
-  .cal-chip span:last-child:not(:first-child) {
+  /* Compact cells have no room for the save-to-calendar link. */
+  .cal-save {
     display: none;
   }
 
@@ -2491,10 +2513,6 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .cal-controls > * {
-    flex: 1 1 calc(50% - 0.5rem);
-  }
-
   .cal-grid-head {
     font-size: 0.62rem;
   }
@@ -2504,7 +2522,6 @@ a {
     min-height: 52px;
   }
 
-  .cal-grid,
   .cal-grid.is-public-grid {
     grid-template-rows: 28px repeat(6, 52px);
   }

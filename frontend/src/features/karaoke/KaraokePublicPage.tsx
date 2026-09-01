@@ -112,67 +112,81 @@ export function KaraokeEventFeature({ eventSlug, eventTitle }: { eventSlug: stri
   const items = queue.data?.items ?? [];
 
   return (
-    <section className="karaoke-event-feature" aria-labelledby="karaoke-event-title">
-      <header className="section-heading"><p className="page-kicker">Karaoke</p><h2 id="karaoke-event-title">{de ? `Song-Warteschlange für ${eventTitle}` : `Song queue for ${eventTitle}`}</h2><p>{de ? "Wünsche werden geprüft, bevor sie in der Live-Warteschlange dieses Events erscheinen." : "Requests are reviewed before they enter this event's live queue."}</p></header>
-
-      <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <form ref={formErrors.formRef} className="card" onSubmit={submit} noValidate aria-label={de ? "Song wünschen" : "Request a song"}>
-          <h3>{de ? "Song wünschen" : "Request a song"}</h3>
-          {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
-          {submitted ? (
-            <p className="notice notice-ok">
-              {de ? "Wunsch erhalten! Dein Tracking-Code ist" : "Request received! Your tracking code is"} <strong>{submitted}</strong>. {de ? "Verfolge den Status unten unter" : "Follow its status in"}{" "}
-              <button
-                type="button"
-                className="link-button"
-                onClick={() =>
-                  document
-                    .getElementById("karaoke-tracked")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                }
-              >
-                {de ? "Deine Wünsche" : "Your requests"}
-              </button>{" "}
-              {de ? "." : " below."}
-            </p>
-          ) : null}
-          <Field label={de ? "Dein Name oder Spitzname" : "Your name or nickname"} error={formErrors.errors.displayName}>
-            <input
-              name="displayName"
-              value={form.displayName}
-              onChange={(event) => change("displayName", event.target.value)}
-              maxLength={120}
-              required
-            />
-          </Field>
-          <Field label={de ? "Songtitel" : "Song title"} error={formErrors.errors.songTitle}>
-            <input
-              name="songTitle"
-              value={form.songTitle}
-              onChange={(event) => change("songTitle", event.target.value)}
-              maxLength={200}
-              required
-            />
-          </Field>
-          <Field label={de ? "Interpret:in (optional)" : "Artist (optional)"}>
-            <input
-              name="artist"
-              value={form.artist}
-              onChange={(event) => change("artist", event.target.value)}
-              maxLength={200}
-            />
-          </Field>
-          <Field label={de ? "Hinweis für die Moderation (optional)" : "Note for the host (optional)"}>
-            <textarea
-              name="note"
-              value={form.note}
-              onChange={(event) => change("note", event.target.value)}
-              rows={2}
-            />
-          </Field>
-          <button type="submit" className="btn btn-primary" disabled={busy}>
-            {busy ? (de ? "Wird gesendet..." : "Submitting...") : (de ? "Wunsch senden" : "Submit request")}
-          </button>
+    <section className="karaoke-event-feature" aria-label={de ? `Song-Warteschlange für ${eventTitle}` : `Song queue for ${eventTitle}`}>
+      <div className="karaoke-grid">
+        <form ref={formErrors.formRef} className="radio-set" onSubmit={submit} noValidate aria-label={de ? "Song wünschen" : "Request a song"}>
+          <div className="radio-top">
+            <div className="radio-grille">
+              <span className="radio-badge">{de ? "On Air" : "On air"}</span>
+              <h3>{de ? "Song wünschen" : "Request a song"}</h3>
+              <p>{de ? "Sag uns, was du singen willst, und wir rufen dich auf." : "Tell us what you want to sing and we will call you up."}</p>
+            </div>
+            <div className="radio-dial" aria-hidden="true">
+              <span className="radio-knob" />
+              <span className="radio-scale">{de ? "Einschalten" : "Tune in"}</span>
+            </div>
+          </div>
+          <div className="radio-panel">
+            {formErrors.errors.form ? <p ref={formErrors.alertRef} className="notice notice-bad" role="alert" tabIndex={-1}>{formErrors.errors.form}</p> : null}
+            {submitted ? (
+              <p className="notice notice-ok">
+                {de ? "Wunsch erhalten! Dein Tracking-Code ist" : "Request received! Your tracking code is"} <strong>{submitted}</strong>. {de ? "Verfolge den Status unten unter" : "Follow its status in"}{" "}
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() =>
+                    document
+                      .getElementById("karaoke-tracked")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                >
+                  {de ? "Deine Wünsche" : "Your requests"}
+                </button>{" "}
+                {de ? "." : " below."}
+              </p>
+            ) : null}
+            <Field label={de ? "Dein Name oder Spitzname" : "Your name or nickname"} error={formErrors.errors.displayName}>
+              <input
+                name="displayName"
+                value={form.displayName}
+                onChange={(event) => change("displayName", event.target.value)}
+                maxLength={120}
+                required
+              />
+            </Field>
+            <Field label={de ? "Songtitel" : "Song title"} error={formErrors.errors.songTitle}>
+              <input
+                name="songTitle"
+                value={form.songTitle}
+                onChange={(event) => change("songTitle", event.target.value)}
+                maxLength={200}
+                required
+              />
+            </Field>
+            <Field label={de ? "Interpret:in (optional)" : "Artist (optional)"}>
+              <input
+                name="artist"
+                value={form.artist}
+                onChange={(event) => change("artist", event.target.value)}
+                maxLength={200}
+              />
+            </Field>
+            <Field label={de ? "Hinweis für die Moderation (optional)" : "Note for the host (optional)"}>
+              <textarea
+                name="note"
+                value={form.note}
+                onChange={(event) => change("note", event.target.value)}
+                rows={2}
+              />
+            </Field>
+          </div>
+          <div className="radio-play">
+            <span className="radio-lamp" aria-hidden="true" />
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              {busy ? (de ? "Wird gesendet..." : "Submitting...") : (de ? "Wunsch senden" : "Send my request")}
+            </button>
+          </div>
+          <p className="radio-foot">{de ? "Vom Karaoke-Team geprüft, bevor es auf die Bühne geht" : "Checked by the karaoke team before it hits the stage"}</p>
         </form>
 
         <div>

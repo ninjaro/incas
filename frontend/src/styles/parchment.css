@@ -230,6 +230,28 @@
 .theme-parchment .treasure-station.is-below .treasure-label { top: 44px; }
 .theme-parchment .treasure-station.is-above .treasure-label { bottom: 44px; }
 
+/* Save-the-date pill on map plaques (design reference). */
+.treasure-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 5px;
+  justify-self: center;
+  padding: 3px 8px;
+  border: 1px solid rgba(179, 71, 0, 0.4);
+  border-radius: 999px;
+  background: none;
+  font: 600 0.66rem var(--font-body, inherit);
+  letter-spacing: 0.04em;
+  color: var(--incas-orange-deep);
+  cursor: pointer;
+}
+
+.treasure-save:hover {
+  background: var(--incas-orange-soft);
+}
+
 /* ---------- landing sections N° 02 / N° 03 ---------- */
 
 .team-section {

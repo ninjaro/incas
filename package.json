@@ -17,11 +17,14 @@
   "dependencies": {
     "@amcharts/amcharts5": "5.19.1",
     "@amcharts/amcharts5-geodata": "5.1.5",
+    "bootstrap-icons": "^1.13.1",
+    "d3-geo": "^3.1.1",
     "ol": "10.9.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.1",
+    "topojson-client": "^3.1.0",
     "world-atlas": "2.0.2"
   },
   "devDependencies": {
@@ -30,9 +33,11 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/d3-geo": "^3.1.1",
     "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^5.0.0",
     "jsdom": "^29.1.1",
     "typescript": "^5.8.0",

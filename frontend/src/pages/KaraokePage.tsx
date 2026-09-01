@@ -19,20 +19,9 @@ export function KaraokePage() {
 
   return (
     <>
-      <header className="page-hero">
-        <p className="hero-coords">50°46′ N · 6°05′ E · Aachen</p>
-        <h1>
-          {de ? (
-            <>Karaoke <em>Nacht</em></>
-          ) : (
-            <>Karaoke <em>night</em></>
-          )}
-        </h1>
-        <p>
-          {de
-            ? "Sing deine Lieblingssongs mit der INCAS Crowd. Wünsch dir hier einen Song für die nächste Karaoke-Nacht."
-            : "Sing your favorite songs with the INCAS crowd. Request a song for the next karaoke night here."}
-        </p>
+      <header className="page-hero karaoke-hero">
+        <h1>{de ? "Song-Warteschlange" : "Song Queue"}</h1>
+        <p>{de ? "Wünsch dir einen Song und verfolge deinen Platz in der Warteschlange." : "Request a song and track your spot in the queue."}</p>
       </header>
 
       {karaokeEvent ? (

@@ -1,6 +1,12 @@
-import { useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+
+import { geoGraticule10, geoNaturalEarth1, geoOrthographic, geoPath } from "d3-geo";
+import { feature } from "topojson-client";
+import type { GeoJsonProperties, FeatureCollection, Geometry } from "geojson";
+import worldTopo from "world-atlas/countries-110m.json";
 
 import type { PublicPost, PublicPostsResponse } from "../api/types";
 import { EventCard, EventDate, EventIcon, EventMarker, EventTitle, PinnedBadge } from "../components/events";
@@ -10,6 +16,7 @@ import { usePublicTheme } from "../features/themes/usePublicTheme";
 import { useAsync } from "../hooks/useAsync";
 import { useLocale } from "../i18n/LocaleContext";
 import { assetUrl } from "../utils/assets";
+import { downloadEventIcs } from "../utils/ics";
 
 function PostCard({ post, de }: { post: PublicPost; de: boolean }) {
   return <article className="post-card"><Link className="post-card-main card-primary-link" to={`/events/${post.slug}`} aria-label={post.title.full}>{post.isPinned ? <PinnedBadge locale={de ? "de" : "en"} /> : null}<h3>{post.title.full}</h3><p>{post.summary}</p></Link></article>;
@@ -42,143 +49,232 @@ function News({ posts, locale }: { posts: PublicPost[]; locale: string }) {
   return <section className="landing-section"><div className="landing-section-head"><h2>{de ? "Aktuelles" : "Latest posts"}</h2></div><div className="post-grid">{posts.map((post) => <PostCard key={post.slug} post={post} de={de} />)}</div></section>;
 }
 
-/* ---------- treasure-map landing (Parchment Daylight, design system) ---------- */
+/* ---------- playful landing (INCAS Design System handoff) ---------- */
 
-const MAP_INK = "#6f5226";
-const MAP_W = 1200;
-const MAP_H = 680;
+type LandFeatures = FeatureCollection<Geometry, GeoJsonProperties>;
 
-type StationSlot = { x: number; y: number; label: "above" | "below" };
+let landCache: LandFeatures | null = null;
 
-/* One layout per event count (index = count - 1) so the route always spans
-   the full map. Slots keep clear of the cartouche (top-left), the month stamp
-   (bottom-right), and each other's plaques. */
-const STATION_LAYOUTS: StationSlot[][] = [
-  [{ x: 640, y: 470, label: "above" }],
-  [
-    { x: 260, y: 540, label: "above" },
-    { x: 1000, y: 420, label: "below" },
-  ],
-  [
-    { x: 180, y: 565, label: "above" },
-    { x: 640, y: 430, label: "below" },
-    { x: 1050, y: 555, label: "above" },
-  ],
-  [
-    { x: 150, y: 565, label: "above" },
-    { x: 520, y: 420, label: "below" },
-    { x: 810, y: 575, label: "above" },
-    { x: 1050, y: 295, label: "below" },
-  ],
-  [
-    { x: 150, y: 565, label: "above" },
-    { x: 460, y: 420, label: "below" },
-    { x: 700, y: 565, label: "above" },
-    { x: 880, y: 300, label: "below" },
-    { x: 1075, y: 570, label: "above" },
-  ],
-  [
-    { x: 150, y: 565, label: "above" },
-    { x: 440, y: 430, label: "below" },
-    { x: 640, y: 565, label: "above" },
-    { x: 845, y: 300, label: "below" },
-    { x: 1010, y: 590, label: "above" },
-    { x: 1100, y: 295, label: "below" },
-  ],
-];
-
-function routePath(points: Array<{ x: number; y: number }>): string {
-  if (points.length < 2) return "";
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const cur = points[i];
-    const midX = (prev.x + cur.x) / 2;
-    d += ` C ${midX} ${prev.y}, ${midX} ${cur.y}, ${cur.x} ${cur.y}`;
+function getLand(): LandFeatures {
+  if (!landCache) {
+    // world-atlas countries-110m, Antarctica removed per the reference.
+    const topo = worldTopo as unknown as Parameters<typeof feature>[0];
+    const countries = (topo as unknown as { objects: { countries: Parameters<typeof feature>[1] } }).objects.countries;
+    const land = feature(topo, countries) as unknown as LandFeatures;
+    land.features = land.features.filter((f) => f.id !== "010");
+    landCache = land;
   }
-  return d;
+  return landCache;
 }
 
-function TreasureBackdrop({ de }: { de: boolean }) {
-  // Hand-drawn chart furniture per the design reference: landmasses,
-  // mountains, sea arcs, the dashed "exam phase" ring, skull, compass.
+/* The envelope animates once per session: after that, switching tabs or
+   revisiting the scene shows the letter already open instead of re-sealing
+   and replaying (About us remounts on every section-tab click). */
+let letterRevealedOnce = false;
+
+/** Faded flat world map behind the hero text (d3 Natural Earth projection). */
+function HeroMap() {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const land = getLand();
+
+    const draw = () => {
+      const w = host.clientWidth;
+      if (!w) return;
+      const wide = window.innerWidth > 700;
+      const hero = host.parentElement as HTMLElement | null;
+      const scale = 1.06;
+      let proj = geoNaturalEarth1().fitWidth(w * scale, land);
+      let path = geoPath(proj);
+      let bounds = path.bounds(land);
+      // Wide screens: size the hero to the viewport minus the nav and a
+      // ~130px peek, so "This month's events" shows above the fold; then fit
+      // the WHOLE map inside that hero (narrower fit-by-height when the
+      // width-fit map would be taller) - the world is never cropped. The
+      // phone layout sizes the hero itself, so leave it alone there.
+      if (wide && hero) {
+        const nav = document.querySelector(".site-nav");
+        const navH = nav ? nav.getBoundingClientRect().height : 64;
+        const target = Math.max(560, Math.round(window.innerHeight - navH - 130));
+        hero.style.minHeight = `${target}px`;
+        const availH = target - 60;
+        if (bounds[1][1] > availH) {
+          proj = geoNaturalEarth1().fitHeight(availH, land);
+          path = geoPath(proj);
+          bounds = path.bounds(land);
+        }
+      } else if (hero) {
+        hero.style.minHeight = "";
+      }
+      const h = host.clientHeight;
+      if (!h) return;
+      const mapW = bounds[1][0];
+      const mapH = bounds[1][1];
+      const vbY = wide ? (mapH - h) / 2 : Math.max(0, (mapH - h) / 2);
+      host.innerHTML =
+        `<svg width="${w}" height="${h}" viewBox="${(mapW - w) / 2} ${vbY} ${w} ${h}">` +
+        `<path d="${path(land)}" fill="#e2cb9c" stroke="#d9bf8b" stroke-width="0.6"></path></svg>`;
+    };
+
+    draw();
+    window.addEventListener("resize", draw);
+    return () => {
+      window.removeEventListener("resize", draw);
+      const hero = host.parentElement as HTMLElement | null;
+      if (hero) hero.style.minHeight = "";
+    };
+  }, []);
+
+  return <div className="hero-map" ref={hostRef} aria-hidden="true" />;
+}
+
+/** Flat globe (orthographic, olive sea, cream land) as a static SVG. */
+function GlobeSphere() {
+  const size = 300;
+  const land = getLand();
+  const proj = geoOrthographic().rotate([-12, -32]).fitExtent(
+    [[5, 5], [size - 5, size - 5]],
+    { type: "Sphere" },
+  );
+  const path = geoPath(proj);
   return (
-    <svg
-      className="treasure-backdrop"
-      viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-      focusable="false"
+    <span className="globe-sphere" aria-hidden="true">
+      <svg viewBox={`0 0 ${size} ${size}`}>
+        <path d={path({ type: "Sphere" }) ?? ""} fill="#8fa057" />
+        <path d={path(geoGraticule10()) ?? ""} fill="none" stroke="#414b21" strokeOpacity="0.16" strokeWidth="1.6" />
+        <path d={path(land) ?? ""} fill="#f6ead6" />
+        <path d={path({ type: "Sphere" }) ?? ""} fill="none" stroke="#414b21" strokeWidth="6" />
+      </svg>
+    </span>
+  );
+}
+
+/* Event-kind badge stickers orbiting the globe, verbatim from the handoff. */
+const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
+  {
+    a: "0deg",
+    accent: true,
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <path fill="currentColor" fillRule="evenodd" d="M-21 -4 a3 3 0 0 1 3-3 h36 a3 3 0 0 1 3 3 a3 3 0 0 1 -3 3 h-1 v8 a10 10 0 0 1 -10 10 h-14 a10 10 0 0 1 -10-10 v-8 h-1 a3 3 0 0 1 -3-3 Z M-3 -7 a3 3 0 0 1 6 0 Z" />
+        <path fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" d="M-9 -13c4-4-2-8 1-12M9 -13c4-4-2-8 1-12" />
+      </svg>
+    ),
+  },
+  {
+    a: "60deg",
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <path fill="currentColor" d="M-24 -10 a6 6 0 0 1 6-6 h22 a6 6 0 0 1 6 6 v9 a6 6 0 0 1 -6 6 h-10 l-9 8 v-8 h-3 a6 6 0 0 1 -6-6 Z" />
+        <path fill="currentColor" opacity="0.72" d="M14 -4 h4 a6 6 0 0 1 6 6 v7 a6 6 0 0 1 -6 6 h-1 v7 l-8-7 h-3 a6 6 0 0 1 -5-6 l9 0 a9 9 0 0 0 4-3 Z" />
+      </svg>
+    ),
+  },
+  {
+    a: "120deg",
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <path fill="currentColor" fillRule="evenodd" d="M-20 -11 a9 9 0 0 1 9-9 h22 a9 9 0 0 1 9 9 v22 a9 9 0 0 1 -9 9 h-22 a9 9 0 0 1 -9-9 Z M-9 -13 a4 4 0 1 0 0.01 0 Z M9 -13 a4 4 0 1 0 0.01 0 Z M0 -4 a4 4 0 1 0 0.01 0 Z M-9 5 a4 4 0 1 0 0.01 0 Z M9 5 a4 4 0 1 0 0.01 0 Z" />
+      </svg>
+    ),
+  },
+  {
+    a: "180deg",
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <path fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" d="M0 23V-21" />
+        <path fill="currentColor" d="M-3 -19 h22 a2.5 2.5 0 0 1 2 1 l6 6.5 a2.5 2.5 0 0 1 0 3 l-6 6.5 a2.5 2.5 0 0 1 -2 1 h-22 Z" />
+        <path fill="currentColor" opacity="0.72" d="M3 1 h-22 a2.5 2.5 0 0 0 -2 1 l-6 6.5 a2.5 2.5 0 0 0 0 3 l6 6.5 a2.5 2.5 0 0 0 2 1 h22 Z" />
+      </svg>
+    ),
+  },
+  {
+    a: "240deg",
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <path fill="currentColor" d="M-19 -7 a2 2 0 0 1 2-2 h24 a2 2 0 0 1 2 2 v13 a13 13 0 0 1 -14 13 a13 13 0 0 1 -14-13 Z" />
+        <path fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" d="M11 -3h5a7 7 0 0 1 0 14h-5" />
+        <path fill="none" stroke="currentColor" strokeWidth="4.4" strokeLinecap="round" d="M-22 24h36" />
+        <path fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" d="M-6 -15c4-4-2-8 1-12M6 -15c4-4-2-8 1-12" />
+      </svg>
+    ),
+  },
+  {
+    a: "300deg",
+    accent: true,
+    icon: (
+      <svg viewBox="-26 -26 52 52" aria-hidden="true">
+        <rect x="-8" y="-25" width="16" height="28" rx="8" fill="currentColor" />
+        <path fill="none" stroke="currentColor" strokeWidth="4.4" strokeLinecap="round" d="M-14 5a14 14 0 0 0 28 0M0 19v5M-9 24h18" />
+      </svg>
+    ),
+  },
+];
+
+function HeroGlobe({ de }: { de: boolean }) {
+  const globeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const drift = calm ? 0.0009 : 0.0026;
+    let scrollY = 0;
+    let driftAccum = 0;
+    let current = 0;
+    let tilt = 0;
+    let tiltCurrent = 0;
+    let last = 0;
+    let frameId = 0;
+
+    const readScroll = () => {
+      scrollY = window.scrollY || 0;
+      tilt = Math.max(-14, Math.min(14, scrollY * 0.02));
+    };
+    const frame = (now: number) => {
+      const dt = last ? Math.min(64, now - last) : 16;
+      last = now;
+      driftAccum += dt * drift;
+      const target = scrollY * 0.11 + driftAccum;
+      current += (target - current) * 0.07;
+      tiltCurrent += (tilt - tiltCurrent) * 0.06;
+      globe.style.setProperty("--spin", current.toFixed(2));
+      globe.style.setProperty("--tilt", tiltCurrent.toFixed(2));
+      frameId = requestAnimationFrame(frame);
+    };
+
+    window.addEventListener("scroll", readScroll, { passive: true });
+    readScroll();
+    frameId = requestAnimationFrame(frame);
+    return () => {
+      window.removeEventListener("scroll", readScroll);
+      cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  return (
+    <div
+      className="landing-hero-globe"
+      ref={globeRef}
+      role="img"
+      aria-label={de ? "Globus, umkreist von Symbolen für jede Art von INCAS Event" : "Globe circled by symbols for each kind of INCAS event"}
     >
-      <defs>
-        <filter id="parchment-grain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-      </defs>
-
-      <g fill="rgba(155, 110, 55, 0.16)" stroke="rgba(122, 90, 46, 0.5)" strokeWidth="2">
-        <path d="M -30 60 C 120 20, 300 60, 330 170 C 350 250, 260 290, 210 350 C 160 410, 60 400, -30 440 Z" />
-        <path d="M 430 560 C 480 520, 560 530, 590 570 C 620 610, 560 650, 500 645 C 450 640, 400 600, 430 560 Z" />
-        <path d="M 1230 180 C 1120 200, 1060 260, 1090 330 C 1115 390, 1200 400, 1230 460 Z" />
-        <path d="M 640 30 C 700 10, 762 32, 752 72 C 742 108, 662 108, 642 72 Z" />
-      </g>
-
-      <g stroke="rgba(122, 90, 46, 0.55)" strokeWidth="1.5" fill="none" strokeLinejoin="round">
-        <path d="M 110 300 l 14 -18 l 14 18 m 12 0 l 14 -18 l 14 18 m 12 0 l 14 -18 l 14 18" />
-        <path d="M 130 330 l 14 -18 l 14 18 m 12 0 l 14 -18 l 14 18" />
-      </g>
-
-      <g stroke="rgba(122, 90, 46, 0.3)" strokeWidth="1.5" fill="none">
-        <circle cx={1250} cy={740} r={250} />
-        <circle cx={1250} cy={740} r={320} />
-        <circle cx={1250} cy={740} r={390} />
-      </g>
-
-      <g>
-        <circle
-          cx={640}
-          cy={170}
-          r={85}
-          fill="none"
-          stroke="rgba(122, 90, 46, 0.5)"
-          strokeWidth="1.5"
-          strokeDasharray="7 7"
-        />
-        <text
-          x={640}
-          y={176}
-          textAnchor="middle"
-          fill="rgba(105, 75, 35, 0.7)"
-          fontFamily="Playfair Display, Georgia, serif"
-          fontStyle="italic"
-          fontSize="17"
+      <span className="globe-ring" aria-hidden="true" />
+      {GLOBE_BADGES.map((badge) => (
+        <span
+          key={badge.a}
+          className={`globe-badge${badge.accent ? " is-accent" : ""}`}
+          style={{ "--a": badge.a } as CSSProperties}
+          aria-hidden="true"
         >
-          {de ? "Klausurenphase" : "exam phase"}
-        </text>
-      </g>
-
-      <g transform="translate(60 618)" stroke={MAP_INK} fill="none" opacity="0.75">
-        <circle r={11} fill={MAP_INK} stroke="none" />
-        <circle cx={-4} cy={-2} r={2} fill="#e2c894" stroke="none" />
-        <circle cx={4} cy={-2} r={2} fill="#e2c894" stroke="none" />
-        <path d="M -16 18 L 16 32 M 16 18 L -16 32" strokeWidth="5" strokeLinecap="round" />
-      </g>
-
-      <g transform="translate(1092 108)" stroke={MAP_INK} fill="none" opacity="0.8">
-        <circle r={62} strokeWidth="1.2" opacity="0.7" />
-        <circle r={10} strokeWidth="1.2" />
-        <path d="M -46 0 L -10 5 L 46 0 L -10 -5 Z" fill={MAP_INK} fillOpacity="0.45" stroke="none" />
-        <path d="M 0 46 L 5 10 L 0 -20 L -5 10 Z" fill={MAP_INK} fillOpacity="0.45" stroke="none" />
-        <path d="M 0 -74 L 7 -8 L 0 9 L -7 -8 Z" fill="#a04f10" fillOpacity="0.9" stroke="none" />
-        <circle r={3.5} fill="#a04f10" stroke="none" />
-        <text x={0} y={-84} textAnchor="middle" fill={MAP_INK} stroke="none" fontSize="14" fontFamily="ui-monospace, monospace">
-          N
-        </text>
-      </g>
-
-      <rect width={MAP_W} height={MAP_H} filter="url(#parchment-grain)" opacity="0.06" />
-    </svg>
+          {badge.icon}
+        </span>
+      ))}
+      <GlobeSphere />
+    </div>
   );
 }
 
@@ -190,168 +286,424 @@ function formatStationTime(date: Date, locale: string): string {
   return `${weekday} · ${month} ${date.getDate()} · ${time}`;
 }
 
-function TreasureChart({ events, locale }: { events: PublicPost[]; locale: string }) {
+const KIND_PHOTO: Record<string, string> = {
+  cafe_lingua: "img/site/cafe-lingua.webp",
+  country_evening: "img/site/country-evening.webp",
+  breakfast: "img/site/international-breakfast.webp",
+  trip: "img/site/international-weekend.webp",
+  board_games: "img/site/international-tuesday.webp",
+  karaoke: "img/site/international-tuesday.webp",
+  dance: "img/site/language-tandem.webp",
+};
+
+function eventPhoto(event: PublicPost): string | null {
+  if (event.imageUrl) return assetUrl(event.imageUrl);
+  const byKind = event.eventKind ? KIND_PHOTO[event.eventKind] : undefined;
+  return assetUrl(byKind ?? "img/site/cafe-lingua.webp");
+}
+
+const PHOTO_TILTS = [
+  { rot: "4deg", drop: "16px" },
+  { rot: "-3deg", drop: "2px" },
+  { rot: "3deg", drop: "14px" },
+  { rot: "-3deg", drop: "6px" },
+];
+
+function SectionCompass() {
+  return (
+    <svg className="section-compass" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+      <g transform="translate(80 80)" stroke="#6a6252" fill="none" opacity="0.75">
+        <circle r={62} strokeWidth="1.6" opacity="0.7" />
+        <circle r={10} strokeWidth="1.6" />
+        <path d="M -46 0 L -10 5 L 46 0 L -10 -5 Z" fill="#6a6252" fillOpacity="0.45" stroke="none" />
+        <path d="M 0 46 L 5 10 L 0 -20 L -5 10 Z" fill="#6a6252" fillOpacity="0.45" stroke="none" />
+        <path d="M 0 -70 L 7 -8 L 0 9 L -7 -8 Z" fill="#4f6a6a" fillOpacity="0.9" stroke="none" />
+        <circle r={3.5} fill="#4f6a6a" stroke="none" />
+      </g>
+    </svg>
+  );
+}
+
+/** N° 01: this month's events as photos pegged along a hanging string. */
+function EventsString({ events, locale }: { events: PublicPost[]; locale: string }) {
   const de = locale === "de";
   const now = new Date();
   const monthLabel = now.toLocaleString(de ? "de" : "en", { month: "long", year: "numeric" });
-
-  const monthEvents = events
+  const lineup = events
     .filter((event) => event.startsAt)
     .map((event) => ({ event, date: new Date(event.startsAt as string) }))
-    .filter(
-      ({ date }) => date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth(),
-    )
     .sort((a, b) => a.date.getTime() - b.date.getTime())
-    .slice(0, STATION_LAYOUTS.length);
-
-  const slots = STATION_LAYOUTS[monthEvents.length - 1] ?? [];
+    .slice(0, 4);
 
   return (
-    <section className="treasure" aria-label={de ? `Events im ${monthLabel}` : `Upcoming events in ${monthLabel}`}>
+    <section className="treasure landing-plain" aria-label={de ? `Events im ${monthLabel}` : `Upcoming events in ${monthLabel}`} style={{ position: "relative" }}>
+      <SectionCompass />
       <div className="landing-section-head">
         <h2>
-          <span className="section-no" aria-hidden="true">
-            N° 01 · {monthLabel}
-          </span>
-          {de ? "Die Expeditionen dieses Monats" : "This month's expeditions"}
+          <span className="section-no" aria-hidden="true">N° 01 · {monthLabel}</span>
+          {de ? "Die Events dieses Monats" : "This month's events"}
         </h2>
-        <Link to="/calendar" className="btn btn-outline">
-          {de ? "Kalender öffnen" : "View calendar"}
-        </Link>
+        <Link to="/calendar" className="btn btn-outline">{de ? "Kalender öffnen" : "View calendar"}</Link>
       </div>
 
-      <div className="treasure-sheet-wrap">
-        <div className={`treasure-sheet${monthEvents.length >= 5 ? " is-dense" : ""}`}>
-          <TreasureBackdrop de={de} />
-          {monthEvents.length > 1 ? (
-            <svg
-              className="treasure-route"
-              viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-              preserveAspectRatio="none"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path className="treasure-route-path" d={routePath(slots)} />
-            </svg>
-          ) : null}
-
-          <div className="treasure-cartouche">
-            <p className="hero-coords">50°46′ N · 6°05′ E · Aachen</p>
-            <h1>
-              {de ? (
-                <>Triff die Welt <em>in Aachen</em></>
-              ) : (
-                <>Meet the world <em>in Aachen</em></>
-              )}
-            </h1>
-            <p className="treasure-cartouche-sub">
-              {de
-                ? "Länderabende, Sprachtandem, Ausflüge und gemeinsames Frühstück. Jede Woche, offen für alle."
-                : "Country evenings, language tandem, trips, and shared breakfasts. Every week, open to everyone."}
-            </p>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link to="/offers" className="btn btn-primary btn-sm">
-                {de ? "Events entdecken →" : "Discover events →"}
-              </Link>
-              <a href="#team" className="btn btn-outline btn-sm">
-                {de ? "Das Team" : "Meet the team"}
-              </a>
-            </div>
-          </div>
-
-          <p className="treasure-month" aria-hidden="true">
-            {monthLabel} · {de ? "Expeditionskarte" : "expedition chart"}
-          </p>
-
-          {monthEvents.length === 0 ? (
-            <div className="treasure-empty">
-              <p>
-                {de
-                  ? `Für ${monthLabel} ist noch keine Expedition eingezeichnet. Die Crew plant den nächsten Kurs.`
-                  : `No expeditions charted for ${monthLabel}. The crew is plotting the next course.`}
-              </p>
-              <Link to="/calendar" className="btn btn-primary">
-                {de ? "Zum Kalender" : "Go to the calendar"}
-              </Link>
-            </div>
-          ) : (
-            <ol className="treasure-stations">
-              {monthEvents.map(({ event, date }, index) => {
-                const slot = slots[index];
-                return (
-                  <li
-                    key={event.slug}
-                    className={[
-                      "treasure-station",
-                      index === 0 ? "is-next" : "",
-                      slot.label === "above" ? "is-above" : "is-below",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    style={
-                      {
-                        left: `${(slot.x / MAP_W) * 100}%`,
-                        top: `${(slot.y / MAP_H) * 100}%`,
-                        "--station-index": index,
-                      } as CSSProperties
-                    }
-                  >
-                    <Link to={`/events/${event.slug}`}>
-                      <span className="treasure-x" aria-hidden="true">
-                        ✕
-                      </span>
-                      <span className="treasure-label">
-                        {index === 0 ? (
-                          <span className="treasure-next">{de ? "Als Nächstes" : "Next up"}</span>
-                        ) : null}
-                        <time dateTime={event.startsAt ?? undefined}>{formatStationTime(date, locale)}</time>
-                        <strong>{event.title.full}</strong>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
+      {lineup.length === 0 ? (
+        <EmptyState>
+          <p>{de ? "Gerade ist nichts an der Leine. Schau bald wieder vorbei." : "Nothing on the line right now. Check back soon."}</p>
+          <Link to="/calendar" className="btn btn-primary">{de ? "Zum Kalender" : "Go to the calendar"}</Link>
+        </EmptyState>
+      ) : (
+        <div className="ev-line" role="list" aria-label={de ? `Events im ${monthLabel} in Reihenfolge` : `${monthLabel} events in order`}>
+          <svg className="ev-string" viewBox="0 0 1200 34" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M 0 15 Q 75 30 150 14 Q 300 30 450 14 Q 600 30 750 14 Q 900 30 1050 14 Q 1125 30 1200 15" />
+          </svg>
+          {lineup.map(({ event, date }, index) => {
+            const isNext = index === 0;
+            const tiltPreset = PHOTO_TILTS[index % PHOTO_TILTS.length];
+            const photo = eventPhoto(event);
+            return (
+              <div
+                key={event.slug}
+                className={`ev-photo${isNext ? " is-next" : ""}`}
+                role="listitem"
+                style={{ "--rot": tiltPreset.rot, "--drop": tiltPreset.drop } as CSSProperties}
+              >
+                {isNext ? <span className="ev-ribbon">{de ? "Als Nächstes" : "Next up"}</span> : null}
+                <span className="ev-clip" aria-hidden="true" />
+                <Link className="ev-photo-link" to={`/events/${event.slug}`}>
+                  {photo ? <img src={photo} alt="" loading="lazy" /> : null}
+                  <span className="ev-caption">
+                    <time className="ev-date" dateTime={event.startsAt ?? undefined}>
+                      {formatStationTime(date, locale)}
+                    </time>
+                    <strong className="ev-name">{event.title.full}</strong>
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  className="ev-save"
+                  aria-label={de ? `${event.title.full} im Kalender speichern` : `Save ${event.title.full} to calendar`}
+                  title={de ? "Termin speichern" : "Save the date"}
+                  onClick={() => downloadEventIcs(event)}
+                >
+                  <i className="bi bi-calendar-plus" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
     </section>
   );
 }
 
-function TeamIntroSection({ locale }: { locale: string }) {
-  const de = locale === "de";
-  const photo = assetUrl("img/site/about-team.webp");
+/** About copy on a parchment letter emerging from an opened airmail envelope.
+ *  Reveal is fail-safe: scroll check, IntersectionObserver, and a 2.6s timer,
+ *  whichever fires first; reduced motion shortens transitions, never hides. */
+export function LetterScene({ de }: { de: boolean }) {
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const flapRef = useRef<HTMLSpanElement>(null);
+  const letterRef = useRef<HTMLDivElement>(null);
+  const sealRef = useRef<HTMLSpanElement>(null);
+  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 560px)").matches);
+  const [letterOpen, setLetterOpen] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 560px)");
+    const onChange = () => setPhone(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!letterOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLetterOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [letterOpen]);
+
+  useEffect(() => {
+    const env = sceneRef.current;
+    const flap = flapRef.current;
+    const letter = letterRef.current;
+    const seal = sealRef.current;
+    if (!env || !flap || !letter) return;
+    // On a phone the letter is a teaser: the envelope simply sits open.
+    // Same once it has already revealed itself earlier this session.
+    if (phone || letterRevealedOnce) {
+      flap.style.transition = "none";
+      flap.style.transform = "rotateX(0deg)";
+      flap.style.zIndex = "0";
+      if (seal) seal.style.opacity = "0";
+      letter.style.transition = "none";
+      letter.style.transform = "translateY(0px)";
+      return;
+    }
+    flap.style.transition = "";
+    letter.style.transition = "";
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let opened = false;
+
+    let safety: number | undefined;
+
+    // On pages where the scene is visible at load (About us), every trigger
+    // fires immediately and the envelope is open before anyone looks at it.
+    // Hold the reveal briefly so the sealed envelope is seen opening.
+    // The hold is a pause, not motion, so it stays under reduced motion too.
+    const mountedAt = Date.now();
+    const minDelay = 950;
+
+    const open = () => {
+      if (opened) return;
+      const elapsed = Date.now() - mountedAt;
+      if (elapsed < minDelay) {
+        window.setTimeout(open, minDelay - elapsed);
+        return;
+      }
+      opened = true;
+      letterRevealedOnce = true;
+      if (safety !== undefined) window.clearTimeout(safety);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      flap.style.transform = "rotateX(0deg)";
+      if (seal) {
+        seal.style.opacity = "0";
+        seal.style.transform = "scale(0.7) rotate(-18deg)";
+      }
+      letter.style.transitionDelay = calm ? "0.2s" : "0.7s";
+      letter.style.transitionDuration = calm ? "0.7s" : "1.7s";
+      letter.style.transform = "translateY(0px)";
+      window.setTimeout(() => {
+        flap.style.zIndex = "0";
+      }, calm ? 320 : 900);
+    };
+    // The 2.6s safety is a fail-safe for a scene the user can (almost) see,
+    // not a global trigger: arming it at page load would open the envelope
+    // while the visitor is still reading the hero.
+    const armSafety = () => {
+      if (safety === undefined && !opened) safety = window.setTimeout(open, 2600);
+    };
+    const onScroll = () => {
+      const rect = env.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.9 && rect.bottom > 0) open();
+      else if (rect.top < window.innerHeight * 1.6) armSafety();
+    };
+
+    if (calm) flap.style.transitionDuration = "0.55s";
+    flap.style.transform = "rotateX(180deg)";
+    flap.style.zIndex = "6";
+    letter.style.transform = `translateY(${letter.offsetHeight + 8}px)`;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    let io: IntersectionObserver | undefined;
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              window.setTimeout(open, 380);
+              io?.disconnect();
+            }
+          });
+        },
+        { threshold: 0.3 },
+      );
+      io.observe(env);
+    }
+    onScroll();
+    return () => {
+      window.clearTimeout(safety);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      io?.disconnect();
+    };
+  }, [phone]);
+
+  const paragraphs = de
+    ? [
+        <p key="p1">
+          INCAS steht für <strong>Intercultural Centre of Aachen Students</strong>. Wir sind
+          eine studentische Organisation, finanziell und logistisch unterstützt vom
+          International Office der RWTH Aachen und der FH Aachen. INCAS richtet sich vor allem
+          an internationale Studierende, die in Aachen studieren, ein Praktikum machen oder
+          einen Deutschkurs besuchen.
+        </p>,
+        <p key="p2">
+          Das internationale INCAS Team besteht aus ausländischen und deutschen Studierenden.
+          Unser Ziel ist eine kulturelle Brücke zwischen Studierenden aus allen Ländern: wir
+          fördern Integration und interkulturellen Austausch und helfen internationalen
+          Studierenden, ihren Aufenthalt in Aachen so angenehm wie möglich zu machen.
+        </p>,
+      ]
+    : [
+        <p key="p1">
+          INCAS stands for <strong>Intercultural Centre of Aachen Students</strong>. We are a
+          student organisation, financially and logistically supported by the International
+          Office of RWTH Aachen and FH Aachen. INCAS mainly serves international students
+          studying at universities, doing an internship or taking a German class in Aachen.
+        </p>,
+        <p key="p2">
+          The INCAS international team consists of foreign and German students. Our goal is to
+          build a cultural bridge between students from all countries by promoting their
+          integration and the intercultural communication among them. We support foreign
+          students in making their stay in Aachen as pleasant as possible, providing the help
+          and information they need.
+        </p>,
+      ];
+
   return (
-    <section className="team-section" id="team" aria-label={de ? "Über INCAS" : "About INCAS"}>
+    <div className="letter-scene" ref={sceneRef}>
+      <span className="postcard-bg" aria-hidden="true" />
+      <div className="letter-slot">
+        <div className="about-body" ref={letterRef}>
+          {phone ? paragraphs[0] : paragraphs}
+          {phone ? (
+            <button type="button" className="letter-more" onClick={() => setLetterOpen(true)}>
+              {de ? "Weiterlesen" : "Read the rest"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {phone && letterOpen
+        ? createPortal(
+            <>
+              <div className="lt-scrim is-on" onClick={() => setLetterOpen(false)} />
+              <div className="theme-parchment lt-sheet is-on" role="dialog" aria-modal="true" aria-label={de ? "Über INCAS" : "About INCAS"}>
+                <button type="button" className="lt-close" aria-label={de ? "Schließen" : "Close"} onClick={() => setLetterOpen(false)}>
+                  <i className="bi bi-x-lg" aria-hidden="true" />
+                </button>
+                {paragraphs}
+                <p className="lt-sign">{de ? "Herzlich," : "Yours,"}<b>{de ? "das INCAS Team" : "the INCAS team"}</b></p>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+      <div className="envelope" aria-hidden="true">
+        <span className="env-side l" />
+        <span className="env-side r" />
+      </div>
+      <span className="env-flap" aria-hidden="true" ref={flapRef} />
+      <div className="env-front" aria-hidden="true">
+        <span className="env-pocket" />
+        <span className="env-airmail">
+          <b>AIR MAIL</b>
+          <i>PAR AVION</i>
+        </span>
+        <img className="env-postmark" src={assetUrl("img/playful/postmark.svg") ?? ""} alt="" />
+      </div>
+      <span className="env-seal" aria-hidden="true" ref={sealRef}>
+        INCAS
+      </span>
+    </div>
+  );
+}
+
+function NoteArrow() {
+  return (
+    <svg className="note-arrow" viewBox="0 0 90 46" aria-hidden="true" focusable="false">
+      <path d="M6 6 C 32 2, 60 14, 82 34" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M72 33 L 84 35 L 79 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** N° 02: scrapbook team spread with taped photo and hand-drawn notes. */
+function TeamSpread({ locale }: { locale: string }) {
+  const de = locale === "de";
+  const photo = assetUrl("img/site/team-photo.jpg");
+  const logo = assetUrl("img/incas-logo.png");
+  return (
+    <section className="team-section landing-band" id="team" aria-label={de ? "Über INCAS" : "About INCAS"}>
+      <span className="postcard-stamp" aria-hidden="true" style={{ bottom: 64, right: "7%", width: 92, transform: "rotate(6deg)" }}>
+        <img src={assetUrl("img/playful/stamp-globe.svg") ?? ""} alt="" />
+      </span>
       <div className="landing-section-head">
-        <h2>
-          <span className="section-no" aria-hidden="true">
+        <h2 style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: 12 }}>
+          <span className="section-no" aria-hidden="true" style={{ flexBasis: "100%" }}>
             N° 02 · {de ? "Wer wir sind" : "Who we are"}
           </span>
-          {de ? "Was ist INCAS?" : "What is INCAS?"}
+          {de ? "Was ist " : "What is "}
+          {logo ? <img src={logo} alt="INCAS" style={{ height: "1em", width: "auto", transform: "translateY(0.12em)" }} /> : "INCAS"}?
         </h2>
-        <Link to="/about/team" className="btn btn-outline">
-          {de ? "Das ganze Team" : "Meet the whole team"}
-        </Link>
+        <Link to="/about/team" className="btn btn-outline">{de ? "Das ganze Team" : "Meet the whole team"}</Link>
       </div>
-      <div className="team-row">
-        <div>
-          <p className="about-lead">
-            {de
-              ? "Das Intercultural Centre of Aachen Students: eine studentische Initiative, die die Welt in Aachen zusammenbringt."
-              : "The Intercultural Centre of Aachen Students: a student initiative that brings the world together in Aachen."}
-          </p>
-          <p className="team-blurb">
-            {de
-              ? "Komplett ehrenamtlich organisiert. Kein Beitrag, keine Bewerbung. Das Team trifft sich dienstags um 19 Uhr im Humboldt-Haus, alle sind willkommen."
-              : "Run entirely by volunteers. No fee, no application. The team meets Tuesdays at 7:00 PM at Humboldt-Haus, and everyone is welcome."}
-          </p>
+      <p className="about-lead about-lead-center">
+        {de
+          ? "Wir bringen Kulturen zusammen, damit sich in Aachen niemand weit weg von zu Hause fühlt."
+          : "We bring cultures together, so nobody in Aachen feels far from home."}
+      </p>
+      <div className="team-spread">
+        <div className="team-notes team-notes-left">
+          <div className="team-note">
+            <span>{de ? "Komplett ehrenamtlich organisiert" : "Run entirely by volunteers"}</span>
+            <NoteArrow />
+          </div>
+          <div className="team-note note-up">
+            <NoteArrow />
+            <span>{de ? "Kein Beitrag, keine Bewerbung" : "No fee, no application"}</span>
+          </div>
         </div>
         <div className="team-photo-wrap">
           {photo ? <img src={photo} alt={de ? "Das INCAS Team" : "The INCAS team"} /> : null}
+          <span className="team-tape tl" aria-hidden="true" />
+          <span className="team-tape br" aria-hidden="true" />
+          <span className="team-scribble">{de ? "die INCAS Crew, Dienstagabend" : "the INCAS crew, Tuesday night"}</span>
+        </div>
+        <div className="team-notes team-notes-right" style={{ position: "relative" }}>
+          <div className="team-note"><NoteArrow /></div>
+          <div className="team-note note-up"><NoteArrow /></div>
+          <span className="team-note-float" style={{ left: 105, top: 28 }}>
+            {de ? "Dienstags, 19 Uhr im Humboldt-Haus" : "Tuesdays, 7:00 PM at Humboldt-Haus"}
+          </span>
+          <span className="team-note-float" style={{ left: 81, top: 203 }}>
+            {de ? "Alle sind willkommen, keine Einladung nötig" : "Everyone is welcome, no invite needed"}
+          </span>
         </div>
       </div>
+      <LetterScene de={de} />
+    </section>
+  );
+}
+
+/** N° 03: find us at Humboldt-Haus. */
+function FindUs({ locale }: { locale: string }) {
+  const de = locale === "de";
+  return (
+    <section className="find-us landing-plain" aria-label={de ? "Wo ihr uns findet" : "Where to find us"}>
+      <span className="postcard-stamp" aria-hidden="true" style={{ top: 24, right: "2.5%", width: 96, transform: "rotate(-5deg)" }}>
+        <img src={assetUrl("img/playful/stamp-arch.svg") ?? ""} alt="" />
+      </span>
+      <span className="postcard-stamp" aria-hidden="true" style={{ top: 52, right: "calc(2.5% + 68px)", width: 150, transform: "rotate(-9deg)" }}>
+        <img src={assetUrl("img/playful/postmark.svg") ?? ""} alt="" />
+      </span>
+      <div>
+        <span className="footer-coords" aria-hidden="true">N° 03 · 50°46′ N · 6°05′ E</span>
+        <h2>{de ? "Ihr findet uns im Humboldt-Haus" : "Find us at Humboldt-Haus"}</h2>
+        <address>
+          Humboldt-Haus<br />Pontstraße 41<br />52062 Aachen
+        </address>
+        <div className="btn-row">
+          <a
+            href="https://www.openstreetmap.org/?mlat=50.7787&mlon=6.0800#map=18/50.7787/6.0800"
+            className="btn btn-outline btn-sm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <i className="bi bi-geo-alt" aria-hidden="true" /> {de ? "In Karten öffnen" : "Open in maps"}
+          </a>
+          <Link to="/calendar" className="btn btn-outline btn-sm">{de ? "Was dort läuft" : "What's on there"}</Link>
+        </div>
+      </div>
+      <img
+        src={assetUrl("img/playful/humboldt-haus-flat.svg") ?? ""}
+        alt={de ? "Illustration des Humboldt-Hauses: ein oranges Gebäude mit steinernem Torbogen an der Pontstraße" : "Illustration of Humboldt-Haus: an orange building with a stone arch portal on Pontstraße"}
+      />
     </section>
   );
 }
@@ -363,11 +715,12 @@ const INSTA_TILES = [
   "img/site/international-weekend.webp",
 ];
 
+/** N° 04: socials. */
 function SocialBand({ locale }: { locale: string }) {
   const de = locale === "de";
   return (
-    <div className="social-band">
-      <span className="footer-coords" aria-hidden="true">N° 03 · 50°46′ N · 6°05′ E</span>
+    <div className="social-band landing-band">
+      <span className="footer-coords" aria-hidden="true">N° 04 · 50°46′ N · 6°05′ E</span>
       <h2>{de ? "Folge uns" : "Follow us"}</h2>
       <p>
         {de
@@ -397,11 +750,35 @@ function SocialBand({ locale }: { locale: string }) {
   );
 }
 
-function TreasureLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {
+function PlayfulLanding({ data, locale }: { data: PublicPostsResponse; locale: string }) {
+  const de = locale === "de";
   return (
     <>
-      <TreasureChart events={data.events} locale={locale} />
-      <TeamIntroSection locale={locale} />
+      <header className="landing-hero">
+        <HeroMap />
+        <div className="landing-hero-text">
+          <p className="hero-coords">50°46′ N · 6°05′ E · Aachen</p>
+          <h1>
+            {de ? (
+              <>Triff die Welt <em>in Aachen</em></>
+            ) : (
+              <>Meet the world <em>in Aachen</em></>
+            )}
+          </h1>
+          <p className="landing-hero-sub">
+            {de
+              ? "Lerne Kulturen aus der ganzen Welt kennen und finde dabei eine Gemeinschaft."
+              : "Get to know cultures from all over the world, and find a community while you do it."}
+          </p>
+          <div className="landing-hero-cta">
+            <Link to="/events" className="btn btn-primary">{de ? "Events entdecken →" : "Discover events →"}</Link>
+          </div>
+        </div>
+        <HeroGlobe de={de} />
+      </header>
+      <EventsString events={data.events} locale={locale} />
+      <TeamSpread locale={locale} />
+      <FindUs locale={locale} />
       <SocialBand locale={locale} />
     </>
   );
@@ -437,5 +814,5 @@ export function LandingPage() {
   if (posts.loading || themeLoading) return <Loading />;
   if (posts.error || !posts.data) return <ErrorState error={posts.error} onRetry={posts.reload} />;
   const content = posts.data;
-  return <>{isPreview ? <p className="notice notice-info">{locale === "de" ? "Theme-Vorschau" : "Theme preview"}: <strong>{theme}</strong>.</p> : null}{theme === "editorial" ? <EditorialLanding data={content} locale={locale} /> : theme === "event-first" ? <EventFirstLanding data={content} locale={locale} /> : theme === "portal" ? <PortalLanding data={content} locale={locale} /> : <TreasureLanding data={content} locale={locale} />}{content.archivedEvents.length ? <section className="landing-archive"><button type="button" className="btn btn-ghost" onClick={() => setShowArchive((value) => !value)} aria-expanded={showArchive}>{showArchive ? (locale === "de" ? "Vergangene Events ausblenden" : "Hide past events") : (locale === "de" ? "Vergangene Events anzeigen" : "Show past events")}</button>{showArchive ? <div className="event-grid">{content.archivedEvents.slice(0, 6).map((event) => <EventCard key={event.slug} event={event} locale={locale} compact />)}</div> : null}</section> : null}</>;
+  return <>{isPreview ? <p className="notice notice-info">{locale === "de" ? "Theme-Vorschau" : "Theme preview"}: <strong>{theme}</strong>.</p> : null}{theme === "editorial" ? <EditorialLanding data={content} locale={locale} /> : theme === "event-first" ? <EventFirstLanding data={content} locale={locale} /> : theme === "portal" ? <PortalLanding data={content} locale={locale} /> : <PlayfulLanding data={content} locale={locale} />}{content.archivedEvents.length ? <section className="landing-archive"><button type="button" className="btn btn-ghost" onClick={() => setShowArchive((value) => !value)} aria-expanded={showArchive}>{showArchive ? (locale === "de" ? "Vergangene Events ausblenden" : "Hide past events") : (locale === "de" ? "Vergangene Events anzeigen" : "Show past events")}</button>{showArchive ? <div className="event-grid">{content.archivedEvents.slice(0, 6).map((event) => <EventCard key={event.slug} event={event} locale={locale} compact />)}</div> : null}</section> : null}</>;
 }
