@@ -14,7 +14,7 @@ def test_public_content_has_sections_image_metadata_and_one_offers_source():
     assert set(SITE_PAGES["en"]) == set(SITE_PAGES["de"])
     for locale, pages in SITE_PAGES.items():
         for key, page in pages.items():
-            assert page["section"] in {"about", "offers"}, (locale, key)
+            assert page["section"] in {"about", "offers", "legal"}, (locale, key)
             if page.get("image"):
                 assert page["image_alt"], (locale, key)
                 assert page["image_width"] > 0

@@ -26,6 +26,7 @@ from app.sanitize import sanitize_rich_html
 from app.site_content import (
     SITE_PAGES,
     SITE_UI,
+    get_footer_legal_links,
     get_footer_offer_links,
     get_site_offers,
     get_site_page,
@@ -430,6 +431,10 @@ def _serialize_footer(locale):
             {"title": link["title"], "to": _app_route(link["url"])}
             for link in get_footer_offer_links(locale)
         ],
+        "legalLinks": [
+            {"title": link["title"], "to": _app_route(link["url"])}
+            for link in get_footer_legal_links(locale)
+        ],
     }
 
 
@@ -495,7 +500,7 @@ def serialize_content(slug, locale, section=None):
 @api_bp.get("/public/content/<slug>")
 def api_public_content(slug):
     section = request.args.get("section")
-    if section not in {None, "about", "offers"}:
+    if section not in {None, "about", "offers", "legal"}:
         return api_error("not_found", "Page not found.", status=404)
     payload = serialize_content(
         slug,

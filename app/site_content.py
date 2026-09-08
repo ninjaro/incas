@@ -267,6 +267,15 @@ def get_footer_offer_links(locale):
         for key in footer_keys
     ]
 
+def get_footer_legal_links(locale):
+    locale = locale if locale in SITE_PAGES else "en"
+    page_map = SITE_PAGES.get(locale) or SITE_PAGES["en"]
+    return [
+        {"title": page_map["impressum"]["title"], "url": "/impressum"},
+        {"title": page_map["privacy"]["title"], "url": "/privacy"},
+    ]
+
+
 def t(locale, key):
     return SITE_UI.get(locale, {}).get(key) or SITE_UI["en"].get(key) or key
 
@@ -754,6 +763,160 @@ SITE_PAGES = {
 </section>
 """.strip(),
         },
+        "impressum": {
+            "title": "Impressum",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <p class="text-body-secondary mb-0">Information pursuant to Section 5 of the German Digital Services Act (DDG).</p>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Provider</h2>
+        <p class="mb-0">
+            Interkulturelles Centrum Aachener Studierender e.V.<br>
+            Pontstraße 41<br>
+            52062 Aachen<br>
+            Germany
+        </p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Register entry</h2>
+        <p class="mb-0">Register of associations: VR 5770<br>Registering court: Amtsgericht Aachen</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Represented by</h2>
+        <p class="mb-0">1st Coordinator: Nölke, Linus Ary<br>2nd Coordinator: Rzaev, Vladmir</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Contact</h2>
+        <p class="mb-0">Phone: +49 241 80 98184<br>Written contact: <a class="link-primary" href="/contact-form">contact form</a></p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Consumer dispute resolution</h2>
+        <p class="mb-0">We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Liability for content and links</h2>
+        <p>As a service provider we are responsible for our own content on these pages under general law. We are not obliged to monitor transmitted or stored third-party information or to investigate circumstances that indicate unlawful activity.</p>
+        <p class="mb-0">Our site links to external websites over whose content we have no influence. The respective provider is always responsible for the content of linked pages. Those pages were checked for legal violations at the time of linking; unlawful content was not recognisable.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Privacy</h2>
+        <p class="mb-0">How we handle personal data is described in our <a class="link-primary" href="/privacy">privacy policy</a>.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "privacy": {
+            "title": "Privacy Policy",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <p class="text-body-secondary mb-0">This notice explains what personal data we process when you use this website, on what legal basis, and which rights you have (Art. 13 GDPR). Last updated: September 2026.</p>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">1. Controller</h2>
+        <p class="mb-0">
+            Interkulturelles Centrum Aachener Studierender e.V.<br>
+            Pontstraße 41, 52062 Aachen, Germany<br>
+            Phone: +49 241 80 98184 · <a class="link-primary" href="/contact-form">contact form</a>
+        </p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">2. Your rights</h2>
+        <p>You have the right to access your data (Art. 15), to rectification (Art. 16), to erasure (Art. 17), to restriction of processing (Art. 18), to data portability (Art. 20) and to object to processing based on our legitimate interests (Art. 21). Where processing is based on consent, you may withdraw it at any time with effect for the future (Art. 7(3)).</p>
+        <p class="mb-0">You also have the right to lodge a complaint with a data protection supervisory authority. The authority responsible for us is the Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">3. Legal bases</h2>
+        <p class="mb-0">Depending on the purpose we rely on your consent (Art. 6(1)(a), and Art. 9(2)(a) for special categories of data), the performance of a contract or steps taken at your request before entering into one (Art. 6(1)(b)), a legal obligation (Art. 6(1)(c)), or our legitimate interest in running the association's activities securely and efficiently (Art. 6(1)(f)).</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">4. Hosting and server log files</h2>
+        <p>This website runs on hosted server infrastructure. When you open a page, the hosting environment automatically writes technical data to server log files: browser type and version, operating system, referrer URL, host name, the requesting IP address and the time of the request. This data is processed on the basis of Art. 6(1)(f) GDPR for the secure and stable operation of the site and is not merged with other data sources.</p>
+        <p class="mb-0">If we use a hosting provider that processes personal data on our behalf, we conclude a data processing agreement with that provider pursuant to Art. 28 GDPR.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">5. Data you submit through forms</h2>
+        <p>We only ask for what we need to handle your request. Free-text fields are optional; please do not enter special categories of data (for example health, religion or political views) unless it is necessary for your request. If you do, we process it on the basis of your consent under Art. 9(2)(a) GDPR, which you give by submitting the form.</p>
+        <div class="list-group list-group-flush border rounded-2 overflow-hidden">
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Contact form</h3>
+                <p class="mb-0">Name, email address, optional subject, message. Purpose: answering your enquiry. Legal basis: Art. 6(1)(b) where it concerns taking part in our activities, otherwise Art. 6(1)(f).</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Event suggestion</h3>
+                <p class="mb-0">Contact name, email address and/or phone number, the country or culture you suggest, optional comment. Purpose: reviewing and following up on your suggestion. Legal basis: Art. 6(1)(f).</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Language Tandem registration</h3>
+                <p class="mb-0">First and last name, email address, occupation, gender, year of birth, planned departure date, country of origin, the languages you offer and request with your self-assessed level, partner preferences and an optional comment. Purpose: finding and proposing a tandem partner and contacting you about it. Legal basis: Art. 6(1)(b) for the matching service you request; for any special categories you volunteer in the comment: Art. 9(2)(a).</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Event registration</h3>
+                <p class="mb-0">First and last name, email address, occupation, an optional comment and, for breakfast events, your meal preference. Purpose: managing your place, the waiting list and, where a deposit or ticket applies, the payment. Legal basis: Art. 6(1)(b); the meal preference is processed on the basis of consent (Art. 6(1)(a), and Art. 9(2)(a) where it reveals religious or health information), which you give by selecting it.</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Karaoke queue</h3>
+                <p class="mb-0">Display name, song and artist, an optional note and an optional contact detail. Purpose: running the karaoke queue during an event. Legal basis: Art. 6(1)(a) / Art. 6(1)(f).</p>
+            </section>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">6. Recipients</h2>
+        <p>Your data is accessible to the INCAS volunteers who organise the relevant activity. For Language Tandem, matching is done through a pseudonymised admin view; names and contact details are shown only to the volunteers who carry out the actual introduction.</p>
+        <p class="mb-0">We pass data to third parties only where necessary: a hosting provider (see section 4), the operator of the mail server we use to send you transactional emails such as a registration link, and — for events with a deposit or ticket — a payment service provider. Payment and social-media publishing currently run in a simulated mode in which no real payment data is transmitted; this notice will be updated before a live provider is used.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">7. Retention</h2>
+        <p class="mb-0">We keep personal data only as long as it is needed for the purpose it was collected for or to meet a legal retention obligation, and delete it afterwards. You can ask us to delete your data at any time using the contact details above; we will do so unless a legal obligation requires us to keep it.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">8. Data security</h2>
+        <p class="mb-0">The site is served over HTTPS (TLS). Admin access is protected by expiring access keys and is split into separate capabilities, so a volunteer only sees the data their task requires; the Language Tandem matching view is pseudonymised by design (Art. 25, Art. 32 GDPR).</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">9. Cookies and local storage</h2>
+        <p>We use no tracking or advertising cookies and show no consent banner. We set two cookies, both strictly necessary and exempt from consent under Section 25(2) TDDDG: a <code>locale</code> cookie that remembers your language choice, and a session cookie that is created only after an admin signs in and keeps that session.</p>
+        <p class="mb-0">Your browser's local storage keeps a few settings on your device only: your light/dark preference, your language choice, and — if you join a karaoke queue — a random identifier so you can manage your own entry. This information stays in your browser and is not transmitted to us.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">10. Fonts</h2>
+        <p class="mb-0">The fonts used on this site (Source Sans 3, Playfair Display) are stored and served from our own server. No connection to Google or another third-party font service is made when you view the site.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">11. Maps (OpenStreetMap)</h2>
+        <p class="mb-0">Some event pages show an interactive map. The map tiles are loaded from tile.openstreetmap.org, operated by the OpenStreetMap Foundation (United Kingdom). When the map loads, your IP address is transmitted to that service so it can deliver the tiles. Legal basis: Art. 6(1)(f) GDPR (showing event locations clearly). Pages without a map do not contact this service. See the <a class="link-primary" href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">OpenStreetMap Foundation privacy policy</a>.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">12. External links and social media</h2>
+        <p class="mb-0">Links to our Instagram and Facebook pages are plain hyperlinks. We embed no social-media plugins, so opening this site does not contact those networks. Once you follow a link, the network processes your data under its own responsibility.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">13. Changes</h2>
+        <p class="mb-0">We update this notice when our processing changes. The current version always applies.</p>
+    </section>
+</section>
+""".strip(),
+        },
     },
     "de": {
         "about": {
@@ -1233,10 +1396,165 @@ SITE_PAGES = {
 </section>
 """.strip(),
         },
+        "impressum": {
+            "title": "Impressum",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <p class="text-body-secondary mb-0">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz).</p>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Anbieter</h2>
+        <p class="mb-0">
+            Interkulturelles Centrum Aachener Studierender e.V.<br>
+            Pontstraße 41<br>
+            52062 Aachen<br>
+            Deutschland
+        </p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Registereintrag</h2>
+        <p class="mb-0">Vereinsregister: VR 5770<br>Registergericht: Amtsgericht Aachen</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Vertreten durch</h2>
+        <p class="mb-0">1. Koordinator: Nölke, Linus Ary<br>2. Koordinatorin: Rzaev, Vladmir</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Kontakt</h2>
+        <p class="mb-0">Telefon: +49 241 80 98184<br>Schriftlicher Kontakt: <a class="link-primary" href="/contact-form">Kontaktformular</a></p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Verbraucherstreitbeilegung</h2>
+        <p class="mb-0">Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Haftung für Inhalte und Links</h2>
+        <p>Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Wir sind nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.</p>
+        <p class="mb-0">Unsere Seite verweist auf externe Websites, auf deren Inhalte wir keinen Einfluss haben. Für die Inhalte verlinkter Seiten ist stets deren Anbieter verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf Rechtsverstöße überprüft; rechtswidrige Inhalte waren nicht erkennbar.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">Datenschutz</h2>
+        <p class="mb-0">Wie wir mit personenbezogenen Daten umgehen, steht in unserer <a class="link-primary" href="/privacy">Datenschutzerklärung</a>.</p>
+    </section>
+</section>
+""".strip(),
+        },
+        "privacy": {
+            "title": "Datenschutzerklärung",
+            "image": None,
+            "body_html": """
+<section class="vstack gap-4">
+    <p class="text-body-secondary mb-0">Diese Erklärung beschreibt, welche personenbezogenen Daten wir bei der Nutzung dieser Website verarbeiten, auf welcher Rechtsgrundlage und welche Rechte Sie haben (Art. 13 DSGVO). Stand: September 2026.</p>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">1. Verantwortliche Stelle</h2>
+        <p class="mb-0">
+            Interkulturelles Centrum Aachener Studierender e.V.<br>
+            Pontstraße 41, 52062 Aachen, Deutschland<br>
+            Telefon: +49 241 80 98184 · <a class="link-primary" href="/contact-form">Kontaktformular</a>
+        </p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">2. Ihre Rechte</h2>
+        <p>Sie haben das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen, die auf unserem berechtigten Interesse beruhen (Art. 21). Beruht eine Verarbeitung auf Ihrer Einwilligung, können Sie diese jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3).</p>
+        <p class="mb-0">Ihnen steht außerdem ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde zu. Für uns zuständig ist die Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">3. Rechtsgrundlagen</h2>
+        <p class="mb-0">Je nach Zweck stützen wir uns auf Ihre Einwilligung (Art. 6 Abs. 1 lit. a, für besondere Datenkategorien Art. 9 Abs. 2 lit. a), auf die Erfüllung eines Vertrags oder auf Ihr Verlangen erfolgende vorvertragliche Maßnahmen (Art. 6 Abs. 1 lit. b), auf eine rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c) oder auf unser berechtigtes Interesse an einem sicheren und effizienten Betrieb der Vereinsangebote (Art. 6 Abs. 1 lit. f).</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">4. Hosting und Server-Logfiles</h2>
+        <p>Diese Website läuft auf gehosteter Serverinfrastruktur. Beim Aufruf einer Seite schreibt die Hosting-Umgebung automatisch technische Daten in Server-Logfiles: Browsertyp und -version, Betriebssystem, Referrer-URL, Hostname, die anfragende IP-Adresse und den Zeitpunkt der Anfrage. Diese Daten werden auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO für den sicheren und stabilen Betrieb der Website verarbeitet und nicht mit anderen Datenquellen zusammengeführt.</p>
+        <p class="mb-0">Sofern wir einen Hoster einsetzen, der personenbezogene Daten in unserem Auftrag verarbeitet, schließen wir mit ihm einen Auftragsverarbeitungsvertrag nach Art. 28 DSGVO.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">5. Daten aus Formularen</h2>
+        <p>Wir erheben nur, was zur Bearbeitung Ihres Anliegens nötig ist. Freitextfelder sind freiwillig; bitte geben Sie dort keine besonderen Datenkategorien (z. B. Gesundheit, Religion, politische Ansichten) an, sofern dies nicht für Ihr Anliegen erforderlich ist. Tun Sie es dennoch, verarbeiten wir diese Angaben auf Grundlage Ihrer mit dem Absenden erteilten Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO.</p>
+        <div class="list-group list-group-flush border rounded-2 overflow-hidden">
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Kontaktformular</h3>
+                <p class="mb-0">Name, E-Mail-Adresse, optionaler Betreff, Nachricht. Zweck: Beantwortung Ihrer Anfrage. Rechtsgrundlage: Art. 6 Abs. 1 lit. b, soweit es um die Teilnahme an unseren Angeboten geht, sonst Art. 6 Abs. 1 lit. f.</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Event-Vorschlag</h3>
+                <p class="mb-0">Kontaktname, E-Mail-Adresse und/oder Telefonnummer, vorgeschlagenes Land bzw. vorgeschlagene Kultur, optionaler Kommentar. Zweck: Prüfung und Nachverfolgung Ihres Vorschlags. Rechtsgrundlage: Art. 6 Abs. 1 lit. f.</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Sprachtandem-Anmeldung</h3>
+                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Tätigkeit, Geschlecht, Geburtsjahr, geplantes Abreisedatum, Herkunftsland, die angebotenen und gesuchten Sprachen mit Ihrer Selbsteinschätzung des Niveaus, Partnerpräferenzen und ein optionaler Kommentar. Zweck: Suche und Vorschlag einer Tandempartnerin oder eines Tandempartners und Kontaktaufnahme dazu. Rechtsgrundlage: Art. 6 Abs. 1 lit. b für den von Ihnen gewünschten Vermittlungsdienst; für freiwillige Angaben besonderer Kategorien im Kommentar: Art. 9 Abs. 2 lit. a.</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Event-Anmeldung</h3>
+                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Tätigkeit, ein optionaler Kommentar und, bei Frühstücks-Events, Ihre Ernährungspräferenz. Zweck: Verwaltung Ihres Platzes, der Warteliste und, sofern eine Kaution oder ein Ticket anfällt, der Zahlung. Rechtsgrundlage: Art. 6 Abs. 1 lit. b; die Ernährungspräferenz wird auf Grundlage Ihrer mit der Auswahl erteilten Einwilligung verarbeitet (Art. 6 Abs. 1 lit. a, und Art. 9 Abs. 2 lit. a, soweit sie Rückschlüsse auf Religion oder Gesundheit zulässt).</p>
+            </section>
+            <section class="list-group-item py-3">
+                <h3 class="h6 mb-1">Karaoke-Warteschlange</h3>
+                <p class="mb-0">Anzeigename, Titel und Interpret, eine optionale Notiz und eine optionale Kontaktangabe. Zweck: Betrieb der Karaoke-Warteschlange während einer Veranstaltung. Rechtsgrundlage: Art. 6 Abs. 1 lit. a / lit. f.</p>
+            </section>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">6. Empfänger</h2>
+        <p>Zugriff auf Ihre Daten haben die INCAS-Ehrenamtlichen, die das jeweilige Angebot organisieren. Beim Sprachtandem erfolgt das Matching über eine pseudonymisierte Admin-Ansicht; Namen und Kontaktdaten sehen nur die Ehrenamtlichen, die die konkrete Vermittlung durchführen.</p>
+        <p class="mb-0">An Dritte geben wir Daten nur weiter, soweit erforderlich: an einen Hoster (siehe Abschnitt 4), an den Betreiber des Mailservers, über den wir transaktionale E-Mails wie einen Anmeldungslink versenden, und – bei Events mit Kaution oder Ticket – an einen Zahlungsdienstleister. Zahlung und Social-Media-Veröffentlichung laufen derzeit in einem simulierten Modus, in dem keine echten Zahlungsdaten übertragen werden; diese Erklärung wird vor dem Einsatz eines echten Anbieters aktualisiert.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">7. Speicherdauer</h2>
+        <p class="mb-0">Wir speichern personenbezogene Daten nur so lange, wie es für den Erhebungszweck oder zur Erfüllung einer gesetzlichen Aufbewahrungspflicht erforderlich ist, und löschen sie danach. Sie können jederzeit über die oben genannten Kontaktdaten die Löschung Ihrer Daten verlangen; wir kommen dem nach, sofern keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">8. Datensicherheit</h2>
+        <p class="mb-0">Die Website wird über HTTPS (TLS) ausgeliefert. Der Admin-Zugang ist durch ablaufende Zugangsschlüssel geschützt und in getrennte Berechtigungen unterteilt, sodass eine ehrenamtliche Person nur die für ihre Aufgabe nötigen Daten sieht; die Sprachtandem-Matching-Ansicht ist konzeptionell pseudonymisiert (Art. 25, Art. 32 DSGVO).</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">9. Cookies und lokaler Speicher</h2>
+        <p>Wir verwenden keine Tracking- oder Werbe-Cookies und zeigen kein Einwilligungsbanner. Wir setzen zwei Cookies, beide unbedingt erforderlich und nach § 25 Abs. 2 TDDDG einwilligungsfrei: ein <code>locale</code>-Cookie, das deine Sprachwahl speichert, und ein Session-Cookie, das erst nach der Anmeldung einer Admin-Person erstellt wird und diese Sitzung aufrechterhält.</p>
+        <p class="mb-0">Der lokale Speicher Ihres Browsers hält einige Einstellungen ausschließlich auf Ihrem Gerät: Ihre Hell-/Dunkel-Präferenz, Ihre Sprachwahl und – wenn Sie einer Karaoke-Warteschlange beitreten – eine zufällige Kennung, damit Sie Ihren eigenen Eintrag verwalten können. Diese Angaben verbleiben in Ihrem Browser und werden nicht an uns übertragen.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">10. Schriftarten</h2>
+        <p class="mb-0">Die auf dieser Website verwendeten Schriftarten (Source Sans 3, Playfair Display) werden auf unserem eigenen Server gespeichert und ausgeliefert. Beim Aufruf der Website wird keine Verbindung zu Google oder einem anderen Drittanbieter für Schriftarten hergestellt.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">11. Karten (OpenStreetMap)</h2>
+        <p class="mb-0">Einzelne Event-Seiten zeigen eine interaktive Karte. Das Kartenmaterial wird von tile.openstreetmap.org geladen, betrieben von der OpenStreetMap Foundation (Vereinigtes Königreich). Beim Laden der Karte wird Ihre IP-Adresse an diesen Dienst übertragen, damit die Kacheln ausgeliefert werden können. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (übersichtliche Darstellung von Veranstaltungsorten). Seiten ohne Karte kontaktieren diesen Dienst nicht. Siehe die <a class="link-primary" href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">Datenschutzerklärung der OpenStreetMap Foundation</a>.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">12. Externe Links und soziale Medien</h2>
+        <p class="mb-0">Links zu unseren Instagram- und Facebook-Seiten sind einfache Hyperlinks. Wir binden keine Social-Media-Plugins ein, sodass der Aufruf dieser Website diese Netzwerke nicht kontaktiert. Sobald Sie einem Link folgen, verarbeitet das jeweilige Netzwerk Ihre Daten in eigener Verantwortung.</p>
+    </section>
+
+    <section>
+        <h2 class="h4 text-primary-emphasis">13. Änderungen</h2>
+        <p class="mb-0">Wir aktualisieren diese Erklärung, wenn sich unsere Verarbeitung ändert. Es gilt stets die aktuelle Fassung.</p>
+    </section>
+</section>
+""".strip(),
+        },
     },
 }
 
 _ABOUT_PAGE_KEYS = {"about", "working_groups", "team_meetings"}
+_LEGAL_PAGE_KEYS = {"impressum", "privacy"}
 _OFFER_PAGE_KEYS = {
     "board_game_nights",
     "dance_workshops",
@@ -1290,6 +1608,8 @@ for _locale, _localized_pages in SITE_PAGES.items():
             _page["section"] = "about"
         elif _key in _OFFER_PAGE_KEYS:
             _page["section"] = "offers"
+        elif _key in _LEGAL_PAGE_KEYS:
+            _page["section"] = "legal"
         else:
             raise RuntimeError(f"Content page {_key!r} has no section")
         _image = _page.get("image")

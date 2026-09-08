@@ -581,7 +581,7 @@ export type ApiErrorPayload = {
 };
 
 export type Locale = "en" | "de";
-export type ContentSection = "about" | "offers";
+export type ContentSection = "about" | "offers" | "legal";
 
 export interface SiteNavItem {
   label: string;
@@ -629,6 +629,7 @@ export interface SiteResponse {
     copy: string;
     social: SiteFooterSocial[];
     offerLinks: SiteFooterLink[];
+    legalLinks: SiteFooterLink[];
   };
 }
 

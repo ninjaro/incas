@@ -51,6 +51,11 @@ def legacy_react_target(path):
         "/contacts": "/contact",
         "/contact-form": "/contact?form=general",
         "/suggest-event": "/suggest-event",
+        "/impressum": "/impressum",
+        "/imprint": "/impressum",
+        "/privacy": "/privacy",
+        "/datenschutz": "/privacy",
+        "/datenschutzerklaerung": "/privacy",
         "/language-tandem": "/tandem",
         "/team": "/about/team",
         "/about": "/about",
@@ -98,7 +103,7 @@ def is_canonical_react_path(path):
     exact = {
         "/", "/calendar", "/tandem", "/about", "/about/team",
         "/about/working-groups", "/about/team-meetings", "/offers",
-        "/contact", "/suggest-event", "/admin",
+        "/contact", "/suggest-event", "/admin", "/impressum", "/privacy",
     }
     return path in exact or path.startswith(
         ("/events/", "/offers/", "/registrations/", "/admin/")
@@ -383,6 +388,8 @@ def register_spa_routes(app):
             "/contact": "Contact | INCAS",
             "/suggest-event": "Suggest an event | INCAS",
             "/tandem": "Language Tandem | INCAS",
+            "/impressum": "Impressum | INCAS",
+            "/privacy": "Privacy Policy | INCAS",
         }
         title = page_titles.get(path, title)
         if path.startswith("/events/"):
