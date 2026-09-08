@@ -6,6 +6,7 @@ import type { EventRegistrationInput, PublicPost } from "../../api/types";
 import { EventAvailability, EventPaymentNotice } from "../../components/events";
 import { Field } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
+import { FormPrivacyNotice } from "../../forms/FormPrivacyNotice";
 import { usePublicFormErrors } from "../../forms/usePublicFormErrors";
 import { useLocale } from "../../i18n/LocaleContext";
 
@@ -89,6 +90,12 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
         </div>
         {event.eventKind === "breakfast" ? <Field label={de ? "Ernährung" : "Meal preference"} error={formErrors.errors.dietPreference}><select name="dietPreference" value={form.dietPreference} onChange={(e) => change("dietPreference", e.target.value as EventRegistrationInput["dietPreference"])}><option value="">-</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option><option value="omnivore">{de ? "Omnivor" : "Omnivore"}</option></select></Field> : null}
         <Field label={de ? "Kommentar" : "Comments"} error={formErrors.errors.comment}><textarea name="comment" rows={5} value={form.comment} onChange={(e) => change("comment", e.target.value)} /></Field>
+        <FormPrivacyNotice
+          purpose={{
+            en: "manage your place, the waiting list and any payment",
+            de: "deinen Platz, die Warteliste und eine etwaige Zahlung zu verwalten",
+          }}
+        />
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : registration.availability === "waiting_list" ? (de ? "Warteliste beitreten" : "Join waiting list") : (de ? "Anmeldung senden" : "Submit registration")}</button>
       </form>
     </section>

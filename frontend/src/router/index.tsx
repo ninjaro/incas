@@ -96,6 +96,8 @@ const routes = [
       },
       { path: "/contact", element: <ContactPage /> },
       { path: "/suggest-event", element: <SuggestEventPage /> },
+      { path: "/impressum", element: <ContentPage slug="impressum" section="legal" /> },
+      { path: "/privacy", element: <ContentPage slug="privacy" section="legal" /> },
       { path: "/registrations/:publicId", element: <RegistrationStatusPage /> },
       {
         path: "/admin",

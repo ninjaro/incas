@@ -4,6 +4,7 @@ import type { FormOptions, TandemSubmission } from "../api/types";
 import { Field, Loading, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
 import { usePublicTheme } from "../features/themes/usePublicTheme";
+import { FormPrivacyNotice } from "../forms/FormPrivacyNotice";
 import { usePublicFormErrors } from "../forms/usePublicFormErrors";
 import { useAsync } from "../hooks/useAsync";
 import { useLocale } from "../i18n/LocaleContext";
@@ -190,6 +191,14 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
       {(variant === "classic" || step === 0) ? <ProfileFields {...props} /> : null}
       {(variant === "classic" || step === 1) ? <LanguageFields {...props} /> : null}
       {(variant === "classic" || step === 2) ? <PreferenceFields form={form} setForm={setForm} errors={formErrors.errors} de={de} clearField={formErrors.clearField} /> : null}
+      {(variant === "classic" || step === 2) ? (
+        <FormPrivacyNotice
+          purpose={{
+            en: "find and propose a tandem partner and contact you about it",
+            de: "eine Tandempartnerin oder einen Tandempartner zu finden, vorzuschlagen und dich dazu zu kontaktieren",
+          }}
+        />
+      ) : null}
       <div className="form-actions">
         {variant === "steps" && step > 0 ? <button type="button" className="btn btn-ghost" onClick={() => moveToStep(step - 1)}>{de ? "Zurück" : "Back"}</button> : null}
         {variant === "steps" && step < 2 ? <button type="button" className="btn btn-primary" onClick={() => moveToStep(step + 1)}>{de ? "Weiter" : "Continue"}</button> : <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "..." : de ? "Anmeldung senden" : "Submit registration"}</button>}

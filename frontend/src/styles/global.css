@@ -1,3 +1,4 @@
+@import "./fonts.css";
 @import "./site-content.css";
 
 :root {
@@ -2301,6 +2302,21 @@ a {
 .form-section,
 .event-registration {
   max-width: 820px;
+}
+
+.form-consent {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.form-consent a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.site-footer-legal {
+  opacity: 0.85;
 }
 
 .public-form input:not([type="checkbox"]):not([type="radio"]),

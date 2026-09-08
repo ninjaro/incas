@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { Field, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
+import { FormPrivacyNotice } from "../forms/FormPrivacyNotice";
 import { usePublicFormErrors } from "../forms/usePublicFormErrors";
 import { useLocale } from "../i18n/LocaleContext";
 import { SuggestEventForm } from "./SuggestEventPage";
@@ -67,6 +68,7 @@ export function ContactForm() {
         <Field label={copy.message} error={formErrors.errors.message}>
           <textarea name="message" rows={7} value={form.message} onChange={(event) => change("message", event.target.value)} />
         </Field>
+        <FormPrivacyNotice purpose={{ en: "answer your message", de: "deine Nachricht zu beantworten" }} />
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : copy.submit}</button>
       </form>
     </>

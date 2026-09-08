@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import type { EventSuggestionSubmission } from "../api/types";
 import { Field, PageHeader } from "../components/ui";
 import { useData } from "../data/DataProviderContext";
+import { FormPrivacyNotice } from "../forms/FormPrivacyNotice";
 import { usePublicFormErrors } from "../forms/usePublicFormErrors";
 import { useLocale } from "../i18n/LocaleContext";
 
@@ -84,6 +85,7 @@ export function SuggestEventForm({ initialKind = "country_evening" }: { initialK
         <Field label={de ? "Kommentar" : "Comment"} error={formErrors.errors.comment}>
           <textarea name="comment" rows={6} value={form.comment} onChange={(event) => change("comment", event.target.value)} />
         </Field>
+        <FormPrivacyNotice purpose={{ en: "review and follow up on your suggestion", de: "deinen Vorschlag zu prüfen und nachzuverfolgen" }} />
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : de ? "Vorschlag senden" : "Submit suggestion"}</button>
       </form>
     </>

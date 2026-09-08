@@ -399,6 +399,15 @@ export function PublicLayout() {
                 </li>
               ))}
             </ul>
+            {footer.legalLinks?.length ? (
+              <ul className="site-footer-links site-footer-legal" aria-label={locale === "de" ? "Rechtliches" : "Legal"}>
+                {footer.legalLinks.map((link) => (
+                  <li key={link.to}>
+                    <NavLink to={link.to}>{link.title}</NavLink>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         </footer>
       ) : (
