@@ -45,7 +45,6 @@ from app.routes.helpers.tandem_form import (
     get_language_label_map,
     normalize_country_code,
     normalize_language_codes,
-    parse_birth_year,
     parse_departure_date,
     render_admin_language_tandem_edit_page,
 )
@@ -135,7 +134,6 @@ def admin_language_tandem():
             "country": item.country_of_origin_display,
             "occupation": item.occupation,
             "gender": item.gender,
-            "birth_year": item.birth_year,
             "departure_date": item.departure_date.isoformat(),
             "departure_label": item.departure_date.strftime("%Y-%m-%d"),
             "offered": ", ".join(
@@ -206,7 +204,6 @@ def admin_language_tandem_edit(request_id):
             "occupation": request.form.get("occupation", "").strip(),
             "occupation_other": request.form.get("occupation_other", "").strip(),
             "gender": request.form.get("gender", "").strip(),
-            "birth_year": request.form.get("birth_year", "").strip(),
             "departure_date": request.form.get("departure_date", "").strip(),
             "country_of_origin": normalize_country_code(request.form.get("country_of_origin")),
             "offered_languages": normalize_language_codes(request.form.getlist("offered_languages")),
@@ -214,7 +211,7 @@ def admin_language_tandem_edit(request_id):
             "offered_language_levels": {},
             "requested_languages": normalize_language_codes(request.form.getlist("requested_languages")),
             "requested_native_only": request.form.get("requested_native_only") == "on",
-            "preferred_gender": request.form.get("preferred_gender", "").strip(),
+            "same_gender_only": request.form.get("same_gender_only") == "on",
             "comment": request.form.get("comment", "").strip(),
         }
 
@@ -237,7 +234,6 @@ def admin_language_tandem_edit(request_id):
         ]
         values["offered_native_languages"] = offered_native_languages
 
-        birth_year = parse_birth_year(values["birth_year"])
         departure_date = parse_departure_date(values["departure_date"])
 
         resolved_occupation = (
@@ -253,8 +249,6 @@ def admin_language_tandem_edit(request_id):
         if not values["email"]:
             errors["email"] = "Email is required."
 
-        if not values["occupation"]:
-            errors["occupation"] = "Occupation is required."
         if not values["gender"]:
             errors["gender"] = "Gender is required."
         if not values["country_of_origin"]:
@@ -262,9 +256,6 @@ def admin_language_tandem_edit(request_id):
 
         if values["occupation"] == "other" and not values["occupation_other"]:
             errors["occupation_other"] = "Enter occupation."
-
-        if birth_year is None:
-            errors["birth_year"] = "Enter a valid birth year."
 
         if departure_date is None:
             errors["departure_date"] = "Enter a valid departure date."
@@ -283,7 +274,6 @@ def admin_language_tandem_edit(request_id):
         item.email = values["email"]
         item.occupation = resolved_occupation
         item.gender = values["gender"]
-        item.birth_year = birth_year
         item.departure_date = departure_date
         item.country_of_origin = values["country_of_origin"]
         item.offered_languages = json.dumps(values["offered_languages"])
@@ -291,8 +281,7 @@ def admin_language_tandem_edit(request_id):
         item.offered_language_levels = json.dumps(offered_language_levels)
         item.requested_languages = json.dumps(values["requested_languages"])
         item.requested_native_only = values["requested_native_only"]
-        item.preferred_gender = values["preferred_gender"]
-        item.same_gender_only = (values["preferred_gender"] == "same")
+        item.same_gender_only = values["same_gender_only"]
         item.comment = values["comment"]
 
         db.session.commit()

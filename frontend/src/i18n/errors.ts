@@ -13,7 +13,6 @@ const GERMAN_FIELDS: Record<string, string> = {
   occupation: "Bitte fülle dieses Pflichtfeld aus.",
   occupationOther: "Bitte gib deine Tätigkeit ein.",
   gender: "Bitte wähle eine Angabe aus.",
-  birthYear: "Bitte gib ein gültiges Geburtsjahr ein.",
   departureDate: "Bitte gib ein gültiges Abreisedatum ein.",
   offeredLanguages: "Bitte wähle mindestens eine angebotene Sprache.",
   requestedLanguages: "Bitte wähle mindestens eine gesuchte Sprache.",

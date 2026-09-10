@@ -414,6 +414,7 @@ class ContactRequest(db.Model):
     message = db.Column(db.Text, nullable=False, default="")
     is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
     status = db.Column(db.String(32), nullable=False, default="new", index=True)
+    resolved_at = db.Column(db.DateTime, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -429,6 +430,7 @@ class EventSuggestion(db.Model):
     comment = db.Column(db.Text, nullable=False, default="")
     is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
     status = db.Column(db.String(32), nullable=False, default="new", index=True)
+    resolved_at = db.Column(db.DateTime, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -443,9 +445,8 @@ class LanguageTandemRequest(db.Model):
     last_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(255), nullable=False, index=True)
 
-    occupation = db.Column(db.String(120), nullable=False)
+    occupation = db.Column(db.String(120), nullable=False, default="")
     gender = db.Column(db.String(40), nullable=False)
-    birth_year = db.Column(db.Integer, nullable=False)
     departure_date = db.Column(db.Date, nullable=False)
 
     country_of_origin = db.Column(db.String(120), nullable=False)
@@ -458,7 +459,6 @@ class LanguageTandemRequest(db.Model):
     requested_native_only = db.Column(db.Boolean, nullable=False, default=False)
 
     same_gender_only = db.Column(db.Boolean, nullable=False, default=False)
-    preferred_gender = db.Column(db.String(40), nullable=False, default="")
     comment = db.Column(db.Text, nullable=False, default="")
 
     is_viewed = db.Column(db.Boolean, nullable=False, default=False, index=True)
@@ -738,7 +738,6 @@ class KaraokeSongRequest(db.Model):
     song_title = db.Column(db.String(200), nullable=False)
     artist = db.Column(db.String(200), nullable=False, default="")
     note = db.Column(db.Text, nullable=False, default="")
-    contact = db.Column(db.String(255), nullable=False, default="")
     status = db.Column(db.String(32), nullable=False, default=KARAOKE_STATUS_PENDING, index=True)
     position = db.Column(db.Integer, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

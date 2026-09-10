@@ -792,7 +792,7 @@ SITE_PAGES = {
 
     <section>
         <h2 class="h4 text-primary-emphasis">Contact</h2>
-        <p class="mb-0">Phone: +49 241 80 98184<br>Written contact: <a class="link-primary" href="/contact-form">contact form</a></p>
+        <p class="mb-0">Phone: +49 241 80 98184<br>Email: <a class="link-primary" href="mailto:info@incas-aachen.de">info@incas-aachen.de</a><br>Written contact: <a class="link-primary" href="/contact-form">contact form</a></p>
     </section>
 
     <section>
@@ -825,7 +825,7 @@ SITE_PAGES = {
         <p class="mb-0">
             Interkulturelles Centrum Aachener Studierender e.V.<br>
             Pontstraße 41, 52062 Aachen, Germany<br>
-            Phone: +49 241 80 98184 · <a class="link-primary" href="/contact-form">contact form</a>
+            Phone: +49 241 80 98184 · Email: <a class="link-primary" href="mailto:info@incas-aachen.de">info@incas-aachen.de</a> · <a class="link-primary" href="/contact-form">contact form</a>
         </p>
     </section>
 
@@ -848,51 +848,58 @@ SITE_PAGES = {
 
     <section>
         <h2 class="h4 text-primary-emphasis">5. Data you submit through forms</h2>
-        <p>We only ask for what we need to handle your request. Free-text fields are optional; please do not enter special categories of data (for example health, religion or political views) unless it is necessary for your request. If you do, we process it on the basis of your consent under Art. 9(2)(a) GDPR, which you give by submitting the form.</p>
+        <p>We only ask for what we need to handle your request. Fields shown as optional are voluntary; required fields are marked as such on the form. Please do not enter special categories of data (for example health, religion or political views) in free-text fields. If you nonetheless do, we use that information only to handle your request and you can ask us to delete it at any time.</p>
         <div class="list-group list-group-flush border rounded-2 overflow-hidden">
-            <section class="list-group-item py-3">
+            <section id="contact" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Contact form</h3>
-                <p class="mb-0">Name, email address, optional subject, message. Purpose: answering your enquiry. Legal basis: Art. 6(1)(b) where it concerns taking part in our activities, otherwise Art. 6(1)(f).</p>
+                <p class="mb-0">Name, email address, an optional subject and your message (name, email and message are required). Purpose: answering your enquiry. Legal basis: Art. 6(1)(b) where it concerns taking part in our activities, otherwise Art. 6(1)(f).</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="suggestion" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Event suggestion</h3>
-                <p class="mb-0">Contact name, email address and/or phone number, the country or culture you suggest, optional comment. Purpose: reviewing and following up on your suggestion. Legal basis: Art. 6(1)(f).</p>
+                <p class="mb-0">Contact name, an email address and/or phone number, the country or culture you suggest, and an optional comment. Purpose: reviewing and following up on your suggestion. Legal basis: Art. 6(1)(f).</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="tandem" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Language Tandem registration</h3>
-                <p class="mb-0">First and last name, email address, occupation, gender, year of birth, planned departure date, country of origin, the languages you offer and request with your self-assessed level, partner preferences and an optional comment. Purpose: finding and proposing a tandem partner and contacting you about it. Legal basis: Art. 6(1)(b) for the matching service you request; for any special categories you volunteer in the comment: Art. 9(2)(a).</p>
+                <p class="mb-0">First and last name, email address, gender, planned departure date, country of origin, the languages you offer and request with your self-assessed level, whether you want a same-gender partner, and an optional occupation and comment. Purpose: finding and proposing a tandem partner and contacting you about it. Legal basis: Art. 6(1)(b) for the matching service you request. Matching runs on a redacted (pseudonymised) view that only shows the languages, levels, a same-gender flag and the departure month; your name, email, gender, occupation, country and comment are visible only to the volunteers who carry out the actual introduction.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="event-registration" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Event registration</h3>
-                <p class="mb-0">First and last name, email address, occupation, an optional comment and, for breakfast events, your meal preference. Purpose: managing your place, the waiting list and, where a deposit or ticket applies, the payment. Legal basis: Art. 6(1)(b); the meal preference is processed on the basis of consent (Art. 6(1)(a), and Art. 9(2)(a) where it reveals religious or health information), which you give by selecting it.</p>
+                <p class="mb-0">First and last name, email address, occupation, an optional comment and — for breakfast events only — a meal preference (vegan, vegetarian or omnivore). Purpose: managing your place, the waiting list and, where a deposit or ticket applies, the payment. Legal basis: Art. 6(1)(b). The meal preference is a catering-logistics choice and is not treated as special-category data.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="karaoke" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Karaoke queue</h3>
-                <p class="mb-0">Display name, song and artist, an optional note and an optional contact detail. Purpose: running the karaoke queue during an event. Legal basis: Art. 6(1)(a) / Art. 6(1)(f).</p>
+                <p class="mb-0">A display name, the song title and artist, and an optional note for the host. Purpose: running the karaoke queue during an event. The display name you choose is shown on the public queue screen during that event, so please do not use your full name if you would rather not be identified. Legal basis: Art. 6(1)(a) / Art. 6(1)(f).</p>
             </section>
         </div>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">6. Recipients</h2>
-        <p>Your data is accessible to the INCAS volunteers who organise the relevant activity. For Language Tandem, matching is done through a pseudonymised admin view; names and contact details are shown only to the volunteers who carry out the actual introduction.</p>
-        <p class="mb-0">We pass data to third parties only where necessary: a hosting provider (see section 4), the operator of the mail server we use to send you transactional emails such as a registration link, and — for events with a deposit or ticket — a payment service provider. Payment and social-media publishing currently run in a simulated mode in which no real payment data is transmitted; this notice will be updated before a live provider is used.</p>
+        <p>Your data is accessible to the INCAS volunteers who organise the relevant activity. Admin access is split into separate permissions, so a volunteer only sees the data their task requires. For Language Tandem, matching is done through a redacted (pseudonymised) admin view; names and contact details are shown only to the volunteers who carry out the actual introduction. Karaoke display names are additionally shown on the public queue screen during the event.</p>
+        <p class="mb-0">We pass data to third parties only where necessary: a hosting provider (see section 4), the operator of the mail server we use to send you transactional emails such as a registration link, and — for events with a deposit or ticket — a payment service provider. Payment and social-media publishing currently run in a simulated mode in which no real payment data is transmitted.</p>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">7. Retention</h2>
-        <p class="mb-0">We keep personal data only as long as it is needed for the purpose it was collected for or to meet a legal retention obligation, and delete it afterwards. You can ask us to delete your data at any time using the contact details above; we will do so unless a legal obligation requires us to keep it.</p>
+        <p>We delete personal data once it is no longer needed for the purpose it was collected for. An automated job enforces the following schedule; you can ask us to delete your data sooner at any time using the contact details above, and we will do so unless a legal obligation requires us to keep it.</p>
+        <ul class="mb-0">
+            <li>Contact requests and event suggestions: 180 days after we mark them resolved, or 365 days after submission if they are never resolved.</li>
+            <li>Language Tandem registrations: 90 days after a tandem pair is finalised or after your stated departure date, or 365 days after submission if no match is made. Related matching and duplicate-review notes are deleted together with the registration.</li>
+            <li>Event registrations: 180 days after the event ends. Any related payment records are deleted with them (records we are legally required to keep for accounting are handled separately once real payments are introduced).</li>
+            <li>Karaoke requests: 30 days after the event ends.</li>
+            <li>Access-key entry attempts (security log): 90 days.</li>
+        </ul>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">8. Data security</h2>
-        <p class="mb-0">The site is served over HTTPS (TLS). Admin access is protected by expiring access keys and is split into separate capabilities, so a volunteer only sees the data their task requires; the Language Tandem matching view is pseudonymised by design (Art. 25, Art. 32 GDPR).</p>
+        <p class="mb-0">The site is served over HTTPS (TLS). Admin access is protected by expiring access keys and is split into separate permissions — for example, registration check-in, access to private participant data and bulk CSV export are distinct privileges — so a volunteer only sees the data their task requires. The Language Tandem matching view is pseudonymised by design, and responses that contain personal data are marked non-cacheable (Art. 25, Art. 32 GDPR).</p>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">9. Cookies and local storage</h2>
         <p>We use no tracking or advertising cookies and show no consent banner. We set two cookies, both strictly necessary and exempt from consent under Section 25(2) TDDDG: a <code>locale</code> cookie that remembers your language choice, and a session cookie that is created only after an admin signs in and keeps that session.</p>
-        <p class="mb-0">Your browser's local storage keeps a few settings on your device only: your light/dark preference, your language choice, and — if you join a karaoke queue — a random identifier so you can manage your own entry. This information stays in your browser and is not transmitted to us.</p>
+        <p class="mb-0">Your browser's local storage keeps a few settings on your device only: your light/dark preference and your language choice. If you join a karaoke queue, it also stores the tracking code(s) of the requests you submitted. Those codes are sent back to our server when you open the page to check the current status of your requests; the other settings stay in your browser and are not transmitted to us.</p>
     </section>
 
     <section>
@@ -1425,7 +1432,7 @@ SITE_PAGES = {
 
     <section>
         <h2 class="h4 text-primary-emphasis">Kontakt</h2>
-        <p class="mb-0">Telefon: +49 241 80 98184<br>Schriftlicher Kontakt: <a class="link-primary" href="/contact-form">Kontaktformular</a></p>
+        <p class="mb-0">Telefon: +49 241 80 98184<br>E-Mail: <a class="link-primary" href="mailto:info@incas-aachen.de">info@incas-aachen.de</a><br>Schriftlicher Kontakt: <a class="link-primary" href="/contact-form">Kontaktformular</a></p>
     </section>
 
     <section>
@@ -1458,7 +1465,7 @@ SITE_PAGES = {
         <p class="mb-0">
             Interkulturelles Centrum Aachener Studierender e.V.<br>
             Pontstraße 41, 52062 Aachen, Deutschland<br>
-            Telefon: +49 241 80 98184 · <a class="link-primary" href="/contact-form">Kontaktformular</a>
+            Telefon: +49 241 80 98184 · E-Mail: <a class="link-primary" href="mailto:info@incas-aachen.de">info@incas-aachen.de</a> · <a class="link-primary" href="/contact-form">Kontaktformular</a>
         </p>
     </section>
 
@@ -1481,51 +1488,58 @@ SITE_PAGES = {
 
     <section>
         <h2 class="h4 text-primary-emphasis">5. Daten aus Formularen</h2>
-        <p>Wir erheben nur, was zur Bearbeitung Ihres Anliegens nötig ist. Freitextfelder sind freiwillig; bitte geben Sie dort keine besonderen Datenkategorien (z. B. Gesundheit, Religion, politische Ansichten) an, sofern dies nicht für Ihr Anliegen erforderlich ist. Tun Sie es dennoch, verarbeiten wir diese Angaben auf Grundlage Ihrer mit dem Absenden erteilten Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO.</p>
+        <p>Wir erheben nur, was zur Bearbeitung Ihres Anliegens nötig ist. Als optional gekennzeichnete Felder sind freiwillig; Pflichtfelder sind im Formular als solche markiert. Bitte geben Sie in Freitextfeldern keine besonderen Datenkategorien (z. B. Gesundheit, Religion, politische Ansichten) an. Tun Sie es dennoch, verwenden wir diese Angaben ausschließlich zur Bearbeitung Ihres Anliegens und Sie können jederzeit deren Löschung verlangen.</p>
         <div class="list-group list-group-flush border rounded-2 overflow-hidden">
-            <section class="list-group-item py-3">
+            <section id="contact" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Kontaktformular</h3>
-                <p class="mb-0">Name, E-Mail-Adresse, optionaler Betreff, Nachricht. Zweck: Beantwortung Ihrer Anfrage. Rechtsgrundlage: Art. 6 Abs. 1 lit. b, soweit es um die Teilnahme an unseren Angeboten geht, sonst Art. 6 Abs. 1 lit. f.</p>
+                <p class="mb-0">Name, E-Mail-Adresse, ein optionaler Betreff und Ihre Nachricht (Name, E-Mail und Nachricht sind Pflicht). Zweck: Beantwortung Ihrer Anfrage. Rechtsgrundlage: Art. 6 Abs. 1 lit. b, soweit es um die Teilnahme an unseren Angeboten geht, sonst Art. 6 Abs. 1 lit. f.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="suggestion" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Event-Vorschlag</h3>
-                <p class="mb-0">Kontaktname, E-Mail-Adresse und/oder Telefonnummer, vorgeschlagenes Land bzw. vorgeschlagene Kultur, optionaler Kommentar. Zweck: Prüfung und Nachverfolgung Ihres Vorschlags. Rechtsgrundlage: Art. 6 Abs. 1 lit. f.</p>
+                <p class="mb-0">Kontaktname, eine E-Mail-Adresse und/oder Telefonnummer, das vorgeschlagene Land bzw. die Kultur und ein optionaler Kommentar. Zweck: Prüfung und Nachverfolgung Ihres Vorschlags. Rechtsgrundlage: Art. 6 Abs. 1 lit. f.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="tandem" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Sprachtandem-Anmeldung</h3>
-                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Tätigkeit, Geschlecht, Geburtsjahr, geplantes Abreisedatum, Herkunftsland, die angebotenen und gesuchten Sprachen mit Ihrer Selbsteinschätzung des Niveaus, Partnerpräferenzen und ein optionaler Kommentar. Zweck: Suche und Vorschlag einer Tandempartnerin oder eines Tandempartners und Kontaktaufnahme dazu. Rechtsgrundlage: Art. 6 Abs. 1 lit. b für den von Ihnen gewünschten Vermittlungsdienst; für freiwillige Angaben besonderer Kategorien im Kommentar: Art. 9 Abs. 2 lit. a.</p>
+                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Geschlecht, geplantes Abreisedatum, Herkunftsland, die angebotenen und gesuchten Sprachen mit Ihrer Selbsteinschätzung des Niveaus, die Angabe, ob Sie eine Partnerin oder einen Partner desselben Geschlechts wünschen, sowie eine optionale Tätigkeit und ein optionaler Kommentar. Zweck: Suche und Vorschlag einer Tandempartnerin oder eines Tandempartners und Kontaktaufnahme dazu. Rechtsgrundlage: Art. 6 Abs. 1 lit. b für den von Ihnen gewünschten Vermittlungsdienst. Das Matching läuft über eine geschwärzte (pseudonymisierte) Ansicht, die nur Sprachen, Niveaus, eine Kennzeichnung „gleiches Geschlecht“ und den Abreisemonat zeigt; Name, E-Mail, Geschlecht, Tätigkeit, Land und Kommentar sehen nur die Ehrenamtlichen, die die konkrete Vermittlung durchführen.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="event-registration" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Event-Anmeldung</h3>
-                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Tätigkeit, ein optionaler Kommentar und, bei Frühstücks-Events, Ihre Ernährungspräferenz. Zweck: Verwaltung Ihres Platzes, der Warteliste und, sofern eine Kaution oder ein Ticket anfällt, der Zahlung. Rechtsgrundlage: Art. 6 Abs. 1 lit. b; die Ernährungspräferenz wird auf Grundlage Ihrer mit der Auswahl erteilten Einwilligung verarbeitet (Art. 6 Abs. 1 lit. a, und Art. 9 Abs. 2 lit. a, soweit sie Rückschlüsse auf Religion oder Gesundheit zulässt).</p>
+                <p class="mb-0">Vor- und Nachname, E-Mail-Adresse, Tätigkeit, ein optionaler Kommentar und – nur bei Frühstücks-Events – eine Ernährungspräferenz (vegan, vegetarisch oder omnivor). Zweck: Verwaltung Ihres Platzes, der Warteliste und, sofern eine Kaution oder ein Ticket anfällt, der Zahlung. Rechtsgrundlage: Art. 6 Abs. 1 lit. b. Die Ernährungspräferenz ist eine organisatorische Angabe für das Catering und wird nicht als besondere Datenkategorie behandelt.</p>
             </section>
-            <section class="list-group-item py-3">
+            <section id="karaoke" class="list-group-item py-3">
                 <h3 class="h6 mb-1">Karaoke-Warteschlange</h3>
-                <p class="mb-0">Anzeigename, Titel und Interpret, eine optionale Notiz und eine optionale Kontaktangabe. Zweck: Betrieb der Karaoke-Warteschlange während einer Veranstaltung. Rechtsgrundlage: Art. 6 Abs. 1 lit. a / lit. f.</p>
+                <p class="mb-0">Ein Anzeigename, Titel und Interpret des Songs und eine optionale Notiz für die Moderation. Zweck: Betrieb der Karaoke-Warteschlange während einer Veranstaltung. Der von Ihnen gewählte Anzeigename wird während der Veranstaltung auf dem öffentlichen Warteschlangen-Bildschirm angezeigt; bitte verwenden Sie nicht Ihren vollen Namen, wenn Sie nicht erkannt werden möchten. Rechtsgrundlage: Art. 6 Abs. 1 lit. a / lit. f.</p>
             </section>
         </div>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">6. Empfänger</h2>
-        <p>Zugriff auf Ihre Daten haben die INCAS-Ehrenamtlichen, die das jeweilige Angebot organisieren. Beim Sprachtandem erfolgt das Matching über eine pseudonymisierte Admin-Ansicht; Namen und Kontaktdaten sehen nur die Ehrenamtlichen, die die konkrete Vermittlung durchführen.</p>
-        <p class="mb-0">An Dritte geben wir Daten nur weiter, soweit erforderlich: an einen Hoster (siehe Abschnitt 4), an den Betreiber des Mailservers, über den wir transaktionale E-Mails wie einen Anmeldungslink versenden, und – bei Events mit Kaution oder Ticket – an einen Zahlungsdienstleister. Zahlung und Social-Media-Veröffentlichung laufen derzeit in einem simulierten Modus, in dem keine echten Zahlungsdaten übertragen werden; diese Erklärung wird vor dem Einsatz eines echten Anbieters aktualisiert.</p>
+        <p>Zugriff auf Ihre Daten haben die INCAS-Ehrenamtlichen, die das jeweilige Angebot organisieren. Der Admin-Zugang ist in getrennte Berechtigungen unterteilt, sodass eine ehrenamtliche Person nur die für ihre Aufgabe nötigen Daten sieht. Beim Sprachtandem erfolgt das Matching über eine geschwärzte (pseudonymisierte) Admin-Ansicht; Namen und Kontaktdaten sehen nur die Ehrenamtlichen, die die konkrete Vermittlung durchführen. Karaoke-Anzeigenamen werden zusätzlich während der Veranstaltung auf dem öffentlichen Warteschlangen-Bildschirm angezeigt.</p>
+        <p class="mb-0">An Dritte geben wir Daten nur weiter, soweit erforderlich: an einen Hoster (siehe Abschnitt 4), an den Betreiber des Mailservers, über den wir transaktionale E-Mails wie einen Anmeldungslink versenden, und – bei Events mit Kaution oder Ticket – an einen Zahlungsdienstleister. Zahlung und Social-Media-Veröffentlichung laufen derzeit in einem simulierten Modus, in dem keine echten Zahlungsdaten übertragen werden.</p>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">7. Speicherdauer</h2>
-        <p class="mb-0">Wir speichern personenbezogene Daten nur so lange, wie es für den Erhebungszweck oder zur Erfüllung einer gesetzlichen Aufbewahrungspflicht erforderlich ist, und löschen sie danach. Sie können jederzeit über die oben genannten Kontaktdaten die Löschung Ihrer Daten verlangen; wir kommen dem nach, sofern keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
+        <p>Wir löschen personenbezogene Daten, sobald sie für den Erhebungszweck nicht mehr benötigt werden. Ein automatischer Vorgang setzt folgende Fristen durch; Sie können jederzeit über die oben genannten Kontaktdaten eine frühere Löschung verlangen, der wir nachkommen, sofern keine gesetzliche Aufbewahrungspflicht besteht.</p>
+        <ul class="mb-0">
+            <li>Kontaktanfragen und Event-Vorschläge: 180 Tage nachdem wir sie als erledigt markieren, andernfalls 365 Tage nach Eingang.</li>
+            <li>Sprachtandem-Anmeldungen: 90 Tage nach Abschluss einer Tandem-Vermittlung oder nach Ihrem angegebenen Abreisedatum, andernfalls 365 Tage nach Eingang, wenn keine Vermittlung zustande kommt. Zugehörige Matching- und Dublettenprüfungs-Notizen werden mit der Anmeldung gelöscht.</li>
+            <li>Event-Anmeldungen: 180 Tage nach Ende der Veranstaltung. Zugehörige Zahlungsdaten werden mit ihnen gelöscht (buchhalterisch gesetzlich aufzubewahrende Unterlagen werden gesondert behandelt, sobald echte Zahlungen eingeführt werden).</li>
+            <li>Karaoke-Wünsche: 30 Tage nach Ende der Veranstaltung.</li>
+            <li>Zugangsschlüssel-Eingabeversuche (Sicherheitsprotokoll): 90 Tage.</li>
+        </ul>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">8. Datensicherheit</h2>
-        <p class="mb-0">Die Website wird über HTTPS (TLS) ausgeliefert. Der Admin-Zugang ist durch ablaufende Zugangsschlüssel geschützt und in getrennte Berechtigungen unterteilt, sodass eine ehrenamtliche Person nur die für ihre Aufgabe nötigen Daten sieht; die Sprachtandem-Matching-Ansicht ist konzeptionell pseudonymisiert (Art. 25, Art. 32 DSGVO).</p>
+        <p class="mb-0">Die Website wird über HTTPS (TLS) ausgeliefert. Der Admin-Zugang ist durch ablaufende Zugangsschlüssel geschützt und in getrennte Berechtigungen unterteilt – etwa sind Event-Check-in, Zugriff auf private Teilnehmerdaten und CSV-Massenexport eigenständige Rechte –, sodass eine ehrenamtliche Person nur die für ihre Aufgabe nötigen Daten sieht. Die Sprachtandem-Matching-Ansicht ist konzeptionell pseudonymisiert, und Antworten mit personenbezogenen Daten werden als nicht zwischenspeicherbar gekennzeichnet (Art. 25, Art. 32 DSGVO).</p>
     </section>
 
     <section>
         <h2 class="h4 text-primary-emphasis">9. Cookies und lokaler Speicher</h2>
         <p>Wir verwenden keine Tracking- oder Werbe-Cookies und zeigen kein Einwilligungsbanner. Wir setzen zwei Cookies, beide unbedingt erforderlich und nach § 25 Abs. 2 TDDDG einwilligungsfrei: ein <code>locale</code>-Cookie, das deine Sprachwahl speichert, und ein Session-Cookie, das erst nach der Anmeldung einer Admin-Person erstellt wird und diese Sitzung aufrechterhält.</p>
-        <p class="mb-0">Der lokale Speicher Ihres Browsers hält einige Einstellungen ausschließlich auf Ihrem Gerät: Ihre Hell-/Dunkel-Präferenz, Ihre Sprachwahl und – wenn Sie einer Karaoke-Warteschlange beitreten – eine zufällige Kennung, damit Sie Ihren eigenen Eintrag verwalten können. Diese Angaben verbleiben in Ihrem Browser und werden nicht an uns übertragen.</p>
+        <p class="mb-0">Der lokale Speicher Ihres Browsers hält einige Einstellungen ausschließlich auf Ihrem Gerät: Ihre Hell-/Dunkel-Präferenz und Ihre Sprachwahl. Wenn Sie einer Karaoke-Warteschlange beitreten, speichert er zusätzlich die Tracking-Codes der von Ihnen abgeschickten Wünsche. Diese Codes werden an unseren Server übermittelt, wenn Sie die Seite öffnen, um den aktuellen Status Ihrer Wünsche abzufragen; die übrigen Einstellungen verbleiben in Ihrem Browser und werden nicht an uns übertragen.</p>
     </section>
 
     <section>

@@ -60,8 +60,14 @@ class DemoError extends ApiError {
 
 const CAPABILITY_LABELS: Record<string, string> = {
   posts: "Posts and Events",
-  event_registrations: "Event Registrations",
-  forms: "Forms Inbox",
+  event_registrations: "Event Registrations (Full)",
+  event_registrations_view: "Event Registrations (View)",
+  event_registrations_checkin: "Event Registrations (Check-in)",
+  event_registrations_private: "Event Registrations (Private Data)",
+  event_registrations_export: "Event Registrations (CSV Export)",
+  forms: "Forms Inbox (Full)",
+  forms_triage: "Forms (Triage)",
+  forms_full: "Forms (Full Details)",
   access_keys: "Access Keys",
   theme_review: "Theme Review and Voting",
   theme_force: "Theme Force",
@@ -71,11 +77,22 @@ const CAPABILITY_LABELS: Record<string, string> = {
   language_tandem_corrections: "Tandem Corrections",
 };
 
-const DEMO_PRIVATE_FIELDS: Record<string, { firstName: string; lastName: string; email: string }> = {
-  "demo-ref-aaaa": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com" },
-  "demo-ref-aaab": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com" },
-  "demo-ref-bbbb": { firstName: "Max", lastName: "Muster", email: "max@example.com" },
-  "demo-ref-cccc": { firstName: "Giulia", lastName: "Esempio", email: "giulia@example.com" },
+const DEMO_PRIVATE_FIELDS: Record<
+  string,
+  {
+    firstName: string;
+    lastName: string;
+    email: string;
+    gender: string;
+    occupation: string;
+    countryOfOrigin: string;
+    departureDate: string;
+  }
+> = {
+  "demo-ref-aaaa": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com", gender: "female", occupation: "Student", countryOfOrigin: "ES", departureDate: "2026-09-01" },
+  "demo-ref-aaab": { firstName: "Lucia", lastName: "Demo", email: "lucia@example.com", gender: "female", occupation: "Student", countryOfOrigin: "ES", departureDate: "2026-09-03" },
+  "demo-ref-bbbb": { firstName: "Max", lastName: "Muster", email: "max@example.com", gender: "male", occupation: "PhD Candidate", countryOfOrigin: "DE", departureDate: "2026-12-01" },
+  "demo-ref-cccc": { firstName: "Giulia", lastName: "Esempio", email: "giulia@example.com", gender: "diverse", occupation: "Student", countryOfOrigin: "IT", departureDate: "2026-07-15" },
 };
 
 /**
@@ -149,6 +166,21 @@ export class DemoDataProvider implements DataProvider {
       generated.scopes.forEach((scope) => capabilities.add(scope));
     }
     if (capabilities.has("theme_force")) capabilities.add("theme_review");
+    // Broad scopes expand to their fine-grained capabilities (mirrors the
+    // server's SCOPE_CAPABILITIES supersets).
+    if (capabilities.has("event_registrations")) {
+      for (const cap of ["event_registrations_view", "event_registrations_checkin", "event_registrations_private", "event_registrations_export"] as const) {
+        capabilities.add(cap);
+      }
+    }
+    for (const cap of ["event_registrations_checkin", "event_registrations_private", "event_registrations_export"] as const) {
+      if (capabilities.has(cap)) capabilities.add("event_registrations_view");
+    }
+    if (capabilities.has("forms")) {
+      capabilities.add("forms_triage");
+      capabilities.add("forms_full");
+    }
+    if (capabilities.has("forms_full")) capabilities.add("forms_triage");
     this.capabilities = capabilities;
   }
 
@@ -826,7 +858,6 @@ export class DemoDataProvider implements DataProvider {
       songTitle: input.songTitle,
       artist: input.artist ?? "",
       note: input.note ?? "",
-      contact: input.contact ?? "",
       status: "pending",
       position: null,
       queuePosition: null,
@@ -1213,24 +1244,36 @@ export class DemoDataProvider implements DataProvider {
   }
 
   async getFormInbox(params?: { type?: string; status?: string; q?: string }) {
-    this.require("forms");
+    this.require("forms_triage");
+    const full = this.capabilities.has("forms_full");
     const query = params?.q?.toLocaleLowerCase() ?? "";
     return {
-      items: this.formInbox.filter((item) =>
-        (!params?.type || item.type === params.type)
-        && (!params?.status || item.status === params.status)
-        && (!query || `${item.publicId} ${item.name} ${item.email} ${item.subject}`.toLocaleLowerCase().includes(query)),
-      ),
+      items: this.formInbox
+        .filter((item) =>
+          (!params?.type || item.type === params.type)
+          && (!params?.status || item.status === params.status)
+          && (!query || `${item.publicId} ${item.subject}${full ? ` ${item.name} ${item.email}` : ""}`.toLocaleLowerCase().includes(query)),
+        )
+        .map((item) => (full ? item : this.redactForm(item))),
     };
   }
 
+  private redactForm(item: FormInboxEntry): FormInboxEntry {
+    const domain = item.email.includes("@") ? `…@${item.email.split("@")[1]}` : "";
+    return { ...item, name: "", email: domain, phone: "", message: "", redacted: true };
+  }
+
   async updateFormInbox(type: string, id: number, input: { status?: string; isViewed?: boolean }) {
-    this.require("forms");
+    this.require("forms_triage");
+    const full = this.capabilities.has("forms_full");
     const item = this.formInbox.find((entry) => entry.type === type && entry.id === id);
     if (!item) throw new DemoError("not_found", "Form entry not found.", 404);
-    if (input.status) item.status = input.status as FormInboxEntry["status"];
+    if (input.status) {
+      item.status = input.status as FormInboxEntry["status"];
+      item.resolvedAt = ["resolved", "archived"].includes(item.status) ? new Date().toISOString() : null;
+    }
     if (input.isViewed !== undefined) item.isViewed = input.isViewed;
-    return item;
+    return full ? item : this.redactForm(item);
   }
 
   private queueSummary(event: PublicPost): EventQueueSummary {
@@ -1251,31 +1294,48 @@ export class DemoDataProvider implements DataProvider {
   }
 
   async getEventQueues() {
-    this.require("event_registrations");
+    this.require("event_registrations_view");
     return { events: this.events.filter((event) => event.registration).map((event) => this.queueSummary(event)) };
   }
 
   async getEventRegistrations(postId: number, params?: { status?: string; q?: string }) {
-    this.require("event_registrations");
+    this.require("event_registrations_view");
+    const canCheckIn = this.capabilities.has("event_registrations_checkin");
+    const canSeePrivate = this.capabilities.has("event_registrations_private");
     const event = this.events[postId - 1];
     if (!event?.registration) throw new DemoError("not_found", "Event queue not found.", 404);
     const query = params?.q?.toLocaleLowerCase() ?? "";
     const items = this.registrations.filter((item) =>
       item.event.slug === event.slug
       && (!params?.status || item.status === params.status)
-      && (!query || `${item.publicId} ${item.name}`.toLocaleLowerCase().includes(query)),
+      && (!query || `${item.publicId} ${canSeePrivate ? item.name : ""}`.toLocaleLowerCase().includes(query)),
     );
     return {
       event: this.queueSummary(event),
-      items: items.map((item) => ({
-        ...item,
-        allowedTransitions: this.allowedRegistrationTransitions(item),
-      })),
+      items: items.map((item) => {
+        const record: RegistrationRecord = { ...item };
+        if (!canSeePrivate) {
+          delete record.email;
+          delete record.occupation;
+          delete record.dietPreference;
+          delete record.comment;
+          delete record.firstName;
+          delete record.lastName;
+        }
+        if (!canCheckIn && !canSeePrivate) delete record.name;
+        if (canCheckIn || canSeePrivate) {
+          record.allowedTransitions = this.allowedRegistrationTransitions(item);
+        } else {
+          delete record.allowedTransitions;
+          delete record.id;
+        }
+        return record;
+      }),
     };
   }
 
   async updateEventRegistration(id: number, status: EventRegistrationStatus) {
-    this.require("event_registrations");
+    this.require("event_registrations_checkin");
     const item = this.registrations.find((entry) => entry.id === id);
     if (!item) throw new DemoError("not_found", "Registration not found.", 404);
     if (status === item.status) {

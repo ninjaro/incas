@@ -15,9 +15,9 @@ const ADMIN_NAV: AdminNavItem[] = [
   { to: "/admin", label: "Dashboard", capability: null },
   { to: "/admin/posts", label: "Posts & Events", capability: "posts" },
   { to: "/admin/social", label: "Social Publications", capability: "posts" },
-  { to: "/admin/registrations", label: "Event Registrations", capability: "event_registrations" },
+  { to: "/admin/registrations", label: "Event Registrations", capability: "event_registrations_view" },
   { to: "/admin/payments", label: "Payments", capability: "event_registrations" },
-  { to: "/admin/forms", label: "Forms Inbox", capability: "forms" },
+  { to: "/admin/forms", label: "Forms Inbox", capability: "forms_triage" },
   { to: "/admin/access-keys", label: "Access Keys", capability: "access_keys" },
   { to: "/admin/themes", label: "Themes", capability: "theme_review" },
   { to: "/admin/karaoke", label: "Karaoke Queue", capability: "karaoke_queue" },
@@ -59,7 +59,7 @@ function UnlockForm() {
       </label>
       {data.isDemo ? (
         <p style={{ fontSize: "0.75rem", color: "var(--ink-soft)", margin: "6px 0 0" }}>
-          Demo keys: demo-admin, demo-review, demo-karaoke, demo-tandem-blind
+          Demo keys: demo-admin, demo-review, demo-karaoke, demo-tandem-blind, demo-checkin, demo-forms-triage
         </p>
       ) : null}
       {message ? <p className={`notice notice-${message.tone}`}>{message.text}</p> : null}

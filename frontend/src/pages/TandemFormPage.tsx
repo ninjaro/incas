@@ -12,9 +12,9 @@ import { localizeFieldErrors } from "../i18n/errors";
 
 const EMPTY_FORM: TandemSubmission = {
   firstName: "", lastName: "", email: "", occupation: "", occupationOther: "",
-  gender: "", birthYear: "", departureDate: "", countryOfOrigin: "",
+  gender: "", departureDate: "", countryOfOrigin: "",
   offeredLanguages: [], offeredLanguageLevels: {}, requestedLanguages: [],
-  requestedNativeOnly: false, sameGenderOnly: false, preferredGender: "", comment: "",
+  requestedNativeOnly: false, sameGenderOnly: false, comment: "",
 };
 
 function selectedValues(element: HTMLSelectElement) {
@@ -43,9 +43,6 @@ function ProfileFields({ form, setForm, errors, options, de, clearField }: FormS
             <option value="">-</option><option value="Female">{de ? "Weiblich" : "Female"}</option><option value="Male">{de ? "Männlich" : "Male"}</option><option value="Divers">{de ? "Divers" : "Diverse"}</option><option value="Prefer not to say">{de ? "Keine Angabe" : "Prefer not to say"}</option>
           </select>
         </Field>
-        <Field label={de ? "Geburtsjahr" : "Birth year"} error={errors.birthYear}>
-          <input name="birthYear" type="number" min="1900" max={new Date().getFullYear()} value={form.birthYear} onChange={(event) => update("birthYear", event.target.value)} />
-        </Field>
         <Field label={de ? "Geplantes Abreisedatum" : "Planned departure date"} error={errors.departureDate}>
           <input name="departureDate" type="date" value={form.departureDate} onChange={(event) => update("departureDate", event.target.value)} />
         </Field>
@@ -54,7 +51,7 @@ function ProfileFields({ form, setForm, errors, options, de, clearField }: FormS
             <option value="">-</option>{options.countries.map((country) => <option key={country.code} value={country.code}>{country.label}</option>)}
           </select>
         </Field>
-        <Field label={de ? "Tätigkeit" : "Occupation"} error={errors.occupation}>
+        <Field label={de ? "Tätigkeit (optional)" : "Occupation (optional)"} error={errors.occupation}>
           <select name="occupation" value={form.occupation} onChange={(event) => update("occupation", event.target.value)}>
             <option value="">-</option>{options.occupations.map((occupation) => <option key={occupation} value={occupation}>{occupation === "other" ? (de ? "Andere" : "Other") : occupation}</option>)}
           </select>
@@ -99,7 +96,6 @@ function PreferenceFields({ form, setForm, errors, de, clearField }: Omit<FormSe
     <div className="form-section">
       <label className="check-row"><input name="requestedNativeOnly" type="checkbox" checked={form.requestedNativeOnly} onChange={(event) => setForm({ ...form, requestedNativeOnly: event.target.checked })} />{de ? "Nur Muttersprachler:innen für die gesuchte Sprache" : "Only native speakers for requested languages"}</label>
       <label className="check-row"><input name="sameGenderOnly" type="checkbox" checked={form.sameGenderOnly} onChange={(event) => setForm({ ...form, sameGenderOnly: event.target.checked })} />{de ? "Nur Partner:innen mit gleichem Geschlecht" : "Same-gender partner only"}</label>
-      <Field label={de ? "Weitere Geschlechtspräferenz (optional)" : "Other gender preference (optional)"} error={errors.preferredGender}><input name="preferredGender" value={form.preferredGender} onChange={(event) => { clearField("preferredGender"); setForm({ ...form, preferredGender: event.target.value }); }} /></Field>
       <Field label={de ? "Kommentar" : "Comments"} error={errors.comment}><textarea name="comment" rows={6} value={form.comment} onChange={(event) => { clearField("comment"); setForm({ ...form, comment: event.target.value }); }} /></Field>
     </div>
   );
@@ -133,14 +129,14 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
   const fieldStep = (field: string | null) => {
     if (!field) return step;
     if (field === "offeredLanguages" || field === "requestedLanguages" || field.startsWith("offeredLanguageLevels.")) return 1;
-    if (["preferredGender", "comment"].includes(field)) return 2;
+    if (["comment"].includes(field)) return 2;
     return 0;
   };
 
   const validateStep = (targetStep: number) => {
     const next: Record<string, string> = {};
     if (targetStep === 0) {
-      for (const field of ["firstName", "lastName", "email", "occupation", "gender", "birthYear", "departureDate", "countryOfOrigin"] as const) {
+      for (const field of ["firstName", "lastName", "email", "gender", "departureDate", "countryOfOrigin"] as const) {
         if (!String(form[field] ?? "").trim()) next[field] = "Required.";
       }
       if (form.email && !form.email.includes("@")) next.email = "Enter a valid email address.";
@@ -193,6 +189,7 @@ function CompleteForm({ variant }: { variant: "steps" | "classic" }) {
       {(variant === "classic" || step === 2) ? <PreferenceFields form={form} setForm={setForm} errors={formErrors.errors} de={de} clearField={formErrors.clearField} /> : null}
       {(variant === "classic" || step === 2) ? (
         <FormPrivacyNotice
+          anchor="tandem"
           purpose={{
             en: "find and propose a tandem partner and contact you about it",
             de: "eine Tandempartnerin oder einen Tandempartner zu finden, vorzuschlagen und dich dazu zu kontaktieren",

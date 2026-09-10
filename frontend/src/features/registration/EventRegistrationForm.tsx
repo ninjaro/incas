@@ -91,6 +91,7 @@ export function EventRegistrationForm({ event }: { event: PublicPost }) {
         {event.eventKind === "breakfast" ? <Field label={de ? "Ernährung" : "Meal preference"} error={formErrors.errors.dietPreference}><select name="dietPreference" value={form.dietPreference} onChange={(e) => change("dietPreference", e.target.value as EventRegistrationInput["dietPreference"])}><option value="">-</option><option value="vegan">Vegan</option><option value="vegetarian">Vegetarian</option><option value="omnivore">{de ? "Omnivor" : "Omnivore"}</option></select></Field> : null}
         <Field label={de ? "Kommentar" : "Comments"} error={formErrors.errors.comment}><textarea name="comment" rows={5} value={form.comment} onChange={(e) => change("comment", e.target.value)} /></Field>
         <FormPrivacyNotice
+          anchor="event-registration"
           purpose={{
             en: "manage your place, the waiting list and any payment",
             de: "deinen Platz, die Warteliste und eine etwaige Zahlung zu verwalten",

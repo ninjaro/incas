@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { EmptyState, Field, StatusBadge } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { KARAOKE_TRACKING_BATCH_SIZE } from "../../data/karaokeTracking";
+import { FormPrivacyNotice } from "../../forms/FormPrivacyNotice";
 import { usePublicFormErrors } from "../../forms/usePublicFormErrors";
 import { useResilientPolling } from "../../hooks/useResilientPolling";
 import { useLocale } from "../../i18n/LocaleContext";
@@ -170,6 +171,18 @@ export function KaraokeEventFeature({ eventSlug, eventTitle }: { eventSlug: stri
               rows={2}
             />
           </Field>
+          <FormPrivacyNotice
+            anchor="karaoke"
+            purpose={{
+              en: "run the karaoke queue during this event",
+              de: "die Karaoke-Warteschlange während dieser Veranstaltung zu betreiben",
+            }}
+          />
+          <p className="form-hint">
+            {de
+              ? "Dein Anzeigename erscheint während des Events auf dem öffentlichen Warteschlangen-Bildschirm."
+              : "Your display name is shown on the public queue screen during the event."}
+          </p>
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? (de ? "Wird gesendet..." : "Submitting...") : (de ? "Wunsch senden" : "Submit request")}
           </button>

@@ -9,7 +9,6 @@ DUPLICATE_REVIEW_CONFIG = {
         "email_similarity": 20,
         "first_name_similarity": 12,
         "last_name_similarity": 18,
-        "birth_year_match": 8,
         "country_match": 6,
         "occupation_match": 4,
         "gender_match": 4,
@@ -35,7 +34,6 @@ MERGE_FIELD_CONFIG = [
     {"name": "email", "label": "Email", "allow_append": False},
     {"name": "occupation", "label": "Occupation", "allow_append": False},
     {"name": "gender", "label": "Gender", "allow_append": False},
-    {"name": "birth_year", "label": "Birth Year", "allow_append": False},
     {"name": "departure_date", "label": "Departure Date", "allow_append": False},
     {"name": "country_of_origin", "label": "Country", "allow_append": False},
     {"name": "offered_languages", "label": "Offered Languages", "allow_append": False},
@@ -94,7 +92,6 @@ def build_request_signature(item):
     return (
         item.occupation or "",
         item.gender or "",
-        item.birth_year or "",
         item.departure_date.isoformat() if item.departure_date else "",
         item.country_of_origin or "",
         tuple(sorted(item.offered_languages_list)),
@@ -169,10 +166,6 @@ def evaluate_duplicate_candidate(source_item, candidate_item, config=None):
     elif last_name_ratio >= 0.75:
         score += round(weights["last_name_similarity"] * 0.6)
         reasons.append("Similar last name")
-
-    if source_item.birth_year and candidate_item.birth_year and source_item.birth_year == candidate_item.birth_year:
-        score += weights["birth_year_match"]
-        reasons.append("Same birth year")
 
     if source_item.country_of_origin and candidate_item.country_of_origin and source_item.country_of_origin == candidate_item.country_of_origin:
         score += weights["country_match"]

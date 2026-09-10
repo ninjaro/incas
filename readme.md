@@ -130,6 +130,26 @@ queue), and the graduated tandem scopes `language_tandem_blind` /
 `language_tandem_private` / `language_tandem_corrections`. Legacy
 `language_tandem*` keys map to the closest new capabilities automatically.
 
+Event registration and form access follow least privilege. Registrations split
+into `event_registrations_view` (capacity monitoring, no identities),
+`event_registrations_checkin` (door check-in and status changes),
+`event_registrations_private` (participant contact and free-text data) and
+`event_registrations_export` (bulk CSV download — a distinct privilege). Forms
+split into `forms_triage` (status workflow with identities redacted) and
+`forms_full` (name, email, phone, message). The legacy broad `event_registrations`
+and `forms` scopes still work and expand to all of the above.
+
+## Data retention
+
+`app/retention.py` enforces lifecycle-based deletion (contact/suggestion 180d
+after resolution, tandem 90d after a finalised pair or departure date, event
+registrations 180d after the event ends, karaoke 30d after the event, access
+attempts 90d; unmatched form/tandem records fall back to 365d after
+submission). Dependent rows — tandem match/duplicate state, payment records,
+karaoke audit — are deleted with the parent. Run `flask --app run:app
+purge-personal-data` once, or the `retention-worker` service (in
+`docker-compose.yml`) continuously.
+
 ## Docker
 
 Docker runs the app with Postgres via `docker-compose.yml`.

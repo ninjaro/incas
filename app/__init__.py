@@ -315,6 +315,31 @@ def create_app(config_overrides=None):
                 return
             time.sleep(interval)
 
+    @app.cli.command("purge-personal-data")
+    def purge_personal_data_command():
+        """Delete personal data whose retention window has passed."""
+        from app.retention import purge_expired_personal_data
+
+        counts = purge_expired_personal_data()
+        db.session.commit()
+        click.echo(" ".join(f"{name}={count}" for name, count in counts.items()))
+
+    @app.cli.command("retention-worker")
+    @click.option("--once", is_flag=True, help="Run one purge and exit.")
+    @click.option("--interval", default=86400, type=click.IntRange(min=60), show_default=True)
+    def retention_worker_command(once, interval):
+        """Continuously enforce data-retention deletion rules."""
+        from app.retention import purge_expired_personal_data
+
+        while True:
+            counts = purge_expired_personal_data()
+            db.session.commit()
+            click.echo(" ".join(f"{name}={count}" for name, count in counts.items()))
+            db.session.remove()
+            if once:
+                return
+            time.sleep(interval)
+
     from app.routes import bp
     app.register_blueprint(bp)
 
