@@ -23,7 +23,6 @@ from app.routes.helpers.tandem_form import (
     build_language_tandem_form_context,
     normalize_country_code,
     normalize_language_codes,
-    parse_birth_year,
     parse_departure_date,
     render_language_tandem_form_page,
 )
@@ -413,7 +412,6 @@ def render_site_content_page(page_key):
             "occupation": "",
             "occupation_other": "",
             "gender": "",
-            "birth_year": "",
             "departure_date": "",
             "country_of_origin": "",
             "offered_languages": [],
@@ -421,7 +419,7 @@ def render_site_content_page(page_key):
             "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
-            "preferred_gender": "",
+            "same_gender_only": False,
             "comment": "",
         }
         form_action = url_for("main.language_tandem_form")
@@ -721,7 +719,6 @@ def _handle_language_tandem_form(mode):
         "occupation": "",
         "occupation_other": "",
         "gender": "",
-        "birth_year": "",
         "departure_date": "",
         "country_of_origin": "",
         "offered_languages": [],
@@ -729,7 +726,7 @@ def _handle_language_tandem_form(mode):
         "offered_language_levels": {},
         "requested_languages": [],
         "requested_native_only": False,
-        "preferred_gender": "",
+        "same_gender_only": False,
         "comment": "",
     }
     errors = {}
@@ -741,13 +738,12 @@ def _handle_language_tandem_form(mode):
         values["occupation"] = request.form.get("occupation", "").strip()
         values["occupation_other"] = request.form.get("occupation_other", "").strip()
         values["gender"] = request.form.get("gender", "").strip()
-        values["birth_year"] = request.form.get("birth_year", "").strip()
         values["departure_date"] = request.form.get("departure_date", "").strip()
         values["country_of_origin"] = normalize_country_code(request.form.get("country_of_origin"))
         values["offered_languages"] = normalize_language_codes(request.form.getlist("offered_languages"))
         values["requested_languages"] = normalize_language_codes(request.form.getlist("requested_languages"))
         values["requested_native_only"] = request.form.get("requested_native_only") == "on"
-        values["preferred_gender"] = request.form.get("preferred_gender", "").strip()
+        values["same_gender_only"] = request.form.get("same_gender_only") == "on"
         values["comment"] = request.form.get("comment", "").strip()
 
         valid_levels = {"1", "2", "3", "4", "5"}
@@ -769,7 +765,6 @@ def _handle_language_tandem_form(mode):
         ]
         values["offered_native_languages"] = offered_native_languages
 
-        birth_year = parse_birth_year(values["birth_year"])
         departure_date = parse_departure_date(values["departure_date"])
 
         resolved_occupation = (
@@ -785,8 +780,6 @@ def _handle_language_tandem_form(mode):
         if not values["email"]:
             errors["email"] = "Email is required."
 
-        if not values["occupation"]:
-            errors["occupation"] = "Occupation is required."
         if not values["gender"]:
             errors["gender"] = "Gender is required."
         if not values["country_of_origin"]:
@@ -794,9 +787,6 @@ def _handle_language_tandem_form(mode):
 
         if values["occupation"] == "other" and not values["occupation_other"]:
             errors["occupation_other"] = "Enter occupation."
-
-        if birth_year is None:
-            errors["birth_year"] = "Enter a valid birth year."
 
         if departure_date is None:
             errors["departure_date"] = "Enter a valid departure date."
@@ -816,7 +806,6 @@ def _handle_language_tandem_form(mode):
             email=values["email"],
             occupation=resolved_occupation,
             gender=values["gender"],
-            birth_year=birth_year,
             departure_date=departure_date,
             country_of_origin=values["country_of_origin"],
             offered_languages=json.dumps(values["offered_languages"]),
@@ -824,8 +813,7 @@ def _handle_language_tandem_form(mode):
             offered_language_levels=json.dumps(offered_language_levels),
             requested_languages=json.dumps(values["requested_languages"]),
             requested_native_only=values["requested_native_only"],
-            preferred_gender=values["preferred_gender"],
-            same_gender_only=(values["preferred_gender"] == "same"),
+            same_gender_only=values["same_gender_only"],
             comment=values["comment"],
         )
 

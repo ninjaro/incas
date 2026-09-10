@@ -73,7 +73,6 @@ def serialize_admin(item):
             "id": item.id,
             "postId": item.post_id,
             "note": item.note,
-            "contact": item.contact,
             "position": item.position,
             "createdAt": serialize_utc(item.created_at),
         }
@@ -144,7 +143,6 @@ def api_karaoke_submit():
         song_title=song_title[:200],
         artist=(body.get("artist") or "").strip()[:200],
         note=(body.get("note") or "").strip(),
-        contact=(body.get("contact") or "").strip()[:255],
     )
     db.session.add(item)
     db.session.flush()

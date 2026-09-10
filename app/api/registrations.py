@@ -37,7 +37,15 @@ from app.routes.helpers.event_registrations import (
     search_event_registrations,
     should_collect_diet_preference,
 )
-from app.routes.helpers.access import get_session_audit_id
+from app.routes.helpers.access import get_session_audit_id, has_capability
+
+
+def _registration_admin_tier():
+    if has_capability("event_registrations_private"):
+        return "private"
+    if has_capability("event_registrations_checkin"):
+        return "checkin"
+    return "view"
 
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -75,11 +83,15 @@ def _payment_for_registration(item):
     return payload
 
 
-def serialize_registration(item, post=None, *, private=False):
+def serialize_registration(item, post=None, *, tier="public"):
+    # tier: "public" (participant's own bearer link) | "view" (capacity
+    # monitoring, no identity) | "checkin" (door check-in: name + transitions,
+    # no contact/free-text) | "private" (full participant data).
     post = post or db.session.get(Post, item.post_id)
+    identified = tier in ("public", "checkin", "private")
+    admin = tier in ("checkin", "private")
     payload = {
         "publicId": item.public_id,
-        "name": item.full_name,
         "status": item.status,
         "statusLabel": EVENT_REGISTRATION_STATUS_LABELS.get(item.status, item.status_label),
         "waitingListPosition": get_waiting_list_position(item),
@@ -98,17 +110,20 @@ def serialize_registration(item, post=None, *, private=False):
         "createdAt": serialize_utc(item.created_at),
         "updatedAt": serialize_utc(item.updated_at),
     }
-    if private:
+    if identified:
+        payload["name"] = item.full_name
+    if admin:
+        payload["id"] = item.id
+        payload["allowedTransitions"] = allowed_registration_transitions(item, post)
+    if tier == "private":
         payload.update(
             {
-                "id": item.id,
                 "firstName": item.first_name,
                 "lastName": item.last_name,
                 "email": item.email,
                 "occupation": item.occupation,
                 "dietPreference": item.diet_preference,
                 "comment": item.comment,
-                "allowedTransitions": allowed_registration_transitions(item, post),
             }
         )
     return payload
@@ -266,7 +281,7 @@ def _serialize_event_queue(post):
 
 
 @api_bp.get("/admin/event-registrations")
-@require_capability("event_registrations")
+@require_capability("event_registrations_view")
 def api_admin_event_registration_queues():
     expired, _promoted = expire_waiting_payment_registrations()
     if expired:
@@ -281,7 +296,7 @@ def api_admin_event_registration_queues():
 
 
 @api_bp.get("/admin/events/<int:post_id>/registrations")
-@require_capability("event_registrations")
+@require_capability("event_registrations_view")
 def api_admin_event_registrations(post_id):
     post = db.session.get(Post, post_id)
     if post is None or not post.has_registration_queue:
@@ -295,16 +310,18 @@ def api_admin_event_registrations(post_id):
         if status not in STATUSES:
             return validation_error({"status": "Unknown registration status."})
         query = query.filter(EventRegistration.status == status)
+    tier = _registration_admin_tier()
     return jsonify(
         {
             "event": _serialize_event_queue(post),
-            "items": [serialize_registration(item, post, private=True) for item in query.all()],
+            "items": [serialize_registration(item, post, tier=tier) for item in query.all()],
+            "tier": tier,
         }
     )
 
 
 @api_bp.patch("/admin/event-registrations/<int:registration_id>")
-@require_capability("event_registrations")
+@require_capability("event_registrations_checkin")
 def api_admin_event_registration_update(registration_id):
     item = db.session.get(EventRegistration, registration_id)
     if item is None:
@@ -342,17 +359,18 @@ def api_admin_event_registration_update(registration_id):
             )
         )
     db.session.commit()
+    tier = _registration_admin_tier()
     return jsonify(
         {
-            "item": serialize_registration(item, post, private=True),
-            "promoted": [serialize_registration(entry, post, private=True) for entry in promoted],
+            "item": serialize_registration(item, post, tier=tier),
+            "promoted": [serialize_registration(entry, post, tier=tier) for entry in promoted],
             "event": _serialize_event_queue(post),
         }
     )
 
 
 @api_bp.get("/admin/events/<int:post_id>/registrations.csv")
-@require_capability("event_registrations")
+@require_capability("event_registrations_export")
 def api_admin_event_registrations_export(post_id):
     post = db.session.get(Post, post_id)
     if post is None:
@@ -376,7 +394,10 @@ def api_admin_event_registrations_export(post_id):
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{post.slug}-registrations.csv"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{post.slug}-registrations.csv"',
+            "Cache-Control": "no-store",
+        },
     )
 
 

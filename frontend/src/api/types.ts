@@ -8,7 +8,13 @@ export type PageId =
 export type Capability =
   | "posts"
   | "event_registrations"
+  | "event_registrations_view"
+  | "event_registrations_checkin"
+  | "event_registrations_private"
+  | "event_registrations_export"
   | "forms"
+  | "forms_triage"
+  | "forms_full"
   | "access_keys"
   | "language_tandem_blind"
   | "language_tandem_private"
@@ -284,18 +290,13 @@ export type AdminSocialPublication = SocialPublication & {
 
 export type TandemRequest = {
   ref: string;
-  gender: string;
-  birthYear: number;
-  occupation: string;
-  countryOfOrigin: string;
-  departureDate: string | null;
   offeredLanguages: string[];
   offeredNativeLanguages: string[];
   offeredLanguageLevels: Record<string, string>;
   requestedLanguages: string[];
   requestedNativeOnly: boolean;
   sameGenderOnly: boolean;
-  preferredGender: string;
+  departureMonth: string | null;
   isViewed: boolean;
   createdAt: string | null;
   // Only present with the language_tandem_private capability.
@@ -304,6 +305,10 @@ export type TandemRequest = {
   lastName?: string;
   email?: string;
   comment?: string;
+  gender?: string;
+  occupation?: string;
+  countryOfOrigin?: string;
+  departureDate?: string | null;
 };
 
 export type TandemListResponse = {
@@ -365,7 +370,6 @@ export type KaraokeAdminEntry = KaraokePublicEntry & {
   id: number;
   postId: number | null;
   note: string;
-  contact: string;
   position: number | null;
   createdAt: string | null;
 };
@@ -375,7 +379,6 @@ export type KaraokeSubmission = {
   songTitle: string;
   artist?: string;
   note?: string;
-  contact?: string;
   eventSlug?: string;
 };
 
@@ -466,7 +469,6 @@ export type TandemSubmission = {
   occupation: string;
   occupationOther: string;
   gender: string;
-  birthYear: string;
   departureDate: string;
   countryOfOrigin: string;
   offeredLanguages: string[];
@@ -474,7 +476,6 @@ export type TandemSubmission = {
   requestedLanguages: string[];
   requestedNativeOnly: boolean;
   sameGenderOnly: boolean;
-  preferredGender: string;
   comment: string;
 };
 
@@ -497,7 +498,8 @@ export type EventRegistrationStatus =
 export type RegistrationRecord = {
   id?: number;
   publicId: string;
-  name: string;
+  /** Absent in the view-only admin tier (no identity access). */
+  name?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -543,6 +545,7 @@ export type FormInboxEntry = {
   type: "contact" | "suggestion";
   id: number;
   publicId: string;
+  /** Blank in the triage tier (no forms_full capability); email is masked. */
   name: string;
   email: string;
   phone: string;
@@ -551,6 +554,8 @@ export type FormInboxEntry = {
   kind: string;
   status: "new" | "in_progress" | "resolved" | "archived";
   isViewed: boolean;
+  resolvedAt?: string | null;
+  redacted?: boolean;
   createdAt: string;
 };
 

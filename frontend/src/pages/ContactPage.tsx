@@ -68,7 +68,7 @@ export function ContactForm() {
         <Field label={copy.message} error={formErrors.errors.message}>
           <textarea name="message" rows={7} value={form.message} onChange={(event) => change("message", event.target.value)} />
         </Field>
-        <FormPrivacyNotice purpose={{ en: "answer your message", de: "deine Nachricht zu beantworten" }} />
+        <FormPrivacyNotice anchor="contact" purpose={{ en: "answer your message", de: "deine Nachricht zu beantworten" }} />
         <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "..." : copy.submit}</button>
       </form>
     </>

@@ -114,11 +114,11 @@ const routes = [
           },
           {
             path: "registrations",
-            element: <RequireCapability capability="event_registrations"><EventRegistrationsPanel /></RequireCapability>,
+            element: <RequireCapability capability="event_registrations_view"><EventRegistrationsPanel /></RequireCapability>,
           },
           {
             path: "forms",
-            element: <RequireCapability capability="forms"><FormsInboxPanel /></RequireCapability>,
+            element: <RequireCapability capability="forms_triage"><FormsInboxPanel /></RequireCapability>,
           },
           {
             path: "access-keys",
