@@ -145,7 +145,7 @@ function NavItem({
 export function PublicLayout() {
   const data = useData();
   const session = useSession();
-  const { locale, site } = useLocale();
+  const { locale, setLocale, site } = useLocale();
   const t = useT();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -356,6 +356,19 @@ export function PublicLayout() {
               ) : null}
             </div>
             <div className="site-nav-controls">
+              <div className="locale-switch" role="group" aria-label={t("aria.language")}>
+                {(["en", "de"] as Locale[]).map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    className={locale === code ? "is-active" : ""}
+                    aria-pressed={locale === code}
+                    onClick={() => setLocale(code)}
+                  >
+                    {code.toUpperCase()}
+                  </button>
+                ))}
+              </div>
               <NavLink to="/join" className="btn btn-outline btn-sm site-nav-cta" onClick={closeGroup}>
                 {locale === "de" ? "Mitmachen" : "Join us"}
               </NavLink>

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 
+import { assetUrl } from "../utils/assets";
+
 export function JoinPage() {
   return (
     <>
@@ -19,7 +21,7 @@ export function JoinPage() {
             <h2>WANTED</h2>
             <p className="wanted-sub">Curious students, all nationalities</p>
             <span className="wanted-rule" aria-hidden="true" />
-            <div className="wanted-art"><img src="/static/img/incas-logo.png" alt="INCAS" /></div>
+            <div className="wanted-art"><img src={assetUrl("img/incas-logo.png") ?? ""} alt="INCAS" /></div>
             <ul className="wanted-list">
               <li>Last seen: learning a language over coffee</li>
               <li>Known for: cooking for forty people</li>

@@ -5,6 +5,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { ARCHIVE_FORMATS } from "./eventFormats";
 import { EDITION_RECORDS } from "./eventRecords";
 import { downloadRecipeCard } from "../utils/recipeCards";
+import { assetUrl } from "../utils/assets";
 import type { RecordDish, RecordDoc, Slide } from "./eventRecords";
 
 const DOC_ICON: Record<string, string> = {
@@ -77,7 +78,7 @@ function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[
           {slide.image ? (
             <figure className="slide-photo">
               <span className="tape" aria-hidden="true" />
-              <img src={slide.image} alt="" />
+              <img src={assetUrl(slide.image) ?? slide.image} alt="" />
             </figure>
           ) : null}
           <span className="slide-folio">{index + 1} / {slides.length}</span>
@@ -191,7 +192,7 @@ export function EventRecordPage() {
             {record.photos.map((photo, index) => (
               <figure className="rec-photo" key={photo.src + index}>
                 <span className="tape" aria-hidden="true" />
-                <img src={photo.src} alt={photo.caption} loading="lazy" />
+                <img src={assetUrl(photo.src) ?? photo.src} alt={photo.caption} loading="lazy" />
                 <figcaption>{photo.caption}</figcaption>
               </figure>
             ))}

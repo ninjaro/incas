@@ -1309,3 +1309,10 @@ a.arch-row:hover { border-color: #a89a7d; background: #fffaf0; color: var(--ink)
 .food-map-controls button:hover:not([disabled]) { background: var(--incas-orange); border-color: var(--incas-orange); color: #fff6e9; }
 .food-map-controls button[disabled] { opacity: 0.4; cursor: default; }
 @media (max-width: 620px) { .food-map-controls button { width: 44px; height: 44px; } }
+
+/* Team "spotlight" theme rows (spacing upstream set inline). */
+.team-spotlight-row h3 { margin: 0; font-family: var(--font-display); font-size: 1.4rem; color: var(--pine-deep); }
+.team-spotlight-row p { margin: 0; color: var(--ink-soft); }
+.team-spotlight-row p.team-role { margin: 2px 0 8px; color: var(--incas-orange-deep); }
+.team-spotlight-row .team-avatar,
+.team-spotlight-row .team-avatar-fallback { margin: 0 auto; }

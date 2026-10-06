@@ -96,9 +96,14 @@ function HeroMap() {
       // width-fit map would be taller) - the world is never cropped. The
       // phone layout sizes the hero itself, so leave it alone there.
       if (wide && hero) {
-        const nav = document.querySelector(".site-nav");
-        const navH = nav ? nav.getBoundingClientRect().height : 64;
-        const target = Math.max(560, Math.round(window.innerHeight - navH - 130));
+        // Land the events heading ~90px above the fold: measure everything that
+        // sits between it and the hero (banner/nav above, section padding and
+        // kicker below) instead of assuming fixed sizes.
+        const heroRect = hero.getBoundingClientRect();
+        const heroTop = heroRect.top + window.scrollY;
+        const heading = hero.nextElementSibling?.querySelector("h2");
+        const gap = heading ? Math.max(0, heading.getBoundingClientRect().top - heroRect.bottom) : 110;
+        const target = Math.max(560, Math.round(window.innerHeight - 90 - heroTop - gap));
         hero.style.minHeight = `${target}px`;
         const availH = target - 60;
         if (bounds[1][1] > availH) {
@@ -580,7 +585,11 @@ export function LetterScene({ de }: { de: boolean }) {
 
   return (
     <div className="letter-scene" ref={sceneRef}>
-      <span className="postcard-bg" aria-hidden="true" />
+      <span
+        className="postcard-bg"
+        aria-hidden="true"
+        style={{ backgroundImage: `url("${assetUrl("img/playful/postcard.svg")}")` }}
+      />
       <div className="letter-slot">
         <div className="about-body" ref={letterRef}>
           {phone ? paragraphs[0] : paragraphs}

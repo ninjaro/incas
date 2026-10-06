@@ -221,7 +221,7 @@ function PosterStack({
           <p className="ev-page-head">Next edition</p>
           <div className="ev-poster-wrap">
             <figure className="ev-poster-art">
-              <img src={art.src} alt={art.alt} width={740} height={927} />
+              <img src={assetUrl(art.src) ?? art.src} alt={art.alt} width={740} height={927} />
               {art.caption ? <figcaption>{art.caption}</figcaption> : null}
             </figure>
             <div className="ev-next-row">
@@ -409,7 +409,7 @@ function RegisterLetter({ events, preset }: { events: PublicPost[]; preset: stri
     <div className="register-layout">
       <form className="letter-sheet register-form" aria-label="Register for an event" onSubmit={submit}>
         <span className="letter-stamp" aria-hidden="true">
-          <img src="/static/img/playful/stamp-globe.svg" alt="" />
+          <img src={assetUrl("img/playful/stamp-globe.svg") ?? ""} alt="" />
         </span>
         <div className="letter-head"><span><b>INCAS</b> · Humboldt-Haus, Aachen</span><span>Pontstr. 41</span></div>
         {result ? (

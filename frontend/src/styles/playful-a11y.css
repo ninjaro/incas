@@ -1,0 +1,62 @@
+/* WCAG AA contrast layer for the Playful theme (loaded last).
+   #ff6600 stays the brand colour for fills, pins and decoration; only where
+   orange carries TEXT does it move to a darker shade that reaches 3:1
+   (large text) or 4.5:1 (normal text) on the cream and band surfaces. */
+
+.theme-parchment {
+  /* large headline accents: 3.42:1 on #f6ead6, 3.13:1 on #f1e0bd */
+  --accent-text: #d95200;
+}
+
+/* Orange words inside headlines ("in Aachen", "are like", "Team", ...) */
+.theme-parchment h1 em,
+.theme-parchment h2 em,
+.theme-parchment .landing-hero h1 em,
+.theme-parchment .events-hero h1 em,
+.theme-parchment .ev-hero h1 em,
+.theme-parchment .team-hero h1 em,
+.theme-parchment .landing-hero h1 .accent {
+  color: var(--accent-text);
+}
+
+/* Light text on an orange fill: use the deep brand orange (5.1:1). */
+.theme-parchment .cal-filter.is-all[aria-pressed="true"],
+.theme-parchment .cal-filters .cal-filter.is-all[aria-pressed="true"] {
+  background: var(--incas-orange-deep);
+  border-color: var(--incas-orange-deep);
+}
+.theme-parchment .wg-board-label,
+.theme-parchment .ev-next-badge {
+  background: var(--incas-orange-deep);
+}
+.theme-parchment .radio-play .btn {
+  background: var(--incas-orange-deep);
+  border-color: var(--incas-orange-deep);
+  box-shadow: 0 4px 0 #7a3000;
+}
+.theme-parchment .radio-play .btn:hover {
+  background: #9a3d00;
+  border-color: #9a3d00;
+  box-shadow: 0 3px 0 #7a3000;
+}
+
+/* Non-"next" clothesline cards recede by fading the POSTER, not the text. */
+.theme-parchment .ev-photo:not(.is-next) { opacity: 1; filter: none; }
+.theme-parchment .ev-photo:not(.is-next) img { opacity: 0.82; filter: saturate(0.8); transition: opacity 0.18s ease, filter 0.18s ease; }
+.theme-parchment .ev-photo:not(.is-next):hover img,
+.theme-parchment .ev-photo:not(.is-next):focus-within img { opacity: 1; filter: none; }
+
+/* Footer legal links were faded through opacity. */
+.theme-parchment .site-footer-legal { opacity: 1; }
+
+/* Small mono kicker on the band */
+.theme-parchment .social-band .footer-coords { color: #9a3d00; }
+
+/* Demo banner label: orange on the dark ink bar */
+.theme-parchment .demo-banner strong { color: #ffa060; }
+
+/* Active / open Events link sits on an olive tint */
+.theme-parchment .site-nav-group.is-open .site-nav-group-link,
+.theme-parchment .site-nav-group.is-section-active .site-nav-group-link {
+  color: var(--pine-deep);
+}

@@ -69,7 +69,9 @@
   .theme-parchment .site-nav-menu .site-nav-group-link { border-bottom: none; }
   .theme-parchment .site-nav-menu a[aria-current="page"] { color: var(--incas-orange-deep); }
   .theme-parchment .site-nav-menu .site-nav-cta { width: 100%; margin-top: 16px; justify-content: center; }
-  .m-scrim { display: block !important; position: fixed; inset: 0; z-index: 80; background: rgba(58, 38, 12, 0.4); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s ease; }
+  /* .site-nav is sticky with z-index 20, which traps the open menu inside that
+     layer: the scrim must sit BELOW it (19), or it covers the menu links. */
+  .m-scrim { display: block !important; position: fixed; inset: 0; z-index: 19; background: rgba(58, 38, 12, 0.4); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s ease; }
   .m-scrim.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
 
   /* Full-bleed bands are sized in vw, which INCLUDES the scrollbar: bleed off the
@@ -341,4 +343,11 @@
     margin: -20px 0 0 -20px;
     border-radius: 50%;
   }
+}
+
+/* parchment.css keeps buttons on one line ("never wrap"); on a phone a long
+   label such as "Suggest an International Breakfast" then overflows the
+   column, so let button text wrap at phone widths. */
+@media (max-width: 560px) {
+  .theme-parchment .btn { white-space: normal; max-width: 100%; }
 }

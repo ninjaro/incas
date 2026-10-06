@@ -13,7 +13,7 @@
   --kraft-pocket: #e8cfa1;
   --ink: #443521;
   --ink-soft: #5f5344;
-  --ink-faint: #7a6a56;
+  --ink-faint: #6b5c48;
   --radius: 12px;
   --radius-lg: 18px;
   background: #f6ead6;
@@ -709,7 +709,8 @@ p.about-lead-center {
   width: 46%;
   aspect-ratio: 3 / 2;
   z-index: -1;
-  background: url("/static/img/playful/postcard.svg") center / 100% 100% no-repeat, #fdfdf7;
+  /* image set inline via assetUrl() so it resolves in the static demo too */
+  background: #fdfdf7 center / 100% 100% no-repeat;
   border: 2px solid #55622e;
   border-radius: 5px;
   box-shadow: 0 3px 4px rgba(60, 70, 30, 0.2), 0 16px 30px rgba(60, 70, 30, 0.26);
@@ -1004,4 +1005,15 @@ a.globe-badge:focus-visible {
   color: #fff6e9;
   box-shadow: 0 0 0 0.9cqw #f6ead6, 0 0 0 1.8cqw rgba(255, 102, 0, 0.35), 0 1.6cqw 3cqw rgba(65, 55, 25, 0.3);
   outline: none;
+}
+
+/* EN/DE switch beside the Join us pill. */
+.theme-parchment .site-nav-controls { display: flex; align-items: center; gap: 12px; }
+.theme-parchment .locale-switch { border: 1.5px solid rgba(85, 98, 46, 0.35); background: transparent; }
+.theme-parchment .locale-switch button { color: var(--pine-deep); font-weight: 700; }
+.theme-parchment .locale-switch button.is-active { background: var(--pine); color: #f6ead6; }
+@media (max-width: 560px) {
+  .theme-parchment .site-nav-menu .site-nav-controls { flex-direction: column; align-items: stretch; margin-top: 12px; }
+  .theme-parchment .site-nav-menu .locale-switch { align-self: flex-start; }
+  .theme-parchment .site-nav-menu .locale-switch button { min-height: 44px; min-width: 44px; }
 }

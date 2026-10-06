@@ -15,6 +15,7 @@ import "./styles/parchment.css";
 import "./styles/playful.css";
 import "./styles/playful-site.css";
 import "./styles/playful-mobile.css";
+import "./styles/playful-a11y.css";
 
 const container = document.getElementById("root");
 if (container) {
