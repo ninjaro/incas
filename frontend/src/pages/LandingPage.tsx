@@ -153,10 +153,12 @@ function GlobeSphere() {
 }
 
 /* Event-kind badge stickers orbiting the globe, verbatim from the handoff. */
-const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
+const GLOBE_BADGES: Array<{ a: string; accent?: boolean; to: string; label: { en: string; de: string }; icon: ReactNode }> = [
   {
     a: "0deg",
     accent: true,
+    to: "/events/archive?e=country-evening",
+    label: { en: "Country Evening", de: "Länderabend" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <path fill="currentColor" fillRule="evenodd" d="M-21 -4 a3 3 0 0 1 3-3 h36 a3 3 0 0 1 3 3 a3 3 0 0 1 -3 3 h-1 v8 a10 10 0 0 1 -10 10 h-14 a10 10 0 0 1 -10-10 v-8 h-1 a3 3 0 0 1 -3-3 Z M-3 -7 a3 3 0 0 1 6 0 Z" />
@@ -166,6 +168,8 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
   },
   {
     a: "60deg",
+    to: "/events/archive?e=cafe-lingua",
+    label: { en: "Café Lingua", de: "Café Lingua" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <path fill="currentColor" d="M-24 -10 a6 6 0 0 1 6-6 h22 a6 6 0 0 1 6 6 v9 a6 6 0 0 1 -6 6 h-10 l-9 8 v-8 h-3 a6 6 0 0 1 -6-6 Z" />
@@ -175,6 +179,8 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
   },
   {
     a: "120deg",
+    to: "/events/archive?e=board-games",
+    label: { en: "Board Games", de: "Brettspiele" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <path fill="currentColor" fillRule="evenodd" d="M-20 -11 a9 9 0 0 1 9-9 h22 a9 9 0 0 1 9 9 v22 a9 9 0 0 1 -9 9 h-22 a9 9 0 0 1 -9-9 Z M-9 -13 a4 4 0 1 0 0.01 0 Z M9 -13 a4 4 0 1 0 0.01 0 Z M0 -4 a4 4 0 1 0 0.01 0 Z M-9 5 a4 4 0 1 0 0.01 0 Z M9 5 a4 4 0 1 0 0.01 0 Z" />
@@ -183,6 +189,8 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
   },
   {
     a: "180deg",
+    to: "/events/archive?e=weekend-trip",
+    label: { en: "International Weekend trips", de: "Internationale Wochenend-Ausflüge" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <path fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" d="M0 23V-21" />
@@ -193,6 +201,8 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
   },
   {
     a: "240deg",
+    to: "/events/archive?e=international-breakfast",
+    label: { en: "International Breakfast", de: "Internationales Frühstück" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <path fill="currentColor" d="M-19 -7 a2 2 0 0 1 2-2 h24 a2 2 0 0 1 2 2 v13 a13 13 0 0 1 -14 13 a13 13 0 0 1 -14-13 Z" />
@@ -205,6 +215,8 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
   {
     a: "300deg",
     accent: true,
+    to: "/karaoke",
+    label: { en: "Karaoke", de: "Karaoke" },
     icon: (
       <svg viewBox="-26 -26 52 52" aria-hidden="true">
         <rect x="-8" y="-25" width="16" height="28" rx="8" fill="currentColor" />
@@ -216,6 +228,9 @@ const GLOBE_BADGES: Array<{ a: string; accent?: boolean; icon: ReactNode }> = [
 
 function HeroGlobe({ de }: { de: boolean }) {
   const globeRef = useRef<HTMLDivElement>(null);
+  // The badges are links: hold the idle drift while the pointer is over the
+  // globe so nobody has to chase a moving target.
+  const hoverRef = useRef(false);
 
   useEffect(() => {
     const globe = globeRef.current;
@@ -237,7 +252,7 @@ function HeroGlobe({ de }: { de: boolean }) {
     const frame = (now: number) => {
       const dt = last ? Math.min(64, now - last) : 16;
       last = now;
-      driftAccum += dt * drift;
+      if (!hoverRef.current) driftAccum += dt * drift;
       const target = scrollY * 0.11 + driftAccum;
       current += (target - current) * 0.07;
       tiltCurrent += (tilt - tiltCurrent) * 0.06;
@@ -259,20 +274,27 @@ function HeroGlobe({ de }: { de: boolean }) {
     <div
       className="landing-hero-globe"
       ref={globeRef}
-      role="img"
-      aria-label={de ? "Globus, umkreist von Symbolen für jede Art von INCAS Event" : "Globe circled by symbols for each kind of INCAS event"}
+      role="group"
+      aria-label={de ? "Unsere Event-Arten" : "Our kinds of events"}
+      onPointerEnter={() => { hoverRef.current = true; }}
+      onPointerLeave={() => { hoverRef.current = false; }}
     >
       <span className="globe-ring" aria-hidden="true" />
-      {GLOBE_BADGES.map((badge) => (
-        <span
-          key={badge.a}
-          className={`globe-badge${badge.accent ? " is-accent" : ""}`}
-          style={{ "--a": badge.a } as CSSProperties}
-          aria-hidden="true"
-        >
-          {badge.icon}
-        </span>
-      ))}
+      {GLOBE_BADGES.map((badge) => {
+        const label = de ? badge.label.de : badge.label.en;
+        return (
+          <Link
+            key={badge.a}
+            to={badge.to}
+            className={`globe-badge${badge.accent ? " is-accent" : ""}`}
+            style={{ "--a": badge.a } as CSSProperties}
+            aria-label={label}
+            title={label}
+          >
+            {badge.icon}
+          </Link>
+        );
+      })}
       <GlobeSphere />
     </div>
   );

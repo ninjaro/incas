@@ -327,3 +327,18 @@
   .btn, .cal-filter, .type-chip, .events-tab { min-height: 44px; }
   .site-footer { padding-inline: 16px; text-align: center; }
 }
+
+/* The phone globe is 100px wide, so each orbit badge is ~15px: give the links
+   an invisible ~40px tap target (neighbours sit ~42px apart, so no overlap). */
+@media (max-width: 560px) {
+  a.globe-badge::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border-radius: 50%;
+  }
+}
