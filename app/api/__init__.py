@@ -100,6 +100,23 @@ def api_not_found(_error):
     return api_error("not_found", "Resource not found.", status=404)
 
 
+# Endpoints whose bodies carry personal data or act as unguessable bearer links.
+# Browsers, shared proxies and "back button" caches must never retain them.
+_NO_STORE_PUBLIC_PREFIXES = (
+    "/api/v1/public/registrations/",
+    "/api/v1/public/karaoke/requests/",
+)
+
+
+@api_bp.after_request
+def prevent_sensitive_caching(response):
+    path = request.path
+    if path.startswith("/api/v1/admin/") or path.startswith(_NO_STORE_PUBLIC_PREFIXES):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
+
 def get_json_body():
     data = request.get_json(silent=True)
     return data if isinstance(data, dict) else {}

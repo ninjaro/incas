@@ -123,7 +123,6 @@ def create_demo_tandem_request(
     email,
     occupation,
     gender,
-    birth_year,
     departure_date,
     country_of_origin,
     offered_languages,
@@ -134,6 +133,7 @@ def create_demo_tandem_request(
     comment="",
     is_viewed=False,
     created_at=None,
+    birth_year=None,  # retired field; accepted for call-site compatibility
 ):
     created_at = created_at or datetime.utcnow()
     offered_language_levels = normalize_demo_offered_language_levels(
@@ -152,7 +152,6 @@ def create_demo_tandem_request(
         email=email,
         occupation=occupation,
         gender=gender,
-        birth_year=birth_year,
         departure_date=departure_date,
         country_of_origin=country_of_origin,
         offered_languages=json.dumps(offered_languages),
@@ -176,7 +175,6 @@ def add_demo_request_pair(
     email,
     occupation,
     gender,
-    birth_year,
     departure_date,
     country_of_origin,
     offered_languages,
@@ -185,6 +183,7 @@ def add_demo_request_pair(
     requested_native_only=False,
     same_gender_only=False,
     comment="",
+    birth_year=None,  # retired field; accepted for call-site compatibility
     second_created_at_offset_minutes=20,
     second_email=None,
     second_first_name=None,

@@ -17,6 +17,20 @@ function languageSummary(item: TandemRequest) {
   return `${item.offeredLanguages.join(", ").toUpperCase() || "-"} -> ${item.requestedLanguages.join(", ").toUpperCase() || "-"}`;
 }
 
+/** Coarse matching signals visible in the pseudonymized (blind) list. */
+function matchSignals(item: TandemRequest) {
+  const parts = [`Departs ${item.departureMonth ?? "?"}`];
+  if (item.sameGenderOnly) parts.push("same-gender only");
+  if (item.requestedNativeOnly) parts.push("native only");
+  return parts.join(" · ");
+}
+
+/** Private-tier identity context; falls back to the blind signals. */
+function profileSummary(item: TandemRequest) {
+  const identity = [item.gender, item.occupation, item.countryOfOrigin].filter(Boolean).join(" · ");
+  return identity || matchSignals(item);
+}
+
 type PendingMatchAction = {
   candidate: TandemRequest;
   action: TandemReviewAction;
@@ -185,7 +199,7 @@ function TandemEditor({ item, onDone }: { item: TandemRequest; onDone: () => voi
     firstName: item.firstName ?? "",
     lastName: item.lastName ?? "",
     email: item.email ?? "",
-    occupation: item.occupation,
+    occupation: item.occupation ?? "",
     comment: item.comment ?? "",
   });
   const [busy, setBusy] = useState(false);
@@ -259,7 +273,7 @@ export function TandemPanel() {
     <button type="button" className="btn btn-ghost btn-sm" disabled={actionBusy === item.ref} onClick={() => void markViewed(item)}>{item.isViewed ? "Unread" : "Viewed"}</button>
     {canCorrect ? <button type="button" className="btn btn-ghost btn-sm" disabled={actionBusy === item.ref} onClick={() => { setOpenRef(null); setEdit(item); }}>Edit</button> : null}
   </div>;
-  const card = (item: TandemRequest) => <><small>{item.ref}</small><h3>{requestLabel(item)}</h3><p>{languageSummary(item)}</p><p>{item.countryOfOrigin} / {item.occupation}</p>{showPrivate && item.email ? <a href={`mailto:${item.email}`}>{item.email}</a> : null}{actions(item)}</>;
+  const card = (item: TandemRequest) => <><small>{item.ref}</small><h3>{requestLabel(item)}</h3><p>{languageSummary(item)}</p><p>{profileSummary(item)}</p>{showPrivate && item.email ? <a href={`mailto:${item.email}`}>{item.email}</a> : null}{actions(item)}</>;
 
   return <>
     <PageHeader kicker="Language exchange" title="Language Tandem" sub={showPrivate ? "Private contact details are available for matching." : "Blind mode: personal details are withheld by the API."} />
@@ -280,7 +294,7 @@ export function TandemPanel() {
           <label><span className="sr-only">Viewed status</span><select aria-label="Viewed status" value={viewed} onChange={(event) => setViewed(event.target.value)}><option value="all">All</option><option value="no">Unviewed</option><option value="yes">Viewed</option></select></label>
           <span>{session.capabilities.length} active capabilities</span>
         </div>
-        {list.loading ? <Loading /> : list.error || !payload ? <ErrorState error={list.error} onRetry={list.reload} /> : <DataViews items={payload.items} keyFor={(item) => item.ref} columns={["Request", "Languages", "Profile", "Origin", "Status", "Actions"]} renderCells={(item) => [<span><strong>{requestLabel(item)}</strong>{showPrivate && item.email ? <><br/><small>{item.email}</small></> : null}</span>, languageSummary(item), `${item.gender}, ${new Date().getFullYear() - item.birthYear}`, item.countryOfOrigin, <StatusBadge status={item.isViewed ? "viewed" : "new"} />, actions(item)]} renderCard={card} empty="No tandem requests match these filters." />}
+        {list.loading ? <Loading /> : list.error || !payload ? <ErrorState error={list.error} onRetry={list.reload} /> : <DataViews items={payload.items} keyFor={(item) => item.ref} columns={["Request", "Languages", "Signals", "Profile", "Status", "Actions"]} renderCells={(item) => [<span><strong>{requestLabel(item)}</strong>{showPrivate && item.email ? <><br/><small>{item.email}</small></> : null}</span>, languageSummary(item), matchSignals(item), showPrivate ? [item.gender, item.occupation, item.countryOfOrigin].filter(Boolean).join(" · ") || "-" : "—", <StatusBadge status={item.isViewed ? "viewed" : "new"} />, actions(item)]} renderCard={card} empty="No tandem requests match these filters." />}
       </>}
     </div>
   </>;

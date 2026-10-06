@@ -1,8 +1,10 @@
 """Unified Language Tandem admin API with progressive capabilities.
 
-- language_tandem_blind: anonymized list and matching. Personal data is
-  stripped on the server, never sent, and requests are addressed through an
-  opaque HMAC reference instead of the database id.
+- language_tandem_blind: pseudonymized (redacted) list and matching. Direct and
+  quasi-identifying fields are stripped on the server and never sent; requests
+  are addressed through an opaque HMAC reference instead of the database id. The
+  records remain linkable to a person via that reference, so this is
+  pseudonymized, not anonymous.
 - language_tandem_private: adds names, emails, and free-text fields.
 - language_tandem_corrections: allows edits.
 """
@@ -45,20 +47,18 @@ def resolve_blind_ref(ref):
 
 
 def serialize_blind(item):
+    # Only data the matching algorithm needs, plus coarse derived signals.
+    # No direct identifiers and no exact quasi-identifiers (gender, occupation,
+    # country, exact departure date) — those live in the private tier.
     return {
         "ref": blind_ref(item.id),
-        "gender": item.gender,
-        "birthYear": item.birth_year,
-        "occupation": item.occupation,
-        "countryOfOrigin": item.country_of_origin,
-        "departureDate": item.departure_date.isoformat() if item.departure_date else None,
         "offeredLanguages": item.offered_languages_list,
         "offeredNativeLanguages": item.offered_native_languages_list,
         "offeredLanguageLevels": item.offered_language_levels_dict,
         "requestedLanguages": item.requested_languages_list,
         "requestedNativeOnly": bool(item.requested_native_only),
         "sameGenderOnly": bool(item.same_gender_only),
-        "preferredGender": item.preferred_gender,
+        "departureMonth": item.departure_date.strftime("%Y-%m") if item.departure_date else None,
         "isViewed": bool(item.is_viewed),
         "createdAt": serialize_utc(item.created_at),
     }
@@ -73,6 +73,10 @@ def serialize_private(item):
             "lastName": item.last_name,
             "email": item.email,
             "comment": item.comment,
+            "gender": item.gender,
+            "occupation": item.occupation,
+            "countryOfOrigin": item.country_of_origin,
+            "departureDate": item.departure_date.isoformat() if item.departure_date else None,
         }
     )
     return payload
@@ -170,7 +174,6 @@ EDITABLE_TEXT_FIELDS = {
     "gender": "gender",
     "countryOfOrigin": "country_of_origin",
     "comment": "comment",
-    "preferredGender": "preferred_gender",
 }
 
 
@@ -191,12 +194,6 @@ def api_admin_tandem_update(ref):
                 errors[source] = "This field cannot be empty."
             else:
                 setattr(item, attr, value)
-
-    if "birthYear" in body:
-        try:
-            item.birth_year = int(body.get("birthYear"))
-        except (TypeError, ValueError):
-            errors["birthYear"] = "Enter a valid year."
 
     if "isViewed" in body:
         item.is_viewed = bool(body.get("isViewed"))
@@ -333,10 +330,10 @@ def api_admin_tandem_duplicate_merge():
     fields = body.get("fields") if isinstance(body.get("fields"), dict) else {}
     editable = {
         "firstName": "first_name", "lastName": "last_name", "email": "email",
-        "occupation": "occupation", "gender": "gender", "birthYear": "birth_year",
+        "occupation": "occupation", "gender": "gender",
         "departureDate": "departure_date", "countryOfOrigin": "country_of_origin",
         "requestedNativeOnly": "requested_native_only", "sameGenderOnly": "same_gender_only",
-        "preferredGender": "preferred_gender", "comment": "comment",
+        "comment": "comment",
     }
     for source, attr in editable.items():
         choice = fields.get(source, "keep")

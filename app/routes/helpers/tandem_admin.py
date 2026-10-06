@@ -29,7 +29,6 @@ TANDEM_ADMIN_SORT_DEFAULTS = {
     "country": "asc",
     "occupation": "asc",
     "gender": "asc",
-    "birth": "asc",
     "departure": "asc",
     "offered": "asc",
     "requested": "asc",
@@ -46,7 +45,6 @@ TANDEM_ADMIN_SORT_OPTIONS = [
     {"key": "country", "label": "Country"},
     {"key": "occupation", "label": "Occupation"},
     {"key": "gender", "label": "Gender"},
-    {"key": "birth", "label": "Birth year"},
     {"key": "departure", "label": "Departure date"},
     {"key": "offered", "label": "Offered languages"},
     {"key": "requested", "label": "Requested languages"},
@@ -78,7 +76,6 @@ def build_tandem_request_signature(item):
     return (
         item.occupation or "",
         item.gender or "",
-        item.birth_year or "",
         item.departure_date.isoformat() if item.departure_date else "",
         item.country_of_origin or "",
         tuple(sorted(item.offered_languages_list)),
@@ -341,8 +338,6 @@ def _sort_value_for_request(item, sort_key, country_labels, language_labels):
         return (item.occupation or "").lower()
     if sort_key == "gender":
         return (item.gender or "").lower()
-    if sort_key == "birth":
-        return item.birth_year or 0
     if sort_key == "departure":
         return item.departure_date or datetime.min.date()
     if sort_key == "offered":

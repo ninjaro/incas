@@ -42,8 +42,10 @@ def content_security_policy() -> str:
         (
             "default-src 'self'",
             "script-src 'self'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com data:",
+            # Fonts are self-hosted (see static/fonts, frontend/src/styles/fonts);
+            # no external style or font origin is needed.
+            "style-src 'self' 'unsafe-inline'",
+            "font-src 'self' data:",
             f"img-src 'self' data: blob:{f' {image_sources}' if image_sources else ''}",
             "connect-src 'self'",
             "object-src 'none'",

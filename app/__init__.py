@@ -51,6 +51,11 @@ def legacy_react_target(path):
         "/contacts": "/contact",
         "/contact-form": "/contact?form=general",
         "/suggest-event": "/suggest-event",
+        "/impressum": "/impressum",
+        "/imprint": "/impressum",
+        "/privacy": "/privacy",
+        "/datenschutz": "/privacy",
+        "/datenschutzerklaerung": "/privacy",
         "/language-tandem": "/tandem",
         "/team": "/about/team",
         "/about": "/about",
@@ -98,7 +103,7 @@ def is_canonical_react_path(path):
     exact = {
         "/", "/calendar", "/tandem", "/join", "/events", "/karaoke", "/wiki", "/about", "/about/team",
         "/about/working-groups", "/about/team-meetings", "/offers",
-        "/contact", "/suggest-event", "/admin",
+        "/contact", "/suggest-event", "/admin", "/impressum", "/privacy",
     }
     return path in exact or path.startswith(
         ("/events/", "/offers/", "/registrations/", "/admin/")
@@ -310,6 +315,31 @@ def create_app(config_overrides=None):
                 return
             time.sleep(interval)
 
+    @app.cli.command("purge-personal-data")
+    def purge_personal_data_command():
+        """Delete personal data whose retention window has passed."""
+        from app.retention import purge_expired_personal_data
+
+        counts = purge_expired_personal_data()
+        db.session.commit()
+        click.echo(" ".join(f"{name}={count}" for name, count in counts.items()))
+
+    @app.cli.command("retention-worker")
+    @click.option("--once", is_flag=True, help="Run one purge and exit.")
+    @click.option("--interval", default=86400, type=click.IntRange(min=60), show_default=True)
+    def retention_worker_command(once, interval):
+        """Continuously enforce data-retention deletion rules."""
+        from app.retention import purge_expired_personal_data
+
+        while True:
+            counts = purge_expired_personal_data()
+            db.session.commit()
+            click.echo(" ".join(f"{name}={count}" for name, count in counts.items()))
+            db.session.remove()
+            if once:
+                return
+            time.sleep(interval)
+
     from app.routes import bp
     app.register_blueprint(bp)
 
@@ -383,6 +413,8 @@ def register_spa_routes(app):
             "/contact": "Contact | INCAS",
             "/suggest-event": "Suggest an event | INCAS",
             "/tandem": "Language Tandem | INCAS",
+            "/impressum": "Impressum | INCAS",
+            "/privacy": "Privacy Policy | INCAS",
         }
         title = page_titles.get(path, title)
         if path.startswith("/events/"):

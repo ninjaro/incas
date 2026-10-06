@@ -4,18 +4,27 @@ import re
 from flask import jsonify, request
 from sqlalchemy import func, or_
 
-from app.api import api_bp, get_json_body, rate_limited, require_capability, validation_error
-from app.datetime_utils import serialize_utc
+from app.api import api_bp, api_error, get_json_body, rate_limited, require_capability, validation_error
+from app.datetime_utils import serialize_utc, utc_now
 from app.models import ContactRequest, EventSuggestion, LanguageTandemRequest, db
+from app.routes.helpers.access import has_capability
 from app.routes.helpers.tandem_form import (
     get_country_options,
     get_language_label_map,
     get_occupation_choices,
     normalize_country_code,
     normalize_language_codes,
-    parse_birth_year,
     parse_departure_date,
 )
+
+RESOLVED_FORM_STATUSES = {"resolved", "archived"}
+
+
+def _mask_email(value):
+    value = value or ""
+    if "@" not in value:
+        return ""
+    return f"…@{value.split('@', 1)[1]}"
 
 
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -135,13 +144,11 @@ def api_public_tandem_submit():
         "requestedLanguages": normalize_language_codes(body.get("requestedLanguages") or []),
         "requestedNativeOnly": bool(body.get("requestedNativeOnly")),
         "sameGenderOnly": bool(body.get("sameGenderOnly")),
-        "preferredGender": (body.get("preferredGender") or "").strip(),
         "comment": (body.get("comment") or "").strip(),
     }
-    birth_year = parse_birth_year(str(body.get("birthYear") or ""))
     departure_date = parse_departure_date(str(body.get("departureDate") or ""))
     errors = {}
-    for field in ("firstName", "lastName", "occupation", "gender"):
+    for field in ("firstName", "lastName", "gender"):
         if not values[field]:
             errors[field] = "This field is required."
     if not _email_is_valid(values["email"]):
@@ -150,8 +157,6 @@ def api_public_tandem_submit():
         errors["occupationOther"] = "Enter your occupation."
     if not values["countryOfOrigin"]:
         errors["countryOfOrigin"] = "Select your country of origin."
-    if birth_year is None:
-        errors["birthYear"] = "Enter a valid birth year."
     if departure_date is None:
         errors["departureDate"] = "Enter a valid departure date."
     if not values["offeredLanguages"]:
@@ -181,7 +186,6 @@ def api_public_tandem_submit():
         email=values["email"][:255],
         occupation=occupation[:120],
         gender=values["gender"][:40],
-        birth_year=birth_year,
         departure_date=departure_date,
         country_of_origin=values["countryOfOrigin"],
         offered_languages=json.dumps(values["offeredLanguages"]),
@@ -189,8 +193,7 @@ def api_public_tandem_submit():
         offered_language_levels=json.dumps(levels),
         requested_languages=json.dumps(values["requestedLanguages"]),
         requested_native_only=values["requestedNativeOnly"],
-        same_gender_only=values["sameGenderOnly"] or values["preferredGender"] == "same",
-        preferred_gender=values["preferredGender"][:40],
+        same_gender_only=values["sameGenderOnly"],
         comment=values["comment"][:10000],
     )
     db.session.add(item)
@@ -198,43 +201,67 @@ def api_public_tandem_submit():
     return jsonify({"submissionId": f"TAN-{item.id:06d}"}), 201
 
 
-def _serialize_contact(item):
-    return {
+def _serialize_contact(item, *, full=True):
+    payload = {
         "type": "contact",
         "id": item.id,
         "publicId": f"CON-{item.id:06d}",
-        "name": item.name,
-        "email": item.email,
         "phone": "",
         "subject": item.subject,
-        "message": item.message,
         "kind": "",
         "status": item.status,
         "isViewed": bool(item.is_viewed),
+        "resolvedAt": serialize_utc(item.resolved_at),
         "createdAt": serialize_utc(item.created_at),
+        "redacted": not full,
     }
+    if full:
+        payload.update({"name": item.name, "email": item.email, "message": item.message})
+    else:
+        payload.update(
+            {"name": "", "email": _mask_email(item.email), "message": ""}
+        )
+    return payload
 
 
-def _serialize_suggestion(item):
-    return {
+def _serialize_suggestion(item, *, full=True):
+    payload = {
         "type": "suggestion",
         "id": item.id,
         "publicId": f"SUG-{item.id:06d}",
-        "name": item.contact_name,
-        "email": item.contact_email,
-        "phone": item.contact_phone,
         "subject": item.country,
-        "message": item.comment,
         "kind": item.kind,
         "status": item.status,
         "isViewed": bool(item.is_viewed),
+        "resolvedAt": serialize_utc(item.resolved_at),
         "createdAt": serialize_utc(item.created_at),
+        "redacted": not full,
     }
+    if full:
+        payload.update(
+            {
+                "name": item.contact_name,
+                "email": item.contact_email,
+                "phone": item.contact_phone,
+                "message": item.comment,
+            }
+        )
+    else:
+        payload.update(
+            {
+                "name": "",
+                "email": _mask_email(item.contact_email),
+                "phone": "",
+                "message": "",
+            }
+        )
+    return payload
 
 
 @api_bp.get("/admin/forms")
-@require_capability("forms")
+@require_capability("forms_triage")
 def api_admin_forms_list():
+    full = has_capability("forms_full")
     form_type = request.args.get("type", "").strip()
     status = request.args.get("status", "").strip()
     search = request.args.get("q", "").strip().casefold()
@@ -245,23 +272,30 @@ def api_admin_forms_list():
             query = query.filter(ContactRequest.status == status)
         if search:
             pattern = f"%{search}%"
-            query = query.filter(or_(func.lower(ContactRequest.name).like(pattern), func.lower(ContactRequest.email).like(pattern), func.lower(ContactRequest.subject).like(pattern)))
-        items.extend(_serialize_contact(item) for item in query.all())
+            columns = [func.lower(ContactRequest.subject).like(pattern)]
+            if full:
+                columns += [func.lower(ContactRequest.name).like(pattern), func.lower(ContactRequest.email).like(pattern)]
+            query = query.filter(or_(*columns))
+        items.extend(_serialize_contact(item, full=full) for item in query.all())
     if form_type in {"", "suggestion"}:
         query = EventSuggestion.query
         if status:
             query = query.filter(EventSuggestion.status == status)
         if search:
             pattern = f"%{search}%"
-            query = query.filter(or_(func.lower(EventSuggestion.contact_name).like(pattern), func.lower(EventSuggestion.contact_email).like(pattern), func.lower(EventSuggestion.country).like(pattern)))
-        items.extend(_serialize_suggestion(item) for item in query.all())
+            columns = [func.lower(EventSuggestion.country).like(pattern)]
+            if full:
+                columns += [func.lower(EventSuggestion.contact_name).like(pattern), func.lower(EventSuggestion.contact_email).like(pattern)]
+            query = query.filter(or_(*columns))
+        items.extend(_serialize_suggestion(item, full=full) for item in query.all())
     items.sort(key=lambda item: item["createdAt"], reverse=True)
-    return jsonify({"items": items})
+    return jsonify({"items": items, "capabilities": {"full": full}})
 
 
 @api_bp.patch("/admin/forms/<form_type>/<int:item_id>")
-@require_capability("forms")
+@require_capability("forms_triage")
 def api_admin_form_update(form_type, item_id):
+    full = has_capability("forms_full")
     model = ContactRequest if form_type == "contact" else EventSuggestion if form_type == "suggestion" else None
     if model is None:
         return api_error("not_found", "Form entry not found.", status=404)
@@ -276,5 +310,7 @@ def api_admin_form_update(form_type, item_id):
         if status not in {"new", "in_progress", "resolved", "archived"}:
             return validation_error({"status": "Unknown form status."})
         item.status = status
+        item.resolved_at = utc_now() if status in RESOLVED_FORM_STATUSES else None
     db.session.commit()
-    return jsonify(_serialize_contact(item) if form_type == "contact" else _serialize_suggestion(item))
+    serialize = _serialize_contact if form_type == "contact" else _serialize_suggestion
+    return jsonify(serialize(item, full=full))

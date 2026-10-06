@@ -10,15 +10,27 @@ from app.models import AccessKey, db
 ACCESS_TARGETS = {
     "posts": "main.admin_posts",
     "event_registrations": "main.admin_event_registrations",
+    "event_registrations_view": "main.admin_event_registrations",
+    "event_registrations_checkin": "main.admin_event_registrations",
+    "event_registrations_private": "main.admin_event_registrations",
+    "event_registrations_export": "main.admin_event_registrations",
     "language_tandem": "main.admin_language_tandem",
     "language_tandem_corrections": "main.admin_language_tandem",
     "forms": "main.admin_forms",
+    "forms_triage": "main.admin_forms",
+    "forms_full": "main.admin_forms",
     "access_keys": "main.admin_access_keys",
 }
 
 ACCESS_LABELS = {
     "posts": "Posts and Events",
-    "event_registrations": "Event Registrations",
+    "event_registrations": "Event Registrations (Full)",
+    "event_registrations_view": "Event Registrations (View)",
+    "event_registrations_checkin": "Event Registrations (Check-in)",
+    "event_registrations_private": "Event Registrations (Private Data)",
+    "event_registrations_export": "Event Registrations (CSV Export)",
+    "forms_triage": "Forms (Triage)",
+    "forms_full": "Forms (Full Details)",
     "language_tandem": "Language Tandem",
     "language_tandem_blind": "Tandem Matching (Blind)",
     "language_tandem_private": "Tandem Contact Details",
@@ -34,9 +46,26 @@ ACCESS_LABELS = {
 # supersets of the weaker ones so the admin UI can stay a single panel.
 # Legacy keys ("language_tandem", "language_tandem_corrections") keep working
 # by expanding to the closest new capabilities.
+# Fine-grained registration and forms capabilities. The historical broad scopes
+# ("event_registrations", "forms") stay as strict supersets so existing keys keep
+# working; new narrow scopes grant only what their task needs (least privilege).
+EVENT_REGISTRATION_CAPABILITIES = {
+    "event_registrations_view",
+    "event_registrations_checkin",
+    "event_registrations_private",
+    "event_registrations_export",
+}
+
 SCOPE_CAPABILITIES = {
     "posts": {"posts"},
-    "event_registrations": {"event_registrations"},
+    "event_registrations": {"event_registrations", *EVENT_REGISTRATION_CAPABILITIES},
+    "event_registrations_view": {"event_registrations_view"},
+    "event_registrations_checkin": {"event_registrations_view", "event_registrations_checkin"},
+    "event_registrations_private": {"event_registrations_view", "event_registrations_private"},
+    "event_registrations_export": {"event_registrations_view", "event_registrations_export"},
+    "forms": {"forms", "forms_triage", "forms_full"},
+    "forms_triage": {"forms_triage"},
+    "forms_full": {"forms_triage", "forms_full"},
     "language_tandem": {"language_tandem_blind", "language_tandem_private"},
     "language_tandem_blind": {"language_tandem_blind"},
     "language_tandem_private": {"language_tandem_blind", "language_tandem_private"},
@@ -45,7 +74,6 @@ SCOPE_CAPABILITIES = {
         "language_tandem_private",
         "language_tandem_corrections",
     },
-    "forms": {"forms"},
     "access_keys": {"access_keys"},
     "theme_review": {"theme_review"},
     "theme_force": {"theme_review", "theme_force"},

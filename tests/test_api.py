@@ -575,3 +575,97 @@ def test_payment_not_required(client, app):
     )
     assert response.status_code == 422
     assert response.get_json()["error"]["code"] == "payment_not_required"
+
+
+# --- Privacy / GDPR hardening -------------------------------------------------
+
+
+def _make_registration_event(client, app):
+    unlock(client, app, "posts-key", ["posts"])
+    post = client.post(
+        "/api/v1/admin/posts",
+        json={
+            "title": "Privacy Trip",
+            "status": "published",
+            "startsAt": (get_configured_local_now() + timedelta(days=6)).isoformat(),
+            "registrationLimitEnabled": True,
+            "registrationLimit": 10,
+        },
+        headers=API_HEADERS,
+    ).get_json()
+    with app.app_context():
+        post_id = Post.query.filter_by(slug=post["slug"]).first().id
+    client.post("/api/v1/access/lock", headers=API_HEADERS)
+    return post["slug"], post_id
+
+
+def test_sensitive_responses_are_not_cacheable(client, app):
+    slug, post_id = _make_registration_event(client, app)
+    registration = register_for_event(client, slug)
+
+    status = client.get(f"/api/v1/public/registrations/{registration['publicId']}")
+    assert status.headers.get("Cache-Control") == "no-store"
+
+    unlock(client, app, "reg-key", ["event_registrations"])
+    listing = client.get(f"/api/v1/admin/events/{post_id}/registrations")
+    assert listing.headers.get("Cache-Control") == "no-store"
+    export = client.get(f"/api/v1/admin/events/{post_id}/registrations.csv")
+    assert export.headers.get("Cache-Control") == "no-store"
+
+
+def test_blind_tandem_only_exposes_matching_signals(client, app):
+    unlock(client, app, "blind-key", ["language_tandem_blind"])
+    items = client.get("/api/v1/admin/language-tandem").get_json()["items"]
+    assert items
+    for item in items:
+        for leaked in (
+            "firstName", "lastName", "email", "comment", "id",
+            "gender", "occupation", "countryOfOrigin", "departureDate", "birthYear",
+            "preferredGender",
+        ):
+            assert leaked not in item, f"blind payload leaked {leaked}"
+        assert "departureMonth" in item
+        assert "offeredLanguages" in item and "requestedLanguages" in item
+
+
+def test_registration_permission_split(client, app):
+    slug, post_id = _make_registration_event(client, app)
+    register_for_event(client, slug)
+
+    # View-only: sees the queue but not identities, cannot export or check in.
+    unlock(client, app, "view-key", ["event_registrations_view"])
+    listing = client.get(f"/api/v1/admin/events/{post_id}/registrations")
+    assert listing.status_code == 200
+    item = listing.get_json()["items"][0]
+    assert "name" not in item and "email" not in item
+    assert listing.get_json()["tier"] == "view"
+    assert client.get(f"/api/v1/admin/events/{post_id}/registrations.csv").status_code == 403
+    patch = client.patch(
+        f"/api/v1/admin/event-registrations/1", json={"status": "approved"}, headers=API_HEADERS
+    )
+    assert patch.status_code == 403
+    client.post("/api/v1/access/lock", headers=API_HEADERS)
+
+    # Export is its own privilege and does not imply seeing the live list body.
+    unlock(client, app, "export-key", ["event_registrations_export"])
+    assert client.get(f"/api/v1/admin/events/{post_id}/registrations.csv").status_code == 200
+
+
+def test_forms_triage_redacts_identifying_fields(client, app):
+    client.post(
+        "/api/v1/public/contact",
+        json={"name": "Jane Roe", "email": "jane@example.org", "message": "Hi there"},
+        headers=API_HEADERS,
+    )
+    unlock(client, app, "triage-key", ["forms_triage"])
+    triage = client.get("/api/v1/admin/forms").get_json()
+    assert triage["capabilities"]["full"] is False
+    entry = next(item for item in triage["items"] if item["type"] == "contact")
+    assert entry["name"] == "" and entry["message"] == ""
+    assert "jane@example.org" not in entry["email"]
+    client.post("/api/v1/access/lock", headers=API_HEADERS)
+
+    unlock(client, app, "full-key", ["forms"])
+    full = client.get("/api/v1/admin/forms").get_json()
+    entry = next(item for item in full["items"] if item["type"] == "contact")
+    assert entry["email"] == "jane@example.org" and entry["name"] == "Jane Roe"

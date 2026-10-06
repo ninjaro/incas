@@ -1,5 +1,5 @@
-import { useCallback, type CSSProperties, type MouseEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, type CSSProperties, type MouseEvent } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { ContentPageResponse, ContentSection } from "../api/types";
 import { Loading } from "../components/ui";
@@ -53,6 +53,16 @@ export function ContentNotFound() {
 
 export function ContentArticle({ page }: { page: ContentPageResponse }) {
   const navigate = useNavigate();
+  const { hash } = useLocation();
+
+  // Deep links such as /privacy#tandem (used by the per-form privacy notices)
+  // must scroll to the matching section once the injected HTML is mounted.
+  useEffect(() => {
+    if (!hash || hash.length < 2) return;
+    const id = decodeURIComponent(hash.slice(1));
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hash, page.bodyHtml]);
 
   // Delegated click handler: intercept clicks on internal in-body links and
   // route them through react-router instead of letting the browser load the

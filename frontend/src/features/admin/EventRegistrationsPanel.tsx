@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { EventQueueSummary, EventRegistrationStatus, RegistrationRecord } from "../../api/types";
 import { EventRegistrationStatus as RegistrationBadge } from "../../components/events";
 import { ConfirmDialog, EmptyState, ErrorState, Loading, PageHeader } from "../../components/ui";
+import { useSession } from "../../auth/SessionContext";
 import { useData } from "../../data/DataProviderContext";
 import { useAsync } from "../../hooks/useAsync";
 import { DataViews } from "./DataViews";
@@ -11,6 +12,10 @@ const STATUSES: EventRegistrationStatus[] = ["waiting_payment", "approved", "wai
 
 export function EventRegistrationsPanel() {
   const data = useData();
+  const { hasCapability } = useSession();
+  const canCheckIn = hasCapability("event_registrations_checkin");
+  const canSeePrivate = hasCapability("event_registrations_private");
+  const canExport = hasCapability("event_registrations_export");
   const queues = useAsync(() => data.getEventQueues(), [data]);
   const [postId, setPostId] = useState<number | null>(null);
   const [status, setStatus] = useState("");
@@ -54,11 +59,22 @@ export function EventRegistrationsPanel() {
     else void update(item, next);
   };
   const actions = (item: RegistrationRecord) => {
+    if (!canCheckIn) return <RegistrationBadge status={item.status} position={item.waitingListPosition} />;
     const choices = [item.status, ...(item.allowedTransitions ?? [])];
-    return <select aria-label={`Status for ${item.name}`} value={item.status} disabled={choices.length === 1 || busyId === item.id} onChange={(event) => chooseStatus(item, event.target.value as EventRegistrationStatus)}>{choices.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>;
+    return <select aria-label={`Status for ${item.name ?? item.publicId}`} value={item.status} disabled={choices.length === 1 || busyId === item.id} onChange={(event) => chooseStatus(item, event.target.value as EventRegistrationStatus)}>{choices.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>;
   };
-  const card = (item: RegistrationRecord) => <><small>{item.publicId}</small><h3>{item.name}</h3><p>{item.email}<br/>{item.occupation}</p><RegistrationBadge status={item.status} position={item.waitingListPosition} />{item.comment ? <p>{item.comment}</p> : null}{actions(item)}</>;
+  const card = (item: RegistrationRecord) => <><small>{item.publicId}</small><h3>{item.name ?? "—"}</h3>{canSeePrivate ? <p>{item.email}<br/>{item.occupation}</p> : null}<RegistrationBadge status={item.status} position={item.waitingListPosition} />{canSeePrivate && item.comment ? <p>{item.comment}</p> : null}{actions(item)}</>;
   const event = registrations.data?.event;
+  const columns = canSeePrivate
+    ? ["Application", "Name", "Contact", "Status", "Change"]
+    : canCheckIn
+      ? ["Application", "Name", "Status", "Change"]
+      : ["Application", "Status"];
+  const renderCells = (item: RegistrationRecord) => {
+    if (canSeePrivate) return [item.publicId, item.name, <a href={`mailto:${item.email}`}>{item.email}</a>, <RegistrationBadge status={item.status} position={item.waitingListPosition} />, actions(item)];
+    if (canCheckIn) return [item.publicId, item.name ?? "—", <RegistrationBadge status={item.status} position={item.waitingListPosition} />, actions(item)];
+    return [item.publicId, <RegistrationBadge status={item.status} position={item.waitingListPosition} />];
+  };
 
   return <>
     <PageHeader kicker="Admin" title="Event registrations" sub={event ? `${event.reservedCount}/${event.capacity} reserved, ${event.waitingListCount} waiting, ${event.placesRemaining} places remaining` : "Load and manage an event registration queue."} />
@@ -66,12 +82,12 @@ export function EventRegistrationsPanel() {
       <label><span className="sr-only">Event queue</span><select aria-label="Event queue" value={activePostId} onChange={(event) => setPostId(Number(event.target.value))}>{queues.data.events.map((queue) => <option key={queue.postId} value={queue.postId}>{queue.title} ({queue.startsAt?.slice(0, 10)})</option>)}</select></label>
       <label><span className="sr-only">Search registrations</span><input aria-label="Search registrations" type="search" value={query} placeholder="Search name or application ID" onChange={(event) => setQuery(event.target.value)} /></label>
       <label><span className="sr-only">Registration status</span><select aria-label="Registration status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{STATUSES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
-      <a className="btn btn-outline btn-sm" href={`/api/v1/admin/events/${activePostId}/registrations.csv`}>Export CSV</a>
+      {canExport ? <a className="btn btn-outline btn-sm" href={`/api/v1/admin/events/${activePostId}/registrations.csv`}>Export CSV</a> : null}
     </div>
     {error ? <p className="notice notice-bad" role="alert">{error}</p> : null}
     {registrations.loading ? <Loading /> : registrations.error || !registrations.data || !event ? (
       <ErrorState error={registrations.error} onRetry={registrations.reload} />
-    ) : <DataViews items={registrations.data.items} keyFor={(item) => item.publicId} columns={["Application", "Name", "Contact", "Status", "Change"]} renderCells={(item) => [item.publicId, item.name, <a href={`mailto:${item.email}`}>{item.email}</a>, <RegistrationBadge status={item.status} position={item.waitingListPosition} />, actions(item)]} renderCard={card} empty="No matching applications." />}
+    ) : <DataViews items={registrations.data.items} keyFor={(item) => item.publicId} columns={columns} renderCells={renderCells} renderCard={card} empty="No matching applications." />}
     <ConfirmDialog
       open={pending !== null}
       title={pending?.next === "waiting_refund" ? "Request a refund?" : "Cancel this registration?"}

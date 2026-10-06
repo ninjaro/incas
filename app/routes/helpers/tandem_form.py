@@ -212,22 +212,6 @@ def render_language_tandem_form_page(values, errors=None, mode="compact"):
     )
 
 
-def parse_birth_year(value):
-    value = (value or "").strip()
-    if not value:
-        return None
-
-    try:
-        year = int(value)
-    except ValueError:
-        return None
-
-    current_year = datetime.utcnow().year
-    if year < 1900 or year > current_year:
-        return None
-
-    return year
-
 def parse_departure_date(value):
     value = (value or "").strip()
     if not value:
@@ -253,7 +237,6 @@ def build_tandem_form_values(item=None):
             "occupation": "",
             "occupation_other": "",
             "gender": "",
-            "birth_year": "",
             "departure_date": "",
             "country_of_origin": "",
             "offered_languages": [],
@@ -261,7 +244,7 @@ def build_tandem_form_values(item=None):
             "offered_language_levels": {},
             "requested_languages": [],
             "requested_native_only": False,
-            "preferred_gender": "",
+            "same_gender_only": False,
             "comment": "",
         }
 
@@ -272,10 +255,9 @@ def build_tandem_form_values(item=None):
         "first_name": item.first_name,
         "last_name": item.last_name,
         "email": item.email,
-        "occupation": raw_occupation if is_known_occupation else "other",
+        "occupation": raw_occupation if is_known_occupation else ("other" if raw_occupation else ""),
         "occupation_other": "" if is_known_occupation else raw_occupation,
         "gender": item.gender,
-        "birth_year": str(item.birth_year or ""),
         "departure_date": item.departure_date.strftime("%Y-%m-%d") if item.departure_date else "",
         "country_of_origin": item.country_of_origin,
         "offered_languages": list(item.offered_languages_list),
@@ -283,7 +265,7 @@ def build_tandem_form_values(item=None):
         "offered_language_levels": dict(item.offered_language_levels_dict),
         "requested_languages": list(item.requested_languages_list),
         "requested_native_only": bool(item.requested_native_only),
-        "preferred_gender": item.preferred_gender or "",
+        "same_gender_only": bool(item.same_gender_only),
         "comment": item.comment or "",
     }
 

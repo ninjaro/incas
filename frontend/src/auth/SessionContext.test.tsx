@@ -31,7 +31,7 @@ describe("session expiration", () => {
         <SessionProvider><SessionProbe /></SessionProvider>
       </DataProviderProvider>,
     );
-    expect(await screen.findByText("forms")).toBeInTheDocument();
+    expect(await screen.findByText((text) => text.split(",").includes("forms_triage"))).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("locked")).toBeInTheDocument(), { timeout: 1_500 });
   });
 });

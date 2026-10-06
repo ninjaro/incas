@@ -109,6 +109,8 @@ const routes = [
       },
       { path: "/contact", element: <ContactPage /> },
       { path: "/suggest-event", element: <SuggestEventPage /> },
+      { path: "/impressum", element: <ContentPage slug="impressum" section="legal" /> },
+      { path: "/privacy", element: <ContentPage slug="privacy" section="legal" /> },
       { path: "/registrations/:publicId", element: <RegistrationStatusPage /> },
       {
         path: "/admin",
@@ -125,11 +127,11 @@ const routes = [
           },
           {
             path: "registrations",
-            element: <RequireCapability capability="event_registrations"><EventRegistrationsPanel /></RequireCapability>,
+            element: <RequireCapability capability="event_registrations_view"><EventRegistrationsPanel /></RequireCapability>,
           },
           {
             path: "forms",
-            element: <RequireCapability capability="forms"><FormsInboxPanel /></RequireCapability>,
+            element: <RequireCapability capability="forms_triage"><FormsInboxPanel /></RequireCapability>,
           },
           {
             path: "access-keys",
