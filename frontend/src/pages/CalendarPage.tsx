@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import type { PublicPost } from "../api/types";
 import { EventCard, EventDate, EventMarker, EventPaymentNotice, EventTitle } from "../components/events";
-import { EmptyState, ErrorState, Loading, PageHeader } from "../components/ui";
+import { EmptyState, ErrorState, Loading } from "../components/ui";
+import { downloadEventIcs } from "../utils/ics";
 import { useData } from "../data/DataProviderContext";
 import { getEventKind } from "../domain/eventKinds";
 import { usePublicTheme } from "../features/themes/usePublicTheme";
@@ -72,7 +74,28 @@ function DayDialog({ cell, locale, onClose }: { cell: DayCell; locale: string; o
   );
 }
 
-function MonthGrid({ year, month, events, locale, minimal = false }: { year: number; month: number; events: PublicPost[]; locale: string; minimal?: boolean }) {
+/* Design (Calendar.html): colour-coded filter chips above the grid. */
+export const CAL_FILTERS: { key: string; label: string; labelDe: string; dot: string; kinds: string[] }[] = [
+  { key: "lingua", label: "Café Lingua", labelDe: "Café Lingua", dot: "#55622e", kinds: ["cafe_lingua"] },
+  { key: "country", label: "Country Evening", labelDe: "Länderabend", dot: "#ff6600", kinds: ["country_evening"] },
+  { key: "karaoke", label: "Karaoke", labelDe: "Karaoke", dot: "#b34700", kinds: ["karaoke"] },
+  { key: "games", label: "Board Games", labelDe: "Brettspiele", dot: "#8fa057", kinds: ["board_games"] },
+  { key: "breakfast", label: "Breakfast", labelDe: "Frühstück", dot: "#a8761f", kinds: ["breakfast"] },
+  { key: "trip", label: "Weekend trip", labelDe: "Wochenendtrip", dot: "#6b7f8f", kinds: ["trip"] },
+];
+
+export function filterTypeOf(event: PublicPost): string | null {
+  const entry = CAL_FILTERS.find((filter) => filter.kinds.includes(event.eventKind ?? ""));
+  return entry ? entry.key : null;
+}
+
+function eventHidden(event: PublicPost, active: string[]): boolean {
+  if (!active.length) return false;
+  const type = filterTypeOf(event);
+  return !type || !active.includes(type);
+}
+
+function MonthGrid({ year, month, events, locale, minimal = false, activeFilters = [] }: { year: number; month: number; events: PublicPost[]; locale: string; minimal?: boolean; activeFilters?: string[] }) {
   const [selected, setSelected] = useState<DayCell | null>(null);
   const cells = buildCells(year, month, events);
   const weekdays = Array.from({ length: 7 }, (_, index) => new Intl.DateTimeFormat(locale, { weekday: "short" }).format(new Date(2026, 0, 5 + index)));
@@ -88,15 +111,33 @@ function MonthGrid({ year, month, events, locale, minimal = false }: { year: num
           const isToday = dateKey(cell.date) === today;
           const weekend = cell.date.getDay() === 0 || cell.date.getDay() === 6;
           const eventState = hasEvents ? (cell.events.some((event) => event.isLive) ? " has-upcoming" : " has-archived") : "";
-          const classes = `cal-cell${cell.inMonth ? "" : " is-outside"}${weekend ? " is-weekend" : ""}${isToday ? " is-today" : ""}${hasEvents ? " has-events" : ""}${eventState}`;
+          const allHidden = hasEvents && cell.events.every((event) => eventHidden(event, activeFilters));
+          const classes = `cal-cell${cell.inMonth ? "" : " is-outside"}${weekend ? " is-weekend" : ""}${isToday ? " is-today" : ""}${hasEvents ? " has-events" : ""}${eventState}${allHidden ? " is-dimmed" : ""}`;
           if (minimal) {
             const eventLabel = locale === "de" ? `${cell.events.length} Events` : `${cell.events.length} events`;
             return <button key={dateKey(cell.date)} type="button" className={classes} role="gridcell" aria-current={isToday ? "date" : undefined} aria-label={`${new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(cell.date)}${hasEvents ? `, ${eventLabel}` : ""}`} onClick={() => hasEvents ? setSelected(cell) : setSelected(null)}><span>{cell.date.getDate()}</span></button>;
           }
+          if (!cell.inMonth) {
+            // Design (Calendar.html): outside-month cells stay empty and faded.
+            return <div key={dateKey(cell.date)} className={classes} role="gridcell" />;
+          }
           return (
             <div key={dateKey(cell.date)} className={classes} role="gridcell">
-              <span className="cal-day-number">{cell.date.getDate()}</span>
-              <div className="cal-cell-events">{cell.events.slice(0, 2).map((event) => <Link key={event.slug} to={`/events/${event.slug}`} className="cal-chip"><EventMarker eventKind={event.eventKind} /><span>{event.title.full}</span>{event.registration?.priceCents ? <span aria-label="Payment required">EUR</span> : null}</Link>)}{cell.events.length > 2 ? <button type="button" className="cal-more" onClick={() => setSelected(cell)}>+{cell.events.length - 2}</button> : null}</div>
+              {cell.date.getDate()}
+              {cell.events.slice(0, 2).map((event) => {
+                const hidden = eventHidden(event, activeFilters);
+                return (
+                  <span key={event.slug}>
+                    <Link to={`/events/${event.slug}`} className={`cal-chip${hidden ? " is-hidden" : ""}`} data-type={filterTypeOf(event) ?? undefined}>{event.title.full}</Link>
+                    {event.startsAt ? (
+                      <button type="button" className={`cal-save${hidden ? " is-hidden" : ""}`} title={locale === "de" ? "Im Kalender speichern" : "Save to calendar"} onClick={() => downloadEventIcs(event)}>
+                        <i className="bi bi-calendar-plus" aria-hidden="true" /> {locale === "de" ? "Speichern" : "Save"}
+                      </button>
+                    ) : null}
+                  </span>
+                );
+              })}
+              {cell.events.length > 2 ? <button type="button" className="cal-more" onClick={() => setSelected(cell)}>+{cell.events.length - 2}</button> : null}
             </div>
           );
         })}</div>)}
@@ -147,29 +188,98 @@ export function CalendarPage() {
     const month = match ? Number(match[2]) : now.getMonth() + 1;
     return month >= 1 && month <= 12 ? { year, month } : { year: now.getFullYear(), month: now.getMonth() + 1 };
   });
-  const [kind, setKind] = useState("");
   const calendar = useAsync(() => data.getCalendar(cursor.year, cursor.month), [data, cursor.year, cursor.month]);
   const shift = (delta: number) => setCursor(({ year, month }) => { const date = new Date(year, month - 1 + delta, 1); return { year: date.getFullYear(), month: date.getMonth() + 1 }; });
-  const allEvents = calendar.data?.events ?? [];
-  const events = kind ? allEvents.filter((event) => event.eventKind === kind) : allEvents;
-  const kinds = [...new Set(allEvents.map((event) => event.eventKind).filter((value): value is string => Boolean(value)))];
-  const earlier = events.filter((event) => !event.isLive).length;
-  const upcoming = events.length - earlier;
-  const monthValue = `${cursor.year}-${String(cursor.month).padStart(2, "0")}`;
+  const events = calendar.data?.events ?? [];
   const de = locale === "de";
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const toggleFilter = (key: string) => {
+    setActiveFilters((current) => current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
+  };
+  const [phone, setPhone] = useState(() => window.matchMedia("(max-width: 560px)").matches);
+  const [dropOpen, setDropOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 560px)");
+    const onChange = () => setPhone(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  useEffect(() => {
+    if (!dropOpen) return;
+    const onDoc = (event: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(event.target as Node)) setDropOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDropOpen(false);
+    };
+    document.addEventListener("click", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("click", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [dropOpen]);
+  const dropLabel = activeFilters.length === 0
+    ? (de ? "Alles" : "Everything")
+    : activeFilters.length === 1
+      ? (CAL_FILTERS.find((f) => f.key === activeFilters[0])?.[de ? "labelDe" : "label"] ?? "")
+      : de ? `${activeFilters.length} Typen` : `${activeFilters.length} types`;
+  const visibleEvents = events.filter((event) => !eventHidden(event, activeFilters));
+  const isGridTheme = !["agenda", "timeline", "board", "cards", "table"].includes(theme);
 
   return (
     <>
-      <PageHeader kicker={de ? "Was läuft" : "What's on"} title={de ? "Veranstaltungskalender" : "Event calendar"} sub={de ? `${upcoming} bevorstehend, ${earlier} bereits vorbei` : `${upcoming} upcoming, ${earlier} earlier this month`} />
+      <header className="page-hero">
+        <p className="hero-coords">{de ? "Was läuft" : "What's on"} · 50°46′ N · 6°05′ E</p>
+        <h1>{de ? "Kalender" : "Calendar"}</h1>
+      </header>
       {isPreview ? <p className="notice notice-info">Theme preview: <strong>{theme}</strong>.</p> : null}
       <div className="cal-controls" aria-label={de ? "Kalendersteuerung" : "Calendar controls"}>
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(-1)}>{de ? "Zurück" : "Previous"}</button>
-        <label><span className="sr-only">{de ? "Monat" : "Month"}</span><input type="month" value={monthValue} onChange={(event) => { const [year, month] = event.target.value.split("-").map(Number); if (year && month) setCursor({ year, month }); }} /></label>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCursor({ year: now.getFullYear(), month: now.getMonth() + 1 })}>{de ? "Heute" : "Today"}</button>
-        <label><span className="sr-only">{de ? "Eventtyp" : "Event kind"}</span><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="">{de ? "Alle Eventtypen" : "All event kinds"}</option>{kinds.map((id) => <option key={id} value={id}>{getEventKind(id)?.label[de ? "de" : "en"] ?? id}</option>)}</select></label>
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(1)}>{de ? "Weiter" : "Next"}</button>
+        <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(-1)}>{de ? "← Zurück" : "← Previous"}</button>
+        <h2>{new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(cursor.year, cursor.month - 1, 1))}</h2>
+        <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(1)}>{de ? "Weiter →" : "Next →"}</button>
       </div>
-      {calendar.loading ? <Loading /> : calendar.error ? <ErrorState error={calendar.error} onRetry={calendar.reload} /> : theme === "agenda" ? <Agenda events={events} locale={locale} /> : theme === "timeline" ? <Timeline events={events} locale={locale} /> : theme === "board" ? <Board events={events} locale={locale} /> : theme === "cards" ? <CardList events={events} locale={locale} /> : theme === "table" ? <EventTable events={events} locale={locale} /> : <MonthGrid year={cursor.year} month={cursor.month} events={events} locale={locale} minimal={theme === "public-grid"} />}
+      <div className="cal-filters" role="group" aria-label={de ? "Nach Eventtyp filtern" : "Filter by event type"} ref={filtersRef}>
+        <span className="cal-filters-label">{de ? "Zeige" : "Show"}</span>
+        {phone ? (
+          <button type="button" className="cal-drop-toggle" aria-expanded={dropOpen} onClick={() => setDropOpen((value) => !value)}>
+            <span className="lbl"><i className="bi bi-funnel" aria-hidden="true" /><span className="txt">{dropLabel}</span></span>
+            {activeFilters.length > 1 ? <span className="tally">{activeFilters.length}</span> : null}
+            <span className="caret" aria-hidden="true"><i className="bi bi-chevron-down" /></span>
+          </button>
+        ) : null}
+        <div className={phone ? `cal-drop-menu${dropOpen ? " is-on" : ""}` : "cal-filter-strip"}>
+          <button
+            type="button"
+            className="cal-filter is-all"
+            aria-pressed={activeFilters.length === 0}
+            onClick={() => { setActiveFilters([]); if (phone) setDropOpen(false); }}
+          >
+            {de ? "Alles" : "Everything"}
+            {phone ? <i className="bi bi-check-lg tick" aria-hidden="true" /> : null}
+          </button>
+          {CAL_FILTERS.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              className="cal-filter"
+              aria-pressed={activeFilters.includes(filter.key)}
+              style={{ "--dot": filter.dot } as CSSProperties}
+              onClick={() => toggleFilter(filter.key)}
+            >
+              <span className="dot" aria-hidden="true" />{de ? filter.labelDe : filter.label}
+              {phone ? <i className="bi bi-check-lg tick" aria-hidden="true" /> : null}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="cal-count" role="status">
+        {visibleEvents.length === events.length
+          ? de ? `${events.length} Events in diesem Monat` : `${events.length} events this month`
+          : de ? `${visibleEvents.length} von ${events.length} Events angezeigt` : `${visibleEvents.length} of ${events.length} events shown`}
+      </p>
+      {calendar.loading ? <Loading /> : calendar.error ? <ErrorState error={calendar.error} onRetry={calendar.reload} /> : theme === "agenda" ? <Agenda events={visibleEvents} locale={locale} /> : theme === "timeline" ? <Timeline events={visibleEvents} locale={locale} /> : theme === "board" ? <Board events={visibleEvents} locale={locale} /> : theme === "cards" ? <CardList events={visibleEvents} locale={locale} /> : theme === "table" ? <EventTable events={visibleEvents} locale={locale} /> : <MonthGrid year={cursor.year} month={cursor.month} events={isGridTheme ? events : visibleEvents} locale={locale} minimal={theme === "public-grid"} activeFilters={activeFilters} />}
     </>
   );
 }

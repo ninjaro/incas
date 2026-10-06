@@ -201,7 +201,7 @@ export function ThemesPanel() {
         const availableAt = error.details.availableAt as string | null;
         setNotice({
           tone: "bad",
-          text: `This page theme cannot be changed yet${availableAt ? ` — available at ${new Date(availableAt).toLocaleString()}` : ""}.`,
+          text: `This page theme cannot be changed yet${availableAt ? `; available at ${new Date(availableAt).toLocaleString()}` : ""}.`,
         });
       } else {
         setNotice({ tone: "bad", text: error instanceof Error ? error.message : "Force failed." });

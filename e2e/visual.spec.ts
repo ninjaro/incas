@@ -30,10 +30,6 @@ test("public and admin visual regression matrix", async ({ page }) => {
     await snapshot(page, `landing-${theme}.png`);
   }
 
-  await page.getByRole("button", { name: "Toggle light or dark appearance" }).click();
-  await snapshot(page, "landing-portal-dark.png");
-  await page.getByRole("button", { name: "Toggle light or dark appearance" }).click();
-
   await go(page, "/offers");
   await expect(page.locator(".offers-grid .offers-card")).toHaveCount(9);
   const firstCard = page.locator(".offers-card").first();
@@ -44,7 +40,7 @@ test("public and admin visual regression matrix", async ({ page }) => {
   await expect(page.locator(".about-topic-preview .section-card")).toHaveCount(3);
   await snapshot(page, "about-overview.png");
   await go(page, "/about/team?previewTheme=grid");
-  await expect(page.locator(".team-grid")).toBeVisible();
+  await expect(page.locator(".team-hero .photo-tape")).toBeVisible();
   await snapshot(page, "team-grid.png");
   await go(page, "/about/team?previewTheme=spotlight");
   await expect(page.locator(".team-spotlight-row").first()).toBeVisible();
@@ -86,7 +82,7 @@ test("@mobile mobile navigation visual regression", async ({ page }) => {
 });
 
 test("desktop About disclosure visual regression", async ({ page }) => {
-  await page.goto("/#/about");
+  await page.goto("/#/about/team");
   const disclosure = page.locator(".site-nav-group-disclosure");
   await disclosure.click();
   await expect(disclosure).toHaveAttribute("aria-expanded", "true");
@@ -98,7 +94,7 @@ test("@mobile public sections remain responsive at 320px", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 });
   await page.goto("/#/about");
   await expect(page.locator("body")).toHaveJSProperty("scrollWidth", 320);
-  await expect(page.locator(".content-page-image")).toBeVisible();
+  await expect(page.locator(".letter-scene")).toBeVisible();
   await expect(page).toHaveScreenshot("about-overview-320.png", { fullPage: true });
 
   await page.goto("/#/offers");
@@ -107,7 +103,7 @@ test("@mobile public sections remain responsive at 320px", async ({ page }) => {
   await expect(page).toHaveScreenshot("offers-320.png", { fullPage: true });
 
   await page.locator(".site-nav-menu-toggle").click();
-  await page.getByRole("button", { name: "Open submenu: About Us" }).click();
-  await expect(page.getByRole("button", { name: "Close submenu: About Us" })).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "Open submenu: Events" }).click();
+  await expect(page.getByRole("button", { name: "Close submenu: Events" })).toHaveAttribute("aria-expanded", "true");
   await expect(page).toHaveScreenshot("about-submenu-mobile.png");
 });

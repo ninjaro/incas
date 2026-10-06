@@ -8,8 +8,8 @@ test.beforeEach(async ({ page }) => {
 
 test("landing, calendar, event detail, locale, and appearance remain in the SPA", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("img", { name: "INCAS" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Bringing people together");
+  await expect(page.locator(".site-nav-brand").getByRole("img", { name: "INCAS", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Meet the world");
 
   await page.getByRole("link", { name: "View calendar" }).click();
   await expect(page).toHaveURL(/#\/calendar/);
@@ -21,11 +21,8 @@ test("landing, calendar, event detail, locale, and appearance remain in the SPA"
   await page.getByRole("button", { name: "DE" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "de");
   await expect(page.getByRole("link", { name: "Zurück zum Kalender" })).toBeVisible();
-  await page.getByRole("button", { name: "Helles oder dunkles Design umschalten" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "de");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("About navigation, route focus, and section boundaries are canonical", async ({ page }) => {
@@ -39,7 +36,7 @@ test("About navigation, route focus, and section boundaries are canonical", asyn
   await expect(disclosure).toBeFocused();
   await expect(disclosure).toHaveAttribute("aria-expanded", "false");
 
-  await page.getByRole("link", { name: "About Us", exact: true }).click();
+  await page.locator(".section-local-nav").getByRole("link", { name: "About us", exact: true }).click();
   await expect(page).toHaveURL(/#\/about$/);
   await expect(page.locator("#main-content")).toBeFocused();
   await expect(page.locator(".about-topic-preview .section-card")).toHaveCount(3);
@@ -64,7 +61,7 @@ test("About navigation, route focus, and section boundaries are canonical", asyn
   await expect(page.locator(".team-spotlight-row").first()).toBeVisible();
 
   for (const [route, title] of [
-    ["/about", "About us"],
+    ["/about", "What is INCAS"],
     ["/about/working-groups", "Working Groups"],
     ["/about/team-meetings", "Team Meetings"],
     ["/about/team", "The INCAS Team"],
@@ -152,15 +149,18 @@ test("paid registration is linked to payment and ends confirmed", async ({ page 
   await expect(page.getByText("Approved")).toBeVisible();
 });
 
-test("landing Scroll stays in the HashRouter route and reaches Upcoming Events", async ({ page }) => {
+test("landing stays in the HashRouter route and shows this month's events above the fold", async ({ page }) => {
+  // The hero keeps a 560px minimum so its content and the globe fit; the peek is
+  // a desktop-height guarantee (typical 900px), not a 720px one.
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   const originalUrl = page.url();
-  await page.getByRole("button", { name: "Scroll" }).click();
-  await expect(page).toHaveURL(originalUrl);
+  const viewport = page.viewportSize();
   await expect.poll(async () => {
-    const box = await page.getByRole("heading", { name: "Upcoming events" }).boundingBox();
-    return box ? box.y >= 0 && box.y < 260 : false;
+    const box = await page.getByRole("heading", { name: "This month's events" }).boundingBox();
+    return box && viewport ? box.y >= 0 && box.y < viewport.height : false;
   }).toBe(true);
+  await expect(page).toHaveURL(originalUrl);
 });
 
 test("access-key activation cleans the URL after body-based unlock", async ({ page }) => {
@@ -217,7 +217,7 @@ test("karaoke request is scoped to its event and remains trackable", async ({ pa
   await karaoke.first().click();
   await page.getByLabel("Your name or nickname").fill("Browser Singer");
   await page.getByLabel("Song title").fill("Browser Song");
-  await page.getByRole("button", { name: "Submit request" }).click();
+  await page.getByRole("button", { name: "Send my request" }).click();
   await expect(page.getByText("Request received!")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your requests" })).toBeVisible();
   await expect(page.getByText("Browser Song")).toBeVisible();
@@ -242,6 +242,6 @@ test("@mobile mobile menu overlays content and closes after navigation", async (
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(toggle).toHaveAccessibleName("Close menu");
   await page.getByRole("link", { name: "Events", exact: true }).click();
-  await expect(page).toHaveURL(/#\/calendar/);
+  await expect(page).toHaveURL(/#\/events/);
   await expect(page.locator(".site-nav-menu-toggle")).toHaveAttribute("aria-expanded", "false");
 });

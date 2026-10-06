@@ -46,7 +46,7 @@ def legacy_react_target(path):
     exact = {
         "/": "/",
         "/posts": "/",
-        "/events": "/calendar",
+        "/events": "/events",
         "/calendar": "/calendar",
         "/contacts": "/contact",
         "/contact-form": "/contact?form=general",
@@ -101,7 +101,7 @@ def legacy_react_target(path):
 
 def is_canonical_react_path(path):
     exact = {
-        "/", "/calendar", "/tandem", "/about", "/about/team",
+        "/", "/calendar", "/tandem", "/join", "/events", "/karaoke", "/wiki", "/about", "/about/team",
         "/about/working-groups", "/about/team-meetings", "/offers",
         "/contact", "/suggest-event", "/admin", "/impressum", "/privacy",
     }

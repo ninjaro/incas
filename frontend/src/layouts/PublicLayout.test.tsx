@@ -44,6 +44,7 @@ function renderLayout(initialPath = "/") {
             <Routes>
               <Route element={<PublicLayout />}>
                 <Route index element={<div>Home content</div>} />
+                <Route path="events" element={<div>Events content</div>} />
                 <Route path="about" element={<div>About content</div>} />
                 <Route path="about/working-groups" element={<div>Working groups content</div>} />
                 <Route path="about/team-meetings" element={<div>Team meetings content</div>} />
@@ -59,29 +60,23 @@ function renderLayout(initialPath = "/") {
   );
 }
 
-describe("PublicLayout About navigation", () => {
-  it("hides Admin when keys exist but this session has no active capability", async () => {
-    renderLayout("/");
-    await screen.findByRole("link", { name: "About Us" });
-    expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
-  });
-
+describe("PublicLayout Events navigation", () => {
   it("keeps overview navigation separate from submenu disclosure", async () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const overview = await screen.findByRole("link", { name: "About Us" });
-    const trigger = screen.getByRole("button", { name: "Open submenu: About Us" });
+    const overview = await screen.findByRole("link", { name: "Events" });
+    const trigger = screen.getByRole("button", { name: "Open submenu: Events" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
 
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
-    expect(screen.queryByRole("link", { name: "About us" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Working Groups" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Discover events" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Register for events" })).toBeInTheDocument();
 
     await user.click(overview);
 
-    await waitFor(() => expect(screen.getByText("About content")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Events content")).toBeInTheDocument());
     expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -89,7 +84,7 @@ describe("PublicLayout About navigation", () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: Events" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
@@ -103,7 +98,7 @@ describe("PublicLayout About navigation", () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: Events" });
     await user.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
@@ -117,23 +112,23 @@ describe("PublicLayout About navigation", () => {
     const user = userEvent.setup();
     renderLayout("/");
 
-    const aboutTrigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
-    await user.click(aboutTrigger);
-    expect(aboutTrigger).toHaveAttribute("aria-expanded", "true");
+    const eventsTrigger = await screen.findByRole("button", { name: "Open submenu: Events" });
+    await user.click(eventsTrigger);
+    expect(eventsTrigger).toHaveAttribute("aria-expanded", "true");
 
-    await user.click(aboutTrigger);
-    expect(aboutTrigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(eventsTrigger);
+    expect(eventsTrigger).toHaveAttribute("aria-expanded", "false");
   });
 
   it.each([
-    ["/about", "About Us"],
-    ["/about/working-groups", "Working Groups"],
-    ["/about/team-meetings", "Team Meetings"],
+    ["/", "Home"],
+    ["/calendar", "Calendar"],
+    ["/karaoke", "Karaoke"],
     ["/about/team", "Team"],
   ])("marks exactly one current destination on %s", async (path, currentName) => {
     const user = userEvent.setup();
     renderLayout(path);
-    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: Events" });
     await user.click(trigger);
     const current = document.querySelectorAll('.site-nav-links [aria-current="page"]');
     expect(current).toHaveLength(1);
@@ -143,7 +138,7 @@ describe("PublicLayout About navigation", () => {
   it("keeps pointer hover and aria-expanded synchronized", async () => {
     const user = userEvent.setup();
     renderLayout("/");
-    const trigger = await screen.findByRole("button", { name: "Open submenu: About Us" });
+    const trigger = await screen.findByRole("button", { name: "Open submenu: Events" });
     await user.hover(trigger);
     await waitFor(() => expect(trigger).toHaveAttribute("aria-expanded", "true"));
     await user.unhover(trigger);

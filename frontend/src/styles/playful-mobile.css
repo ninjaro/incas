@@ -1,0 +1,353 @@
+/* Phone layout for every INCAS page (design: mobile.css). Loaded last so it can
+   override the desktop rules without touching them. */
+
+/* Phone-only nodes are injected on every page load, so their hidden/out-of-flow base
+   state must live outside the media query. Without this they land in normal flow on
+   desktop, inherit .theme-parchment's min-height:100vh, and add a viewport of dead space. */
+.m-scrim, .lt-sheet, .lt-scrim, .letter-more, .cal-drop-toggle, .cal-drop-menu { display: none !important; }
+
+@media (max-width: 560px) {
+  .theme-parchment .shell-main { padding-inline: 16px; }
+  .theme-parchment .site-nav-inner { padding-inline: 16px; }
+
+  /* ---- Nav: the upstream burger, restyled, opening a taped sheet ---- */
+  .theme-parchment .site-nav-menu-toggle {
+    width: 44px;
+    height: 44px;
+    gap: 4px;
+    background: transparent;
+    border: none;
+  }
+  .theme-parchment .site-nav-menu-toggle span { width: 22px; height: 2.4px; border-radius: 2px; background: var(--pine-deep); transition: transform 0.2s ease, opacity 0.2s ease; }
+  .theme-parchment .site-nav-menu-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7.4px) rotate(45deg); }
+  .theme-parchment .site-nav-menu-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .theme-parchment .site-nav-menu-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7.4px) rotate(-45deg); }
+  .theme-parchment .site-nav-menu {
+    position: fixed;
+    z-index: 90;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    max-height: calc(100vh - 80px);
+    border: none;
+    border-radius: 0;
+    padding: 30px 22px 24px;
+    background:
+      radial-gradient(160px 120px at 12% 12%, rgba(158, 118, 58, 0.08), transparent 70%),
+      radial-gradient(180px 130px at 88% 84%, rgba(158, 118, 58, 0.07), transparent 72%),
+      linear-gradient(170deg, #fffdf6, #f8f0dd);
+    box-shadow: 0 2px 3px rgba(58, 38, 12, 0.14), 0 26px 46px rgba(58, 38, 12, 0.3);
+    transform: rotate(-0.8deg);
+  }
+  .theme-parchment .site-nav-menu::before,
+  .theme-parchment .site-nav-menu::after {
+    content: "";
+    position: absolute;
+    top: -13px;
+    width: 84px;
+    height: 26px;
+    background: rgba(230, 214, 170, 0.82);
+    border-left: 1px dashed rgba(255, 255, 255, 0.6);
+    border-right: 1px dashed rgba(255, 255, 255, 0.6);
+    box-shadow: 0 1px 2px rgba(90, 55, 15, 0.16);
+  }
+  .theme-parchment .site-nav-menu::before { left: 18px; transform: rotate(-5deg); }
+  .theme-parchment .site-nav-menu::after { right: 18px; transform: rotate(4deg); }
+  .theme-parchment .site-nav-menu .site-nav-links > a,
+  .theme-parchment .site-nav-menu .site-nav-group-link {
+    display: block;
+    padding: 13px 2px;
+    font-family: var(--font-display);
+    font-size: 1.24rem;
+    font-weight: 700;
+    color: var(--pine-deep);
+    text-decoration: none;
+    border-bottom: 1.5px dashed rgba(120, 90, 45, 0.28);
+    background: transparent;
+  }
+  .theme-parchment .site-nav-menu .site-nav-group-primary { border-bottom: 1.5px dashed rgba(120, 90, 45, 0.28); }
+  .theme-parchment .site-nav-menu .site-nav-group-link { border-bottom: none; }
+  .theme-parchment .site-nav-menu a[aria-current="page"] { color: var(--incas-orange-deep); }
+  .theme-parchment .site-nav-menu .site-nav-cta { width: 100%; margin-top: 16px; justify-content: center; }
+  /* .site-nav is sticky with z-index 20, which traps the open menu inside that
+     layer: the scrim must sit BELOW it (19), or it covers the menu links. */
+  .m-scrim { display: block !important; position: fixed; inset: 0; z-index: 19; background: rgba(58, 38, 12, 0.4); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s ease; }
+  .m-scrim.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
+
+  /* Full-bleed bands are sized in vw, which INCLUDES the scrollbar: bleed off the
+     shell's own padding instead. */
+  .landing-band, .landing-plain, .landing-hero, .theme-parchment .shell-main > .social-band {
+    margin-inline: -16px !important;
+    padding-inline: 16px !important;
+  }
+  .landing-band, .landing-plain { padding-block: 54px; }
+  .team-section.landing-band { padding-bottom: 104px; }
+  .team-section.landing-band::before, .team-section.landing-band::after { height: 30px; }
+  .landing-hero::after { height: 26px; }
+
+  /* ---- Landing hero: headline with the globe small beside it ---- */
+  .landing-hero { min-height: 0; padding: 26px 16px 54px; margin-top: -12px; }
+  .landing-hero-text { max-width: none; padding-right: 104px; text-align: left; }
+  .landing-hero h1 { font-size: 2.15rem; }
+  .landing-hero-sub { font-size: 0.98rem; }
+  .landing-hero .btn-row, .landing-hero .landing-hero-cta { justify-content: flex-start; }
+  .landing-hero .landing-hero-globe,
+  .landing-hero-globe { position: absolute !important; right: 6px; top: 30px; left: auto; width: 100px; margin: 0 !important; transform: none; }
+  .hero-map { opacity: 0.34; }
+
+  /* ---- Clothesline: two per row, string dropped ---- */
+  .ev-line { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 14px; margin-top: 30px; padding-top: 8px; }
+  .ev-string { display: none; }
+  .ev-photo { width: auto !important; max-width: none !important; margin: 0 !important; transform: none !important; }
+  .ev-photo-link { padding: 7px 7px 10px; }
+  .ev-name { font-size: 0.92rem; overflow-wrap: break-word; }
+  .ev-date { font-size: 0.66rem; letter-spacing: 0.06em; }
+  .ev-ribbon { font-size: 0.56rem; padding: 3px 8px; }
+  .ev-save { opacity: 1; }
+
+  /* ---- Letter and envelope ---- */
+  .letter-scene { padding-bottom: 78px; margin-top: 30px; overflow: hidden; }
+  .letter-slot { width: 88%; margin: 0 auto 0 1%; transform: rotate(-1.6deg); }
+  .about-body { padding: 24px 18px 58px; }
+  .about-body p { font-size: 0.95rem; line-height: 1.6; }
+  .lt-scrim { display: block !important; position: fixed; inset: 0; z-index: 80; background: rgba(58, 38, 12, 0.5); opacity: 0; visibility: hidden; pointer-events: none; }
+  .lt-scrim.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
+  .lt-sheet {
+    display: block !important;
+    position: fixed;
+    z-index: 90;
+    top: 50%;
+    left: 50%;
+    width: calc(100vw - 26px);
+    max-height: 82vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 30px 22px 26px;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    box-shadow: 0 3px 4px rgba(58, 38, 12, 0.16), 0 34px 60px rgba(58, 38, 12, 0.42);
+    background:
+      repeating-linear-gradient(45deg, var(--incas-orange-deep) 0 7px, #f9efdb 7px 14px) top left / 100% 7px no-repeat,
+      radial-gradient(180px 130px at 6% 10%, rgba(158, 118, 58, 0.08), transparent 68%),
+      radial-gradient(220px 150px at 52% 98%, rgba(150, 108, 48, 0.08), transparent 72%),
+      linear-gradient(170deg, #fffdf6, #faf2e0);
+  }
+  .lt-sheet.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
+  .lt-sheet p { margin: 0 0 14px; font-family: var(--font-body); font-size: 0.98rem; line-height: 1.66; color: #4e3d24; }
+  .lt-sheet .letter-greeting { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--pine-deep); margin-bottom: 12px; padding-right: 42px; }
+  .lt-sheet .lt-sign { font-family: var(--font-display); font-size: 1rem; color: var(--ink-soft); margin: 18px 0 0; padding-top: 14px; border-top: 1.5px dashed rgba(120, 90, 45, 0.3); }
+  .lt-sheet .lt-sign b { display: block; font-size: 1.14rem; color: var(--pine-deep); }
+  .lt-close { position: absolute; top: 18px; right: 16px; display: grid; place-items: center; width: 36px; height: 36px; border: none; border-radius: 50%; background: var(--incas-orange-soft, #fdece0); color: var(--incas-orange-deep); font-size: 1rem; cursor: pointer; }
+
+  .env-side { display: none; }
+  .letter-more {
+    display: inline-block !important;
+    justify-self: start;
+    margin-top: 12px;
+    padding: 8px 2px;
+    min-height: 44px;
+    border: none;
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--incas-orange-deep);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+    cursor: pointer;
+  }
+  .postcard-bg { right: 0; top: 22px; width: 52%; }
+  .envelope, .env-front { left: 8px; right: 8px; }
+  .env-flap { left: 8px; right: 8px; }
+  .env-airmail { bottom: 16px; left: 12px; padding: 4px 8px 5px; }
+  .env-airmail b { font-size: 0.6rem; }
+  .env-postmark { width: 84px; bottom: 14px; right: 10px; }
+
+  /* ---- Team spread: photo, then the facts as pinned slips under it ---- */
+  .team-spread { display: grid; grid-template-columns: 1fr; row-gap: 22px; margin-top: 26px; }
+  .team-notes { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; padding: 0; position: static !important; }
+  .team-notes-left, .team-notes-right { align-items: stretch; text-align: left; }
+  .team-notes-right { margin-top: -8px; }
+  .team-note, .team-note-float {
+    position: static !important;
+    display: block;
+    max-width: none;
+    margin: 0;
+    padding: 16px 14px 14px;
+    background: #fffdf6;
+    box-shadow: 0 1px 1px rgba(90, 55, 15, 0.1), 0 7px 14px rgba(90, 55, 15, 0.14);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    text-align: left;
+    transform: rotate(-1deg) !important;
+  }
+  .team-note, .team-note-float { position: relative !important; inset: auto !important; }
+  .team-notes > :nth-child(even) { background: #f4f1de; transform: rotate(1.2deg) !important; }
+  .team-note::before, .team-note-float::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.9) 0 9%, rgba(255, 255, 255, 0) 36%),
+      radial-gradient(circle at 36% 30%, #ffa763, var(--incas-orange) 44%, var(--incas-orange-deep) 78%, #6d2a00);
+    box-shadow: 0 3px 5px rgba(80, 45, 10, 0.36);
+  }
+  .team-notes > :nth-child(even)::before {
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.9) 0 9%, rgba(255, 255, 255, 0) 36%),
+      radial-gradient(circle at 36% 30%, #b9c983, var(--olive-light) 44%, var(--pine) 78%, #2c3714);
+  }
+  .team-note span { display: block; }
+  /* arrow-only notes have nothing to say without their arrows */
+  .team-note:not(:has(span)) { display: none; }
+  .note-arrow { display: none; }
+  .team-photo-wrap { transform: rotate(1.4deg); }
+  .find-us { grid-template-columns: 1fr; gap: 18px; }
+  .insta-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ---- Events bulletin board ---- */
+  .board-cols { display: block !important; }
+  .board-col { display: block; }
+  .poster { margin: 0 0 30px; transform: none !important; }
+  .events-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .register-layout { grid-template-columns: 1fr !important; }
+  .letter-sheet { transform: none; padding: 30px 20px 26px; }
+  .letter-head { padding-right: 0; }
+  .letter-stamp { display: none; }
+  .register-aside .card { transform: none !important; }
+
+  /* ---- Calendar: an agenda of the days that have something on ---- */
+  .cal-grid { display: flex !important; flex-direction: column; gap: 10px; }
+  .cal-grid-head { display: none; }
+  .cal-grid-row { display: contents; }
+  .cal-cell:not(:has(.cal-chip)), .cal-cell.is-dimmed { display: none; }
+  .cal-cell:has(.cal-chip) {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 4px 14px;
+    align-items: center;
+    min-height: 0;
+    padding: 14px 16px;
+    background: var(--paper);
+    box-shadow: 0 1px 1px rgba(90, 55, 15, 0.08), 0 6px 14px rgba(90, 55, 15, 0.1);
+  }
+  .cal-cell:has(.cal-chip)::first-line { font-weight: 700; }
+  .cal-cell .cal-chip { grid-column: 2; margin: 0; font-size: 1rem; padding: 6px 10px; }
+  .cal-cell .cal-save { grid-column: 2; margin-top: 2px; }
+  /* Seven chips wrap into three rows on a phone, so collapse them into a dropdown. */
+  .cal-filters { position: relative; display: block !important; margin: 18px 0 4px; }
+  .cal-filters-label { display: none; }
+  .cal-drop-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 14px;
+    border: 1.5px solid rgba(120, 90, 45, 0.34);
+    border-radius: 12px;
+    background: var(--paper);
+    font-family: var(--font-display);
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .cal-drop-toggle .lbl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .cal-drop-toggle .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-drop-toggle .caret { flex: 0 0 auto; color: var(--ink-soft); transition: transform 0.2s ease; }
+  .cal-drop-toggle[aria-expanded="true"] { border-color: var(--pine); }
+  .cal-drop-toggle[aria-expanded="true"] .caret { transform: rotate(180deg); }
+  .cal-drop-toggle .tally { flex: 0 0 auto; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--incas-orange); color: #fff6e9; font-family: var(--font-mono); font-size: 0.62rem; }
+  .cal-drop-menu {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    padding: 8px;
+    border: 1.5px solid rgba(120, 90, 45, 0.28);
+    border-radius: 12px;
+    background: var(--paper);
+    box-shadow: 0 3px 4px rgba(58, 38, 12, 0.12), 0 18px 34px rgba(58, 38, 12, 0.24);
+  }
+  .cal-drop-menu.is-on { display: grid !important; gap: 2px; }
+  .cal-filters .cal-filter {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    font-size: 0.98rem;
+    color: var(--ink);
+    transform: none !important;
+  }
+  .cal-filters .cal-filter + .cal-filter { border-top: 1px solid rgba(120, 90, 45, 0.16); }
+  .cal-filters .cal-filter[aria-pressed="true"] { background: var(--pine); color: #f6ead6; }
+  .cal-filters .cal-filter.is-all[aria-pressed="true"] { background: var(--incas-orange); color: #fff6e9; }
+  .cal-filters .cal-filter .tick { margin-left: auto; opacity: 0; font-size: 0.9rem; }
+  .cal-filters .cal-filter[aria-pressed="true"] .tick { opacity: 1; }
+  .cal-count { margin-top: 10px; }
+  .cal-controls h2 { font-size: 1.3rem; }
+
+  /* ---- Team board ---- */
+  .wg-board { padding: 30px 14px 32px; }
+  .wg-files { grid-template-columns: 1fr !important; gap: 30px; }
+  .wg-file { transform: none !important; margin-top: 0 !important; }
+  .wg-file.is-open { width: calc(100vw - 20px); max-height: 84vh; padding: 22px 18px 24px; }
+  .wg-join { transform: none; margin-top: 0; }
+  .team-hero { grid-template-columns: 1fr; gap: 22px; }
+
+  /* ---- Event archive ---- */
+  .arch-row { grid-template-columns: 68px 1fr; }
+  .ev-next { grid-template-columns: auto 1fr; }
+  .other-types { margin-top: 34px; }
+
+  /* ---- Poster overlay ---- */
+  .ev-stack { width: calc(100vw - 18px) !important; }
+  .ev-card { padding: 24px 18px 22px; max-height: 70vh; }
+
+  /* ---- Karaoke, Join ---- */
+  .karaoke-grid { grid-template-columns: 1fr; gap: 24px; }
+  .join-grid { grid-template-columns: 1fr; }
+
+  /* Comfortable tap targets everywhere */
+  .btn, .cal-filter, .type-chip, .events-tab { min-height: 44px; }
+  .site-footer { padding-inline: 16px; text-align: center; }
+}
+
+/* The phone globe is 100px wide, so each orbit badge is ~15px: give the links
+   an invisible ~40px tap target (neighbours sit ~42px apart, so no overlap). */
+@media (max-width: 560px) {
+  a.globe-badge::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border-radius: 50%;
+  }
+}
+
+/* parchment.css keeps buttons on one line ("never wrap"); on a phone a long
+   label such as "Suggest an International Breakfast" then overflows the
+   column, so let button text wrap at phone widths. */
+@media (max-width: 560px) {
+  .theme-parchment .btn { white-space: normal; max-width: 100%; }
+}

@@ -8,7 +8,7 @@ from app.models import Post, db, get_configured_local_now
     ("legacy", "react"),
     [
         ("/", "/"),
-        ("/events", "/calendar"),
+        ("/events", "/events"),
         ("/calendar", "/calendar"),
         ("/content/country-evening-poland", "/events/country-evening-poland"),
         ("/events/country-evening-poland", "/events/country-evening-poland"),
@@ -60,9 +60,13 @@ def test_primary_frontend_uses_stable_urls_and_legacy_redirects(tmp_path):
     assert response.status_code == 200
     assert '<link rel="canonical" href="http://localhost/calendar"' in response.get_data(as_text=True)
 
-    legacy = client.get("/events?month=2026-07")
+    events_page = client.get("/events?month=2026-07")
+    assert events_page.status_code == 200
+    assert '<link rel="canonical" href="http://localhost/events"' in events_page.get_data(as_text=True)
+
+    legacy = client.get("/contact-form?month=2026-07")
     assert legacy.status_code == 308
-    assert legacy.headers["Location"].endswith("/calendar?month=2026-07")
+    assert legacy.headers["Location"].endswith("/contact?form=general&month=2026-07")
     legacy_contact = client.get("/contact-form")
     assert legacy_contact.status_code == 308
     assert legacy_contact.headers["Location"].endswith("/contact?form=general")

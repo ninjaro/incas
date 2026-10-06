@@ -420,7 +420,7 @@ def _serialize_offers(locale):
 
 def _serialize_footer(locale):
     return {
-        "copy": "INCAS — Intercultural Centre of Aachen Students",
+        "copy": "INCAS · Intercultural Centre of Aachen Students",
         "social": [
             {"platform": "facebook", "url": "https://www.facebook.com/INCASAachen/"},
             {"platform": "instagram", "url": "https://www.instagram.com/incas_aachen/"},

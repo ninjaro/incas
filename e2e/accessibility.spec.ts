@@ -31,7 +31,7 @@ test("primary public and admin surfaces pass automated WCAG checks", async ({ pa
   }
 
   await page.goto("/#/about");
-  await page.getByRole("button", { name: "Open submenu: About Us" }).click();
+  await page.getByRole("button", { name: "Open submenu: Events" }).click();
   await expectNoA11yViolations(page);
 
   await page.goto("/#/contact?form=general");

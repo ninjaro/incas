@@ -1,0 +1,453 @@
+/* Parchment Daylight (theme 2a) — INCAS Design System.
+   Token values and component recipes from PARCHMENT_DESIGN_SYSTEM.md and the
+   reference prototypes in the design system's explorations folder. Brand
+   tokens stay on :root (global.css); the parchment set is scoped here. */
+
+:root {
+  --incas-orange-hover: #e65c00;
+  --font-mono: ui-monospace, "Courier New", monospace;
+}
+
+.theme-parchment {
+  --ink: #3d2b10;
+  --ink-soft: #6b5637;
+  --ink-faint: #94805f;
+  --paper: #fdf6e9;
+  --paper-warm: #f8efdd;
+  --line: #ddcdb2;
+  --incas-orange-deep: #b34700;
+  --incas-orange-soft: #fff1e8;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 1px 2px rgba(90, 55, 15, 0.08), 0 6px 20px rgba(90, 55, 15, 0.12);
+
+  color: var(--ink);
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(238, 220, 178, 0.7) 0%, rgba(0, 0, 0, 0) 65%),
+    #f5ead8;
+}
+
+/* The one dark element on the page: the navbar. */
+.theme-parchment .site-nav {
+  background: linear-gradient(180deg, #3a2812 0%, #2c1d0c 100%);
+  border-bottom: 2px solid var(--incas-orange);
+  box-shadow: 0 6px 18px rgba(61, 43, 16, 0.28);
+}
+
+.theme-parchment .site-nav-links a,
+.theme-parchment .site-nav-group-link {
+  color: #c9b391;
+}
+
+.theme-parchment .site-nav-links a:hover,
+.theme-parchment .site-nav-group-link:hover {
+  color: #ff8a3d;
+  background: rgba(255, 102, 0, 0.12);
+}
+
+.theme-parchment .site-nav-links a[aria-current="page"],
+.theme-parchment .site-nav-group.is-section-active .site-nav-group-link {
+  color: var(--incas-orange);
+  background: rgba(255, 102, 0, 0.16);
+}
+
+.theme-parchment .site-nav-group-disclosure {
+  color: #c9b391;
+}
+
+.theme-parchment .site-nav-group-disclosure:hover {
+  color: #ff8a3d;
+}
+
+/* Dropdown menu: dark card matching the navbar gradient. */
+.theme-parchment .site-nav-group-menu {
+  background: linear-gradient(180deg, #3a2812 0%, #2c1d0c 100%);
+  border: 1px solid rgba(255, 138, 61, 0.35);
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(20, 12, 4, 0.45);
+}
+
+.theme-parchment .site-nav-group-menu a {
+  color: #c9b391;
+}
+
+.theme-parchment .site-nav-group-menu a:hover,
+.theme-parchment .site-nav-group-menu a[aria-current="page"] {
+  background: rgba(255, 102, 0, 0.16);
+  color: #ff8a3d;
+}
+
+.theme-parchment .site-nav-cta {
+  border-color: var(--incas-orange);
+  color: #ff8a3d;
+  white-space: nowrap;
+  flex: none;
+}
+
+.theme-parchment .site-nav-cta:hover {
+  background: rgba(255, 102, 0, 0.14);
+  color: #ff8a3d;
+}
+
+.theme-parchment .locale-switch button {
+  color: #c9b391;
+}
+
+.theme-parchment .locale-switch button.is-active {
+  color: var(--incas-orange);
+}
+
+.theme-parchment .site-nav-menu-toggle span {
+  background: #c9b391;
+}
+
+/* Buttons: nearly square, never wrap. */
+.theme-parchment .btn {
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.theme-parchment .btn-primary:hover {
+  background: var(--incas-orange-hover);
+}
+
+.theme-parchment .btn-outline {
+  border-color: #7a5a2e;
+  color: var(--ink);
+}
+
+.theme-parchment .btn-outline:hover {
+  background: rgba(122, 90, 46, 0.12);
+}
+
+/* Page hero pattern: coordinates kicker, display H1 with an italic orange em. */
+.page-hero {
+  padding: 44px 0 18px;
+}
+
+.page-hero .hero-coords {
+  margin-bottom: 10px;
+}
+
+.page-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.4vw, 2.7rem);
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+
+.page-hero h1 em {
+  color: #c2510a;
+  font-style: italic;
+}
+
+.page-hero p {
+  color: var(--ink-soft);
+  max-width: 62ch;
+  margin: 0;
+}
+
+/* Section heads: mono ordinal kicker + display H2 + action, divider below. */
+.section-no {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--incas-orange-deep);
+  margin-bottom: 6px;
+}
+
+.theme-parchment .landing-section-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+
+.theme-parchment .landing-section-head h2 {
+  font-family: var(--font-display);
+}
+
+.footer-coords {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--incas-orange-deep);
+  margin-bottom: 6px;
+}
+
+/* ---------- treasure map, parchment daylight variant ---------- */
+
+.theme-parchment .treasure-sheet-wrap {
+  filter: drop-shadow(0 14px 26px rgba(90, 55, 15, 0.28));
+  position: relative;
+  padding: 0 30px;
+}
+
+/* Scroll rolls on the sides, in the navbar's dark-brown tone. */
+.theme-parchment .treasure-sheet-wrap::before,
+.theme-parchment .treasure-sheet-wrap::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  width: 38px;
+  z-index: 3;
+  border-radius: 19px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 12%, rgba(0, 0, 0, 0) 88%, rgba(0, 0, 0, 0.3) 100%),
+    linear-gradient(90deg, #331f0c 0%, #55381a 38%, #74522a 55%, #402a10 82%, #2c1d0c 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(40, 26, 10, 0.3),
+    inset -6px 0 12px rgba(255, 210, 150, 0.1),
+    0 8px 18px rgba(61, 43, 16, 0.32);
+}
+
+.theme-parchment .treasure-sheet-wrap::before { left: 0; }
+.theme-parchment .treasure-sheet-wrap::after { right: 0; transform: scaleX(-1); }
+
+/* Lighter watercolor parchment, shaded rust at the edges. */
+.theme-parchment .treasure-sheet {
+  background:
+    radial-gradient(130% 130% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(196, 116, 60, 0.22) 84%, rgba(158, 82, 34, 0.38) 100%),
+    radial-gradient(60% 55% at 78% 72%, rgba(200, 130, 70, 0.12) 0%, rgba(0, 0, 0, 0) 70%),
+    radial-gradient(40% 35% at 18% 80%, rgba(200, 130, 70, 0.1) 0%, rgba(0, 0, 0, 0) 70%),
+    radial-gradient(120% 100% at 30% 20%, #fdf4e2 0%, #f7e7c8 55%, #eed7ae 100%);
+  box-shadow: inset 0 0 70px rgba(170, 90, 40, 0.28);
+}
+
+.theme-parchment .treasure-cartouche { background: rgba(250, 238, 208, 0.92); opacity: 1; }
+.theme-parchment .treasure-x { background: #fdf1d6; }
+.theme-parchment .treasure-label { background: rgba(252, 241, 216, 0.95); }
+
+.theme-parchment .treasure-month {
+  text-shadow: 0 1px 0 #f5e6c4, 0 -1px 0 #f5e6c4, 1px 0 0 #f5e6c4, -1px 0 0 #f5e6c4, 0 0 8px #f5e6c4;
+}
+
+/* More breathing room between the map plaques. */
+.theme-parchment .treasure-sheet.is-dense .treasure-label { width: 126px; }
+.theme-parchment .treasure-station.is-below .treasure-label { top: 44px; }
+.theme-parchment .treasure-station.is-above .treasure-label { bottom: 44px; }
+
+/* Save-the-date pill on map plaques (design reference). */
+.treasure-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 5px;
+  justify-self: center;
+  padding: 3px 8px;
+  border: 1px solid rgba(179, 71, 0, 0.4);
+  border-radius: 999px;
+  background: none;
+  font: 600 0.66rem var(--font-body, inherit);
+  letter-spacing: 0.04em;
+  color: var(--incas-orange-deep);
+  cursor: pointer;
+}
+
+.treasure-save:hover {
+  background: var(--incas-orange-soft);
+}
+
+/* ---------- landing sections N° 02 / N° 03 ---------- */
+
+.team-section {
+  margin-top: 56px;
+}
+
+.team-row {
+  display: grid;
+  grid-template-columns: 1fr 460px;
+  gap: 28px;
+  align-items: center;
+}
+
+.team-photo-wrap {
+  aspect-ratio: 3 / 2;
+}
+
+.team-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .team-row { grid-template-columns: 1fr; }
+  .team-photo-wrap { max-width: 460px; }
+}
+
+.about-lead {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.team-blurb {
+  color: var(--ink-soft);
+  max-width: 48ch;
+  margin: 14px 0 0;
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.social-band {
+  border-top: 1px solid var(--line);
+  margin-top: 56px;
+  padding: 40px 20px 8px;
+  text-align: center;
+}
+
+.social-band .footer-coords { margin-bottom: 10px; }
+
+.social-band h2 {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  margin: 0 0 6px;
+}
+
+.social-band p {
+  color: var(--ink-soft);
+  margin: 0 0 18px;
+}
+
+.social-band .btn-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+  margin-top: 4px;
+}
+
+.insta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 880px;
+  margin: 0 auto 20px;
+}
+
+@media (max-width: 760px) {
+  .insta-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.insta-tile {
+  display: block;
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.insta-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.insta-tile:hover img {
+  transform: scale(1.04);
+}
+
+/* ---------- events page (discover / register tabs) ---------- */
+
+.events-discover {
+  margin-top: 18px;
+}
+
+.events-register-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.events-register-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.events-register-row h3 {
+  font-family: var(--font-display);
+  margin: 0 0 2px;
+}
+
+.events-register-row p {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.events-register-when {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--incas-orange-deep);
+}
+
+/* ---------- join page ---------- */
+
+.join-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+.join-grid .card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.join-grid .card p {
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+
+.join-grid .card .btn { margin-top: auto; }
+
+.join-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.join-tandem-note {
+  margin-top: 28px;
+  color: var(--ink-soft);
+}
+
+.join-tandem-note a {
+  color: var(--incas-orange-deep);
+  font-weight: 600;
+}
+
+/* ---------- admin island: restore the neutral light utility palette ---------- */
+
+.theme-parchment .admin-shell {
+  --ink: #1e1b18;
+  --ink-soft: #55504a;
+  --ink-faint: #8a8378;
+  --paper: #ffffff;
+  --paper-warm: #faf6f1;
+  --line: #e8e1d8;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgba(30, 27, 24, 0.06), 0 4px 16px rgba(30, 27, 24, 0.07);
+  color: var(--ink);
+}

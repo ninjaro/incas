@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<clipPath id="g"><circle cx="100" cy="100" r="90"></circle></clipPath>
+<circle cx="100" cy="100" r="94" fill="#8fa057" stroke="#414b21" stroke-width="7"></circle>
+<g clip-path="url(#g)">
+<g fill="#f6ead6">
+<path d="M20 78q2-16 14-26q10-9 26-10q13-1 18 8q4 8-3 13q-6 4-4 11q2 8-5 12q-8 5-10 14q-2 10-11 8q-10-3-16-13q-7-10-9-17Z"></path>
+<path d="M74 104q8-6 15-1q6 4 13 3q8-1 9 7q1 8-5 14q-7 7-9 18q-2 11-10 9q-8-3-10-13q-2-8-5-14q-4-10 2-23Z"></path>
+<path d="M112 40q6-10 20-11q15-1 26 7q11 8 14 21q3 12-3 22q-5 9-15 8q-9-1-12-10q-2-7-10-8q-9-1-13-9q-5-9-7-20Z"></path>
+<path d="M144 100q9-4 16 2q7 6 6 17q-1 12-10 19q-9 7-15 0q-6-8-3-19q3-13 6-19Z"></path>
+<path d="M56 156q9-4 16 1q7 5 4 12q-4 8-14 7q-10-1-11-9q-1-7 5-11Z"></path>
+</g>
+<g fill="none" stroke="#414b21" stroke-opacity="0.18" stroke-width="2.5">
+<ellipse cx="100" cy="100" rx="40" ry="92"></ellipse>
+<ellipse cx="100" cy="100" rx="72" ry="92"></ellipse>
+<ellipse cx="100" cy="100" rx="92" ry="34"></ellipse>
+<ellipse cx="100" cy="100" rx="92" ry="66"></ellipse>
+</g>
+</g>
+</svg>

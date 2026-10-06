@@ -26,6 +26,13 @@ import { LandingPage } from "../pages/LandingPage";
 import { OffersPage } from "../pages/OffersPage";
 import { RegistrationStatusPage } from "../pages/RegistrationStatusPage";
 import { SuggestEventPage } from "../pages/SuggestEventPage";
+import { EventsPage } from "../pages/EventsPage";
+import { EventArchivePage } from "../pages/EventArchivePage";
+import { WikiPage } from "../pages/WikiPage";
+import { WorkingGroupsPage } from "../pages/WorkingGroupsPage";
+import { EventRecordPage } from "../pages/EventRecordPage";
+import { KaraokePage } from "../pages/KaraokePage";
+import { JoinPage } from "../pages/JoinPage";
 import { TandemFormPage } from "../pages/TandemFormPage";
 import { TeamPage } from "../pages/TeamPage";
 import { useLocale } from "../i18n/LocaleContext";
@@ -75,12 +82,18 @@ const routes = [
       { path: "/events/:slug", element: <EventDetailPage /> },
       { path: "/team", element: <Navigate to="/about/team" replace /> },
       { path: "/tandem", element: <TandemFormPage /> },
+      { path: "/join", element: <JoinPage /> },
+      { path: "/events", element: <EventsPage /> },
+      { path: "/events/archive", element: <EventArchivePage /> },
+      { path: "/events/archive/:record", element: <EventRecordPage /> },
+      { path: "/wiki", element: <WikiPage /> },
+      { path: "/karaoke", element: <KaraokePage /> },
       {
         path: "/about",
         element: <AboutLayout />,
         children: [
           { index: true, element: <AboutPage /> },
-          { path: "working-groups", element: <ContentPage slug="working-groups" section="about" /> },
+          { path: "working-groups", element: <WorkingGroupsPage /> },
           { path: "team-meetings", element: <ContentPage slug="team-meetings" section="about" /> },
           { path: "team", element: <TeamPage /> },
           { path: "*", element: <NotFound /> },
