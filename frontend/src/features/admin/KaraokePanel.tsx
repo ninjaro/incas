@@ -8,9 +8,11 @@ import {
   Loading,
   PageHeader,
   StatusBadge,
+  statusLabel,
 } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { useAsync } from "../../hooks/useAsync";
+import { useCurrentLocale } from "../../i18n/LocaleContext";
 
 const STATUS_FILTERS: (KaraokeStatus | "all")[] = [
   "all",
@@ -29,13 +31,14 @@ function RowActions({
   entry: KaraokeAdminEntry;
   onAction: (entry: KaraokeAdminEntry, action: KaraokeAction) => void;
 }) {
+  const de = useCurrentLocale() === "de";
   const actions: { action: KaraokeAction; label: string; when: KaraokeStatus[] }[] = [
-    { action: "approve", label: "Approve", when: ["pending"] },
-    { action: "reject", label: "Reject", when: ["pending"] },
-    { action: "performing", label: "On stage", when: ["approved"] },
-    { action: "complete", label: "Done", when: ["performing", "approved"] },
-    { action: "cancel", label: "Cancel", when: ["pending", "approved", "performing"] },
-    { action: "restore", label: "Restore", when: ["cancelled", "rejected"] },
+    { action: "approve", label: de ? "Annehmen" : "Approve", when: ["pending"] },
+    { action: "reject", label: de ? "Ablehnen" : "Reject", when: ["pending"] },
+    { action: "performing", label: de ? "Auf die Bühne" : "On stage", when: ["approved"] },
+    { action: "complete", label: de ? "Fertig" : "Done", when: ["performing", "approved"] },
+    { action: "cancel", label: de ? "Stornieren" : "Cancel", when: ["pending", "approved", "performing"] },
+    { action: "restore", label: de ? "Wiederherstellen" : "Restore", when: ["cancelled", "rejected"] },
   ];
 
   return (
@@ -59,27 +62,29 @@ function RowActions({
 function AuditTab() {
   const data = useData();
   const audit = useAsync(() => data.getKaraokeAudit(), []);
+  const locale = useCurrentLocale();
+  const de = locale === "de";
 
   if (audit.loading) return <Loading />;
   if (audit.error) return <ErrorState error={audit.error} onRetry={audit.reload} />;
   const entries = audit.data?.entries ?? [];
-  if (entries.length === 0) return <EmptyState>No audit entries yet.</EmptyState>;
+  if (entries.length === 0) return <EmptyState>{de ? "Noch keine Protokolleinträge." : "No audit entries yet."}</EmptyState>;
 
   return (
     <div className="table-wrap"><table className="table">
       <thead>
         <tr>
-          <th>When</th>
-          <th>Request</th>
-          <th>Action</th>
-          <th>Detail</th>
-          <th>Session</th>
+          <th>{de ? "Wann" : "When"}</th>
+          <th>{de ? "Wunsch" : "Request"}</th>
+          <th>{de ? "Aktion" : "Action"}</th>
+          <th>{de ? "Details" : "Detail"}</th>
+          <th>{de ? "Sitzung" : "Session"}</th>
         </tr>
       </thead>
       <tbody>
         {entries.map((entry, index) => (
           <tr key={index}>
-            <td>{new Date(entry.createdAt).toLocaleString()}</td>
+            <td>{new Date(entry.createdAt).toLocaleString(locale)}</td>
             <td>#{entry.requestId}</td>
             <td>{entry.action}</td>
             <td>{entry.detail}</td>
@@ -95,6 +100,8 @@ function AuditTab() {
 
 export function KaraokePanel() {
   const data = useData();
+  const locale = useCurrentLocale();
+  const de = locale === "de";
   const [filter, setFilter] = useState<KaraokeStatus | "all">("all");
   const [tab, setTab] = useState<"queue" | "audit">("queue");
   const [notice, setNotice] = useState<string | null>(null);
@@ -136,7 +143,7 @@ export function KaraokePanel() {
       list.reload();
       fullQueue.reload();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Action failed.");
+      setNotice(error instanceof Error ? error.message : de ? "Aktion fehlgeschlagen." : "Action failed.");
       list.reload();
     }
   };
@@ -161,7 +168,7 @@ export function KaraokePanel() {
       list.reload();
       fullQueue.reload();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Reorder failed.");
+      setNotice(error instanceof Error ? error.message : de ? "Neu sortieren fehlgeschlagen." : "Reorder failed.");
       list.reload();
     }
   };
@@ -178,25 +185,27 @@ export function KaraokePanel() {
     void reorder(order);
   };
 
-  if (overview.loading) return <Loading label="Loading Karaoke events…" />;
+  if (overview.loading) return <Loading label={de ? "Karaoke-Events werden geladen…" : "Loading Karaoke events…"} />;
   if (overview.error || !overview.data) return <ErrorState error={overview.error} onRetry={overview.reload} />;
   if (!overview.data.events.length) {
-    return <><PageHeader kicker="Live event" title="Karaoke Queue" sub="Approve and order requests for a Karaoke event." /><EmptyState>No Karaoke events are available.</EmptyState></>;
+    return <><PageHeader kicker={de ? "Live-Event" : "Live event"} title={de ? "Karaoke-Warteschlange" : "Karaoke Queue"} sub={de ? "Wünsche für ein Karaoke-Event annehmen und sortieren." : "Approve and order requests for a Karaoke event."} /><EmptyState>{de ? "Keine Karaoke-Events verfügbar." : "No Karaoke events are available."}</EmptyState></>;
   }
 
   return (
     <>
       <PageHeader
-        kicker="Live event"
-        title="Karaoke Queue"
-        sub="Approve requests into the live queue, reorder by drag and drop, and mark songs as performing or done."
+        kicker={de ? "Live-Event" : "Live event"}
+        title={de ? "Karaoke-Warteschlange" : "Karaoke Queue"}
+        sub={de
+          ? "Wünsche in die Live-Warteschlange übernehmen, per Drag-and-drop sortieren und Songs als „auf der Bühne“ oder „fertig“ markieren."
+          : "Approve requests into the live queue, reorder by drag and drop, and mark songs as performing or done."}
       />
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "queue"} onClick={() => setTab("queue")}>
-          Requests
+          {de ? "Wünsche" : "Requests"}
         </button>
         <button type="button" role="tab" aria-selected={tab === "audit"} onClick={() => setTab("audit")}>
-          Audit
+          {de ? "Protokoll" : "Audit"}
         </button>
       </div>
       {notice ? <p className="notice notice-bad">{notice}</p> : null}
@@ -205,17 +214,17 @@ export function KaraokePanel() {
       ) : (
         <>
           <div className="admin-filterbar">
-            <label><span className="sr-only">Karaoke event</span><select aria-label="Karaoke event" value={activeEvent} onChange={(event) => setEventSlug(event.target.value)}>
+            <label><span className="sr-only">{de ? "Karaoke-Event" : "Karaoke event"}</span><select aria-label={de ? "Karaoke-Event" : "Karaoke event"} value={activeEvent} onChange={(event) => setEventSlug(event.target.value)}>
               {(overview.data?.events ?? []).map((event) => <option key={event.slug} value={event.slug}>{event.title} ({event.startsAt?.slice(0, 10)})</option>)}
             </select></label>
-            <div className="filter-buttons" role="group" aria-label="Request status">{STATUS_FILTERS.map((status) => (
+            <div className="filter-buttons" role="group" aria-label={de ? "Status der Wünsche" : "Request status"}>{STATUS_FILTERS.map((status) => (
               <button
                 key={status}
                 type="button"
                 className={`btn btn-sm ${filter === status ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => setFilter(status)}
               >
-                {status}
+                {de ? statusLabel(status, locale) : status}
               </button>
             ))}</div>
           </div>
@@ -224,7 +233,7 @@ export function KaraokePanel() {
           ) : list.error ? (
             <ErrorState error={list.error} onRetry={list.reload} />
           ) : (list.data?.items ?? []).length === 0 ? (
-            <EmptyState>No requests with this status.</EmptyState>
+            <EmptyState>{de ? "Keine Wünsche mit diesem Status." : "No requests with this status."}</EmptyState>
           ) : (
             (list.data?.items ?? []).map((entry) => {
               const inQueue = entry.status === "approved" || entry.status === "performing";
@@ -254,7 +263,7 @@ export function KaraokePanel() {
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm"
-                        aria-label={`Move ${entry.songTitle} up`}
+                        aria-label={de ? `${entry.songTitle} nach oben verschieben` : `Move ${entry.songTitle} up`}
                         disabled={fullQueue.loading || queueIndex <= 0}
                         onClick={() => move(entry, -1)}
                       >
@@ -263,7 +272,7 @@ export function KaraokePanel() {
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm"
-                        aria-label={`Move ${entry.songTitle} down`}
+                        aria-label={de ? `${entry.songTitle} nach unten verschieben` : `Move ${entry.songTitle} down`}
                         disabled={fullQueue.loading || queueIndex < 0 || queueIndex === queueItems.length - 1}
                         onClick={() => move(entry, 1)}
                       >
@@ -280,13 +289,15 @@ export function KaraokePanel() {
       )}
       <ConfirmDialog
         open={confirmCancel !== null}
-        title="Cancel this request?"
+        title={de ? "Diesen Wunsch stornieren?" : "Cancel this request?"}
         body={
           confirmCancel
-            ? `"${confirmCancel.songTitle}" by ${confirmCancel.displayName} will leave the queue. It can be restored later.`
+            ? (de
+              ? `„${confirmCancel.songTitle}“ von ${confirmCancel.displayName} verlässt die Warteschlange. Der Wunsch kann später wiederhergestellt werden.`
+              : `"${confirmCancel.songTitle}" by ${confirmCancel.displayName} will leave the queue. It can be restored later.`)
             : undefined
         }
-        confirmLabel="Cancel request"
+        confirmLabel={de ? "Wunsch stornieren" : "Cancel request"}
         danger
         onConfirm={() => confirmCancel && applyAction(confirmCancel, "cancel")}
         onCancel={() => setConfirmCancel(null)}

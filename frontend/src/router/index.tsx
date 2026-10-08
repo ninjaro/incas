@@ -15,6 +15,7 @@ import { SocialPublicationsPanel } from "../features/admin/SocialPublicationsPan
 import { PostsPanel } from "../features/admin/PostsPanel";
 import { TandemPanel } from "../features/admin/TandemPanel";
 import { ThemesPanel } from "../features/admin/ThemesPanel";
+import { capabilityLabel } from "../features/admin/labels";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { AboutLayout, OffersLayout } from "../layouts/SectionLayouts";
 import { CalendarPage } from "../pages/CalendarPage";
@@ -53,7 +54,7 @@ function RequireCapability({
       <div className="state-box">
         <p>
           {de ? "Dieser Bereich benötigt die Berechtigung" : "This panel requires the capability"}{" "}
-          <strong>{session.capabilityLabels[capability] ?? capability}</strong>.
+          <strong>{capabilityLabel(capability, locale, session.capabilityLabels)}</strong>.
         </p>
         <p>{de ? "Aktiviere links einen passenden Zugangsschlüssel. Eine Abmeldung ist nicht nötig." : "Activate a matching access key in the sidebar. No logout is needed."}</p>
       </div>

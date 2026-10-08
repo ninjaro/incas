@@ -79,7 +79,7 @@ export function EventDetailPage() {
               {event.address ? <div><dt>{de ? "Adresse" : "Address"}</dt><dd>{event.address}{event.city ? `, ${event.city}` : ""}</dd></div> : null}
               {event.meetingPoint ? <div><dt>{de ? "Treffpunkt" : "Meeting point"}</dt><dd>{event.meetingPoint}</dd></div> : null}
               {event.destination ? <div><dt>{de ? "Ziel" : "Destination"}</dt><dd>{event.destination}</dd></div> : null}
-              {event.eventPublicId ? <div><dt>Event ID</dt><dd>{event.eventPublicId}</dd></div> : null}
+              {event.eventPublicId ? <div><dt>{de ? "Event-ID" : "Event ID"}</dt><dd>{event.eventPublicId}</dd></div> : null}
             </dl>
             {event.registration ? <><EventPaymentNotice registration={event.registration} locale={locale} /><p>{event.registration.nonCancelledCount} {de ? "aktive Anmeldungen" : "non-cancelled applications"}</p></> : null}
           </div>

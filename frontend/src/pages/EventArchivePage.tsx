@@ -1,19 +1,20 @@
 import { useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
-import type { PublicPost } from "../api/types";
+import type { Locale, PublicPost } from "../api/types";
 import { useData } from "../data/DataProviderContext";
 import { useAsync } from "../hooks/useAsync";
+import { useLocale } from "../i18n/LocaleContext";
 import { downloadEventIcs } from "../utils/ics";
 import { assetUrl } from "../utils/assets";
 import {
-  ARCHIVE_BLURBS,
-  ARCHIVE_FORMATS,
-  STATIC_PAST,
+  archiveBlurb,
+  archiveFormats,
   badgeParts,
   nextEventFor,
   pastRowFrom,
   sortEvents,
+  staticPast,
   whenLabel,
   whereLabel,
 } from "./eventFormats";
@@ -25,9 +26,9 @@ const ALIASES: Record<string, string> = {
   karaoke: "karaoke-night",
 };
 
-function formatFromParam(param: string | null): Format {
+function formatFromParam(param: string | null, formats: Format[]): Format {
   const key = ALIASES[param ?? ""] ?? param ?? "";
-  return ARCHIVE_FORMATS.find((fmt) => fmt.key === key) ?? ARCHIVE_FORMATS.find((fmt) => fmt.key === "country-evening")!;
+  return formats.find((fmt) => fmt.key === key) ?? formats.find((fmt) => fmt.key === "country-evening")!;
 }
 
 type ArchRow = {
@@ -41,14 +42,14 @@ type ArchRow = {
   year: string;
 };
 
-function rowsFor(fmt: Format, archived: PublicPost[]): ArchRow[] {
+function rowsFor(fmt: Format, archived: PublicPost[], locale: Locale): ArchRow[] {
   const real = archived
     .filter((event) => event.eventKind === fmt.kind)
     .map((event) => ({
-      ...pastRowFrom(event),
+      ...pastRowFrom(event, locale),
       year: event.startsAt ? String(new Date(event.startsAt).getFullYear()) : "",
     }));
-  const statics = (STATIC_PAST[fmt.key] ?? []).map((row) => ({ ...row, year: "2026" }));
+  const statics = staticPast(fmt.key, locale).map((row) => ({ ...row, year: "2026" }));
   if (!real.length) return statics;
   // Editions with a kept record (photos, protocol, recipes) always stay listed,
   // ahead of the plain rows from the database.
@@ -58,30 +59,36 @@ function rowsFor(fmt: Format, archived: PublicPost[]): ArchRow[] {
 export function EventArchivePage() {
   const data = useData();
   const [params] = useSearchParams();
-  const fmt = formatFromParam(params.get("e"));
+  const { locale } = useLocale();
+  const de = locale === "de";
+  const formats = archiveFormats(locale);
+  const fmt = formatFromParam(params.get("e"), formats);
   const posts = useAsync(() => data.getPublicPosts(), [data]);
 
   useEffect(() => {
-    document.title = `INCAS · ${fmt.title}`;
     window.scrollTo({ top: 0 });
   }, [fmt.key]);
 
+  useEffect(() => {
+    document.title = `INCAS · ${fmt.title}`;
+  }, [fmt.title]);
+
   const events = useMemo(() => sortEvents(posts.data?.events ?? []), [posts.data]);
   const next = nextEventFor(fmt, events);
-  const rows = rowsFor(fmt, posts.data?.archivedEvents ?? []);
-  const badge = badgeParts(next?.startsAt ?? null);
-  const blurb = ARCHIVE_BLURBS[fmt.key] ?? fmt.desc;
+  const rows = rowsFor(fmt, posts.data?.archivedEvents ?? [], locale);
+  const badge = badgeParts(next?.startsAt ?? null, locale);
+  const blurb = archiveBlurb(fmt.key, locale) ?? fmt.desc;
 
   return (
     <>
-      <Link to="/" className="ev-back"><i className="bi bi-arrow-left" aria-hidden="true" /> Back to home</Link>
+      <Link to="/" className="ev-back"><i className="bi bi-arrow-left" aria-hidden="true" /> {de ? "Zur Startseite" : "Back to home"}</Link>
       <header className="ev-hero">
         <p className="hero-coords">Humboldt-Haus · 50°46′ N · 6°05′ E</p>
-        <h1>{fmt.title} <em>archive</em></h1>
+        <h1>{fmt.title} <em>{de ? "Archiv" : "archive"}</em></h1>
         <p>{blurb}</p>
       </header>
 
-      <section aria-label="Next edition">
+      <section aria-label={de ? "Nächste Ausgabe" : "Next edition"}>
         <div className="ev-next">
           {badge ? (
             <span className="ev-next-badge" aria-hidden="true"><span>{badge.month}</span><strong>{badge.day}</strong></span>
@@ -89,25 +96,25 @@ export function EventArchivePage() {
             <span className="ev-next-badge is-empty" aria-hidden="true"><i className="bi bi-calendar3" /></span>
           )}
           <div>
-            <span className="kick">Next edition</span>
-            <p className="when">{(next && whenLabel(next.startsAt)) ?? fmt.fallbackNext}</p>
+            <span className="kick">{de ? "Nächste Ausgabe" : "Next edition"}</span>
+            <p className="when">{(next && whenLabel(next.startsAt, locale)) ?? fmt.fallbackNext}</p>
             <p className="where">{(next && whereLabel(next)) ?? fmt.fallbackWhere}</p>
           </div>
           <div className="btn-row">
-            <Link to="/events#register" className="btn btn-primary btn-sm">Register</Link>
+            <Link to="/events#register" className="btn btn-primary btn-sm">{de ? "Anmelden" : "Register"}</Link>
             {next ? (
               <button type="button" className="btn btn-outline btn-sm" onClick={() => downloadEventIcs(next)}>
-                <i className="bi bi-calendar-plus" aria-hidden="true" /> Save the date
+                <i className="bi bi-calendar-plus" aria-hidden="true" /> {de ? "Termin speichern" : "Save the date"}
               </button>
             ) : null}
           </div>
         </div>
       </section>
 
-      <section aria-label="Past editions">
+      <section aria-label={de ? "Frühere Ausgaben" : "Past editions"}>
         <div className="arch-head">
-          <h2>Past editions</h2>
-          <span className="count">{rows.length} editions on record</span>
+          <h2>{de ? "Frühere Ausgaben" : "Past editions"}</h2>
+          <span className="count">{de ? `${rows.length} Ausgaben festgehalten` : `${rows.length} editions on record`}</span>
         </div>
         <div className="arch-list">
           {rows.map((row, index) => {
@@ -117,7 +124,7 @@ export function EventArchivePage() {
                   {row.imageUrl ? (
                     <img src={assetUrl(row.imageUrl) ?? undefined} alt="" loading="lazy" />
                   ) : (
-                    <span className="arch-thumb-empty">Photo</span>
+                    <span className="arch-thumb-empty">{de ? "Foto" : "Photo"}</span>
                   )}
                 </span>
                 <span className="arch-when">{row.date}<br />{row.year}</span>
@@ -126,7 +133,7 @@ export function EventArchivePage() {
                   <span className="arch-note">{row.note}</span>
                   {row.record ? (
                     <span className="arch-record-hint">
-                      <i className="bi bi-journal-richtext" aria-hidden="true" /> Photos, protocol &amp; recipes kept <i className="bi bi-arrow-right" aria-hidden="true" />
+                      <i className="bi bi-journal-richtext" aria-hidden="true" /> {de ? "Fotos, Protokoll & Rezepte aufbewahrt" : "Photos, protocol & recipes kept"} <i className="bi bi-arrow-right" aria-hidden="true" />
                     </span>
                   ) : null}
                 </span>
@@ -144,10 +151,10 @@ export function EventArchivePage() {
         </div>
       </section>
 
-      <section className="other-types" aria-label="Other event types">
-        <h2>Other events</h2>
+      <section className="other-types" aria-label={de ? "Andere Eventarten" : "Other event types"}>
+        <h2>{de ? "Andere Events" : "Other events"}</h2>
         <div className="type-chips">
-          {ARCHIVE_FORMATS.map((other) => (
+          {formats.map((other) => (
             <Link
               key={other.key}
               className="type-chip"

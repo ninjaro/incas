@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, Navigate, useParams } from "react-router-dom";
 
-import { ARCHIVE_FORMATS } from "./eventFormats";
+import type { Locale } from "../api/types";
+import { useLocale } from "../i18n/LocaleContext";
+import { archiveFormats } from "./eventFormats";
 import { EDITION_RECORDS } from "./eventRecords";
 import { downloadRecipeCard } from "../utils/recipeCards";
 import { assetUrl } from "../utils/assets";
@@ -15,8 +17,11 @@ const DOC_ICON: Record<string, string> = {
   List: "bi-card-checklist",
 };
 
+const DOC_TYPE_DE: Record<string, string> = { Slides: "Folien", Playlist: "Playlist", List: "Liste" };
+
 /** Demo of "kept slides": the deck opens in a paper slide viewer. */
-function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[]; onClose: () => void }) {
+function SlideViewer({ title, slides, locale, onClose }: { title: string; slides: Slide[]; locale: Locale; onClose: () => void }) {
+  const de = locale === "de";
   const [index, setIndex] = useState(0);
   const indexRef = useRef(0);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -61,7 +66,7 @@ function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[
     <>
       <div className="slides-backdrop" onClick={onClose} />
       <div className="theme-parchment slides-panel" role="dialog" aria-modal="true" aria-label={title} ref={panelRef}>
-        <button type="button" className="ev-close" aria-label="Close" onClick={onClose} ref={closeRef}>
+        <button type="button" className="ev-close" aria-label={de ? "Schließen" : "Close"} onClick={onClose} ref={closeRef}>
           <i className="bi bi-x-lg" aria-hidden="true" />
         </button>
         <p className="slides-title">{title}</p>
@@ -84,7 +89,7 @@ function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[
           <span className="slide-folio">{index + 1} / {slides.length}</span>
         </div>
         <div className="ev-pager slides-pager">
-          <button type="button" aria-label="Previous slide" disabled={index === 0} onClick={() => go(index - 1)}>
+          <button type="button" aria-label={de ? "Vorherige Folie" : "Previous slide"} disabled={index === 0} onClick={() => go(index - 1)}>
             <i className="bi bi-chevron-left" aria-hidden="true" />
           </button>
           <span className="ev-dots">
@@ -92,13 +97,13 @@ function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[
               <button
                 key={i}
                 type="button"
-                aria-label={`Slide ${i + 1}`}
+                aria-label={de ? `Folie ${i + 1}` : `Slide ${i + 1}`}
                 aria-current={i === index ? "true" : "false"}
                 onClick={() => go(i)}
               />
             ))}
           </span>
-          <button type="button" aria-label="Next slide" disabled={index === slides.length - 1} onClick={() => go(index + 1)}>
+          <button type="button" aria-label={de ? "Nächste Folie" : "Next slide"} disabled={index === slides.length - 1} onClick={() => go(index + 1)}>
             <i className="bi bi-chevron-right" aria-hidden="true" />
           </button>
         </div>
@@ -108,8 +113,9 @@ function SlideViewer({ title, slides, onClose }: { title: string; slides: Slide[
   );
 }
 
-function DishCard({ dish, recordTitle }: { dish: RecordDish; recordTitle: string }) {
+function DishCard({ dish, recordTitle, locale }: { dish: RecordDish; recordTitle: string; locale: Locale }) {
   const [open, setOpen] = useState(false);
+  const de = locale === "de";
   return (
     <article className={`rec-dish${open ? " is-open" : ""}`}>
       <div className="rec-dish-head">
@@ -119,33 +125,33 @@ function DishCard({ dish, recordTitle }: { dish: RecordDish; recordTitle: string
         </div>
         {dish.recipe ? (
           <button type="button" className="btn btn-outline btn-sm" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-            {open ? "Fold the recipe away" : "Open the recipe"}
+            {open ? (de ? "Rezept zuklappen" : "Fold the recipe away") : (de ? "Rezept öffnen" : "Open the recipe")}
           </button>
         ) : (
-          <span className="rec-dish-none">No recipe kept</span>
+          <span className="rec-dish-none">{de ? "Kein Rezept aufbewahrt" : "No recipe kept"}</span>
         )}
       </div>
       {open && dish.recipe ? (
         <div className="rec-recipe">
           <div className="rec-recipe-top">
-            <span className="rec-recipe-kicker">Recipe card · {dish.recipe.serves}</span>
+            <span className="rec-recipe-kicker">{de ? "Rezeptkarte" : "Recipe card"} · {dish.recipe.serves}</span>
             <button
               type="button"
               className="btn btn-outline btn-sm"
-              onClick={() => downloadRecipeCard(dish.name, recordTitle, dish.recipe!)}
+              onClick={() => downloadRecipeCard(dish.name, recordTitle, dish.recipe!, locale)}
             >
-              <i className="bi bi-download" aria-hidden="true" /> Save the card
+              <i className="bi bi-download" aria-hidden="true" /> {de ? "Karte speichern" : "Save the card"}
             </button>
           </div>
           <div className="rec-recipe-cols">
             <div>
-              <h4>Ingredients</h4>
+              <h4>{de ? "Zutaten" : "Ingredients"}</h4>
               <ul>
                 {dish.recipe.ingredients.map((item) => <li key={item}>{item}</li>)}
               </ul>
             </div>
             <div>
-              <h4>How it went</h4>
+              <h4>{de ? "So ging es" : "How it went"}</h4>
               <ol>
                 {dish.recipe.steps.map((step) => <li key={step}>{step}</li>)}
               </ol>
@@ -161,6 +167,8 @@ export function EventRecordPage() {
   const { record: recordId } = useParams();
   const record = recordId ? EDITION_RECORDS[recordId] : undefined;
   const [openDeck, setOpenDeck] = useState<RecordDoc | null>(null);
+  const { locale } = useLocale();
+  const de = locale === "de";
 
   useEffect(() => {
     if (record) {
@@ -171,23 +179,25 @@ export function EventRecordPage() {
   }, [record?.id]);
 
   if (!record) return <Navigate to="/events/archive" replace />;
-  const fmt = ARCHIVE_FORMATS.find((entry) => entry.key === record.formatKey);
+  const fmt = archiveFormats(locale).find((entry) => entry.key === record.formatKey);
 
   return (
     <>
       <Link to={`/events/archive?e=${record.formatKey}`} className="ev-back">
-        <i className="bi bi-arrow-left" aria-hidden="true" /> Back to the {fmt?.title ?? "event"} archive
+        <i className="bi bi-arrow-left" aria-hidden="true" /> {de
+          ? `Zurück zum Archiv: ${fmt?.title ?? "Event"}`
+          : `Back to the ${fmt?.title ?? "event"} archive`}
       </Link>
       <header className="ev-hero rec-hero">
-        <p className="hero-coords">Kept by the team · {record.date}</p>
+        <p className="hero-coords">{de ? "Vom Team aufbewahrt" : "Kept by the team"} · {record.date}</p>
         <h1>{record.title}</h1>
         <p>{record.intro}</p>
         <p className="rec-meta">{record.meta}</p>
       </header>
 
       {record.photos.length ? (
-        <section className="rec-section" aria-label="Photos from the event">
-          <h2 className="rec-heading"><span className="rec-no">N° 01</span> How it looked</h2>
+        <section className="rec-section" aria-label={de ? "Fotos vom Event" : "Photos from the event"}>
+          <h2 className="rec-heading"><span className="rec-no">N° 01</span> {de ? "So sah es aus" : "How it looked"}</h2>
           <div className="rec-photos">
             {record.photos.map((photo, index) => (
               <figure className="rec-photo" key={photo.src + index}>
@@ -201,8 +211,8 @@ export function EventRecordPage() {
       ) : null}
 
       {record.protocol.length ? (
-        <section className="rec-section" aria-label="How the event went">
-          <h2 className="rec-heading"><span className="rec-no">N° 02</span> The protocol</h2>
+        <section className="rec-section" aria-label={de ? "Ablauf des Events" : "How the event went"}>
+          <h2 className="rec-heading"><span className="rec-no">N° 02</span> {de ? "Das Protokoll" : "The protocol"}</h2>
           <div className="rec-protocol">
             {record.protocol.map((step) => (
               <div className="rec-step" key={step.time + step.what}>
@@ -215,17 +225,17 @@ export function EventRecordPage() {
       ) : null}
 
       {record.dishes.length ? (
-        <section className="rec-section" aria-label="The food and recipes">
-          <h2 className="rec-heading"><span className="rec-no">N° 03</span> The food, kept as recipes</h2>
+        <section className="rec-section" aria-label={de ? "Essen und Rezepte" : "The food and recipes"}>
+          <h2 className="rec-heading"><span className="rec-no">N° 03</span> {de ? "Das Essen, als Rezepte aufbewahrt" : "The food, kept as recipes"}</h2>
           <div className="rec-dishes">
-            {record.dishes.map((dish) => <DishCard dish={dish} recordTitle={record.title} key={dish.name} />)}
+            {record.dishes.map((dish) => <DishCard dish={dish} recordTitle={record.title} locale={locale} key={dish.name} />)}
           </div>
         </section>
       ) : null}
 
       {record.documents.length ? (
-        <section className="rec-section" aria-label="Slides and documents">
-          <h2 className="rec-heading"><span className="rec-no">N° {record.dishes.length ? "04" : "03"}</span> Slides and documents</h2>
+        <section className="rec-section" aria-label={de ? "Folien und Dokumente" : "Slides and documents"}>
+          <h2 className="rec-heading"><span className="rec-no">N° {record.dishes.length ? "04" : "03"}</span> {de ? "Folien und Dokumente" : "Slides and documents"}</h2>
           <div className="rec-docs">
             {record.documents.map((doc) => {
               const inner = (
@@ -236,9 +246,9 @@ export function EventRecordPage() {
                     <span>{doc.info}</span>
                   </span>
                   {doc.slides ? (
-                    <span className="rec-doc-open">View the slides <i className="bi bi-arrow-right" aria-hidden="true" /></span>
+                    <span className="rec-doc-open">{de ? "Folien ansehen" : "View the slides"} <i className="bi bi-arrow-right" aria-hidden="true" /></span>
                   ) : null}
-                  <span className="doc-type-badge">{doc.type}</span>
+                  <span className="doc-type-badge">{de ? DOC_TYPE_DE[doc.type] ?? doc.type : doc.type}</span>
                 </>
               );
               return doc.slides ? (
@@ -251,13 +261,15 @@ export function EventRecordPage() {
             })}
           </div>
           <p className="rec-docs-note">
-            The team keeps these after every edition. Ask at a Tuesday meeting or message us to get a copy.
+            {de
+              ? "Das Team bewahrt diese nach jeder Ausgabe auf. Frag beim Dienstagstreffen oder schreib uns, um eine Kopie zu bekommen."
+              : "The team keeps these after every edition. Ask at a Tuesday meeting or message us to get a copy."}
           </p>
         </section>
       ) : null}
 
       {openDeck?.slides ? (
-        <SlideViewer title={openDeck.title} slides={openDeck.slides} onClose={() => setOpenDeck(null)} />
+        <SlideViewer title={openDeck.title} slides={openDeck.slides} locale={locale} onClose={() => setOpenDeck(null)} />
       ) : null}
     </>
   );

@@ -1181,6 +1181,7 @@ a.arch-row:hover { border-color: #a89a7d; background: #fffaf0; color: var(--ink)
   overflow: hidden;
 }
 .food-map-svg { display: block; width: 100%; height: auto; }
+.food-map-land { fill: #e2cb9c; stroke: #d9bf8b; }
 
 .food-pin { cursor: pointer; outline: none; }
 .food-pin-halo { r: 14px; fill: rgba(255, 102, 0, 0); transition: fill 0.18s ease, r 0.18s ease; }

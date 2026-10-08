@@ -1,5 +1,6 @@
 import { RouterProvider } from "react-router-dom";
 
+import { ColorSchemeProvider } from "../appearance/ColorScheme";
 import { SessionProvider } from "../auth/SessionContext";
 import { DataProviderProvider } from "../data/DataProviderContext";
 import { LocaleProvider } from "../i18n/LocaleContext";
@@ -10,7 +11,9 @@ export function App() {
     <DataProviderProvider>
       <LocaleProvider>
         <SessionProvider>
-          <RouterProvider router={router} />
+          <ColorSchemeProvider>
+            <RouterProvider router={router} />
+          </ColorSchemeProvider>
         </SessionProvider>
       </LocaleProvider>
     </DataProviderProvider>

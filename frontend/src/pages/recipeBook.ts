@@ -191,4 +191,18 @@ export const RECIPE_BOOK: BookCountry[] = [
   },
 ];
 
+const GERMAN_COUNTRY_NAMES: Record<string, string> = {
+  ecuador: "Ecuador",
+  egypt: "Ägypten",
+  vietnam: "Vietnam",
+  poland: "Polen",
+  kenya: "Kenia",
+  turkey: "Türkei",
+  bosnia: "Bosnien und Herzegowina",
+};
+
+export function countryName(country: BookCountry, locale: "en" | "de"): string {
+  return locale === "de" ? GERMAN_COUNTRY_NAMES[country.id] ?? country.country : country.country;
+}
+
 export const RECIPE_COUNT = RECIPE_BOOK.reduce((sum, country) => sum + country.recipes.length, 0);

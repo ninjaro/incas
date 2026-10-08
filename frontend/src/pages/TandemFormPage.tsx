@@ -35,7 +35,7 @@ function ProfileFields({ form, setForm, errors, options, de, clearField }: FormS
         <Field label={de ? "Nachname" : "Last name"} error={errors.lastName}>
           <input name="lastName" autoComplete="family-name" value={form.lastName} onChange={(event) => update("lastName", event.target.value)} />
         </Field>
-        <Field label="Email" error={errors.email}>
+        <Field label={de ? "E-Mail" : "Email"} error={errors.email}>
           <input name="email" type="email" autoComplete="email" value={form.email} onChange={(event) => update("email", event.target.value)} />
         </Field>
         <Field label={de ? "Geschlecht" : "Gender"} error={errors.gender}>
@@ -210,8 +210,8 @@ export function TandemFormPage() {
   const de = locale === "de";
   return (
     <>
-      <PageHeader kicker={de ? "Sprachaustausch" : "Language exchange"} title="Language Tandem" sub={de ? "Finde eine passende Person und übt eure Sprachen gemeinsam." : "Find a partner and practice the languages you offer and want to learn."} />
-      {isPreview ? <p className="notice notice-info">Theme preview: <strong>{theme}</strong></p> : null}
+      <PageHeader kicker={de ? "Sprachaustausch" : "Language exchange"} title={de ? "Sprachtandem" : "Language Tandem"} sub={de ? "Finde eine passende Person und übt eure Sprachen gemeinsam." : "Find a partner and practice the languages you offer and want to learn."} />
+      {isPreview ? <p className="notice notice-info">{de ? "Theme-Vorschau" : "Theme preview"}: <strong>{theme}</strong></p> : null}
       <CompleteForm variant={theme === "classic" ? "classic" : "steps"} />
     </>
   );

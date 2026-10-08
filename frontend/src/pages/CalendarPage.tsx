@@ -234,7 +234,7 @@ export function CalendarPage() {
         <p className="hero-coords">{de ? "Was läuft" : "What's on"} · 50°46′ N · 6°05′ E</p>
         <h1>{de ? "Kalender" : "Calendar"}</h1>
       </header>
-      {isPreview ? <p className="notice notice-info">Theme preview: <strong>{theme}</strong>.</p> : null}
+      {isPreview ? <p className="notice notice-info">{de ? "Theme-Vorschau" : "Theme preview"}: <strong>{theme}</strong>.</p> : null}
       <div className="cal-controls" aria-label={de ? "Kalendersteuerung" : "Calendar controls"}>
         <button type="button" className="btn btn-outline btn-sm" onClick={() => shift(-1)}>{de ? "← Zurück" : "← Previous"}</button>
         <h2>{new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(cursor.year, cursor.month - 1, 1))}</h2>

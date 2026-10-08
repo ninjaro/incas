@@ -1,0 +1,644 @@
+/* Dark appearance ("Parchment by lamplight"), offered to admins through the
+   colour-scheme switch and applied site-wide via html[data-theme="dark"].
+   Loaded last: tokens are redefined first so token-based components follow
+   automatically, then every surface that hard-codes a light paper colour is
+   restated as dark paper. #ff6600 stays the brand fill; where orange or olive
+   carries text it moves to a lighter shade that keeps AA contrast on the dark
+   grounds. Maps that are read as printed maps (event map, QR codes) stay light. */
+
+/* ---------- tokens ---------- */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --dk-ground: #16120d;
+  --dk-band: #201a12;
+  --dk-paper: #2a2219;
+  --dk-paper-hi: #322a1f;
+  --dk-paper-lo: #241d15;
+  --dk-olive-paper: #252a17;
+  --dk-orange-paper: #36210f;
+  --dk-line: #4a3d2c;
+  --dk-stripe: #2a2219;
+  --dk-text: #f1e6d3;
+  --dk-text-soft: #d2c1a3;
+  --dk-text-faint: #ab9a7d;
+  --dk-pine-fill: #5d6c2b;
+  --dk-pine-fill-hover: #6c7c35;
+  --dk-orange-fill: #b34700;
+
+  --on-orange: #21160e;
+  --incas-orange-deep: #ff9a5c;
+  --incas-orange-soft: var(--dk-orange-paper);
+  --incas-orange-hover: #ff7a1f;
+
+  --ink: var(--dk-text);
+  --ink-soft: var(--dk-text-soft);
+  --ink-faint: var(--dk-text-faint);
+  --paper: var(--dk-paper);
+  --paper-warm: var(--dk-ground);
+  --line: var(--dk-line);
+
+  --ok: #6fd08c;
+  --ok-soft: #14301d;
+  --warn: #e8bd55;
+  --warn-soft: #33290d;
+  --bad: #ff8a80;
+  --bad-soft: #3d1715;
+  --info: #8cb4ff;
+  --info-soft: #15233f;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .theme-parchment {
+  --ink: var(--dk-text);
+  --ink-soft: var(--dk-text-soft);
+  --ink-faint: var(--dk-text-faint);
+  --paper: var(--dk-paper);
+  --paper-warm: var(--dk-ground);
+  --line: var(--dk-line);
+  --incas-orange-deep: #ff9a5c;
+  --incas-orange-soft: var(--dk-orange-paper);
+  --accent-text: #ff8f4d;
+  --pine: #b4c57a;
+  --pine-deep: #c9d79a;
+  --olive-light: #7f9048;
+  --kraft: #6b5232;
+  --kraft-flap: #5e472a;
+  --kraft-pocket: #765c39;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 20px rgba(0, 0, 0, 0.4);
+
+  background: var(--dk-ground);
+}
+
+/* parchment.css restores a neutral light palette inside the admin; mirror it in dark. */
+[data-theme="dark"] .theme-parchment .admin-shell {
+  --ink: #eee7dc;
+  --ink-soft: #c8bdac;
+  --ink-faint: #a29682;
+  --paper: #25201a;
+  --paper-warm: #1c1813;
+  --line: #433a2f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .demo-banner {
+  background: #0d0b08;
+  color: var(--dk-text-soft);
+  border-bottom: 1px solid var(--dk-line);
+}
+
+[data-theme="dark"] body {
+  background: var(--dk-ground);
+  color: var(--ink);
+}
+
+[data-theme="dark"] a {
+  color: var(--incas-orange-deep);
+}
+
+/* ---------- form controls, tables, shared components ---------- */
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color: var(--ink);
+  background-color: var(--dk-paper-lo);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+[data-theme="dark"] .dialog-backdrop,
+[data-theme="dark"] .m-scrim,
+[data-theme="dark"] .lt-scrim,
+[data-theme="dark"] .ev-backdrop,
+[data-theme="dark"] .wg-backdrop,
+[data-theme="dark"] .slides-backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--incas-orange-hover);
+}
+
+[data-theme="dark"] .theme-parchment .btn-outline:hover,
+[data-theme="dark"] .theme-parchment .section-local-nav a:hover {
+  background: rgba(180, 197, 122, 0.12);
+}
+
+/* Fills that carry light text keep a deep shade instead of the lightened text tokens. */
+[data-theme="dark"] .theme-parchment .btn-primary,
+[data-theme="dark"] .theme-parchment .site-nav-cta,
+[data-theme="dark"] .globe-badge,
+[data-theme="dark"] .env-airmail,
+[data-theme="dark"] .theme-parchment .section-local-nav a[aria-current="page"],
+[data-theme="dark"] .theme-parchment .locale-switch button.is-active,
+[data-theme="dark"] .cal-filter[aria-pressed="true"],
+[data-theme="dark"] .cal-filters .cal-filter[aria-pressed="true"],
+[data-theme="dark"] .ev-stack.is-olive .ev-date-badge {
+  background: var(--dk-pine-fill);
+  border-color: var(--dk-pine-fill);
+}
+
+[data-theme="dark"] .theme-parchment .btn-primary:hover,
+[data-theme="dark"] .theme-parchment .site-nav-cta:hover {
+  background: var(--dk-pine-fill-hover);
+  border-color: var(--dk-pine-fill-hover);
+}
+
+[data-theme="dark"] .team-avatar-fallback,
+[data-theme="dark"] .globe-badge.is-accent,
+[data-theme="dark"] .ev-ribbon,
+[data-theme="dark"] .radio-grille .radio-badge,
+[data-theme="dark"] .theme-parchment .cal-filter.is-all[aria-pressed="true"],
+[data-theme="dark"] .theme-parchment .cal-filters .cal-filter.is-all[aria-pressed="true"],
+[data-theme="dark"] .theme-parchment .wg-board-label,
+[data-theme="dark"] .theme-parchment .ev-next-badge,
+[data-theme="dark"] .theme-parchment .radio-play .btn {
+  background: var(--dk-orange-fill);
+  border-color: var(--dk-orange-fill);
+}
+
+[data-theme="dark"] .theme-parchment .radio-play .btn:hover {
+  background: #9a3d00;
+  border-color: #9a3d00;
+}
+
+[data-theme="dark"] .event-map-fallback {
+  background: var(--dk-paper);
+  color: var(--ink-soft);
+}
+
+/* ---------- navigation and footer ---------- */
+
+[data-theme="dark"] .theme-parchment .site-nav {
+  background: var(--dk-band);
+  border-bottom: 1px solid var(--dk-line);
+}
+
+[data-theme="dark"] .theme-parchment .site-nav-links a:hover,
+[data-theme="dark"] .theme-parchment .site-nav-group-link:hover,
+[data-theme="dark"] .theme-parchment .site-nav-links a[aria-current="page"],
+[data-theme="dark"] .theme-parchment .site-nav-group.is-section-active .site-nav-group-link,
+[data-theme="dark"] .theme-parchment .site-nav-group-disclosure:hover {
+  color: var(--pine);
+}
+
+[data-theme="dark"] .theme-parchment .site-nav-group-menu {
+  background: var(--dk-paper);
+  border-color: var(--dk-line);
+}
+
+[data-theme="dark"] .theme-parchment .site-nav-group-menu a:hover,
+[data-theme="dark"] .theme-parchment .site-nav-group-menu a[aria-current="page"],
+[data-theme="dark"] .theme-parchment .site-nav-group.is-open .site-nav-group-primary,
+[data-theme="dark"] .theme-parchment .site-nav-group.is-section-active .site-nav-group-primary {
+  background: rgba(180, 197, 122, 0.12);
+}
+
+[data-theme="dark"] .theme-parchment .site-nav-menu {
+  background:
+    radial-gradient(160px 120px at 12% 12%, rgba(158, 118, 58, 0.08), transparent 70%),
+    linear-gradient(170deg, var(--dk-paper-hi), var(--dk-paper));
+}
+
+[data-theme="dark"] .theme-parchment .site-nav-menu::before,
+[data-theme="dark"] .theme-parchment .site-nav-menu::after,
+[data-theme="dark"] .tape,
+[data-theme="dark"] .team-tape,
+[data-theme="dark"] .wg-slip::before {
+  background: rgba(150, 128, 86, 0.55);
+}
+
+[data-theme="dark"] .theme-parchment .social-band .footer-coords {
+  color: var(--incas-orange-deep);
+}
+
+/* ---------- landing ---------- */
+
+[data-theme="dark"] .landing-band,
+[data-theme="dark"] .landing-hero {
+  background: var(--dk-band);
+}
+
+[data-theme="dark"] .landing-band::before,
+[data-theme="dark"] .landing-band::after {
+  background: var(--dk-ground);
+}
+
+[data-theme="dark"] .landing-hero::after {
+  opacity: 0.25;
+}
+
+[data-theme="dark"] .team-section.landing-band::before,
+[data-theme="dark"] .team-section.landing-band::after {
+  background: var(--dk-ground);
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 96% 55%, 92% 40%, 88% 62%, 84% 45%, 80% 70%, 76% 40%, 72% 58%, 68% 42%, 64% 66%, 60% 38%, 56% 60%, 52% 45%, 48% 72%, 44% 40%, 40% 62%, 36% 38%, 32% 64%, 28% 48%, 24% 70%, 20% 40%, 16% 58%, 12% 36%, 8% 66%, 4% 45%, 0 55%);
+}
+
+[data-theme="dark"] .landing-hero-sub,
+[data-theme="dark"] p.about-lead-center,
+[data-theme="dark"] .about-body p {
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .hero-map path {
+  fill: #2c2419;
+  stroke: #3a3022;
+}
+
+[data-theme="dark"] .globe-sphere path:nth-child(3) {
+  fill: #d8c7a4;
+}
+
+[data-theme="dark"] .section-compass g {
+  stroke: #a89a80;
+}
+
+[data-theme="dark"] .section-compass path:nth-of-type(1),
+[data-theme="dark"] .section-compass path:nth-of-type(2) {
+  fill: #a89a80;
+}
+
+[data-theme="dark"] .section-compass path:nth-of-type(3),
+[data-theme="dark"] .section-compass circle:last-of-type {
+  fill: #8fb0b0;
+}
+
+[data-theme="dark"] .ev-string path {
+  stroke: #7d6d52;
+}
+
+[data-theme="dark"] .ev-photo-link,
+[data-theme="dark"] .photo-tape,
+[data-theme="dark"] .rec-photo,
+[data-theme="dark"] .slide-photo {
+  background: var(--dk-paper-hi);
+}
+
+[data-theme="dark"] .ev-save {
+  background: rgba(42, 34, 25, 0.92);
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .ev-save:hover {
+  background: var(--dk-paper-hi);
+}
+
+[data-theme="dark"] .postcard-bg {
+  background-color: var(--dk-paper);
+  border-color: var(--dk-pine-fill);
+  filter: brightness(0.8) sepia(0.15);
+}
+
+/* About: the airmail letter */
+[data-theme="dark"] .about-body {
+  background:
+    radial-gradient(180px 130px at 6% 10%, rgba(158, 118, 58, 0.1), transparent 68%),
+    radial-gradient(220px 150px at 52% 98%, rgba(150, 108, 48, 0.1), transparent 72%),
+    linear-gradient(168deg, var(--dk-paper-hi), var(--dk-paper) 58%, var(--dk-paper-lo));
+  box-shadow: inset 0 0 46px rgba(0, 0, 0, 0.25), 0 8px 16px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .envelope {
+  background:
+    radial-gradient(160px 110px at 14% 26%, rgba(0, 0, 0, 0.16), transparent 70%),
+    var(--kraft);
+}
+
+[data-theme="dark"] .env-side.l { background: #5e472a; }
+[data-theme="dark"] .env-side.r { background: #574126; }
+[data-theme="dark"] .env-flap,
+[data-theme="dark"] .env-front::after {
+  background-image: repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 6px, var(--dk-stripe) 6px 12px);
+}
+[data-theme="dark"] .env-flap::before { background: linear-gradient(180deg, var(--kraft-flap), #574126); }
+[data-theme="dark"] .env-pocket { background: linear-gradient(180deg, var(--kraft-pocket), #66502f); }
+
+/* ---------- events board, posters and the poster stack ---------- */
+
+[data-theme="dark"] .board {
+  background:
+    radial-gradient(220px 160px at 18% 24%, rgba(150, 108, 52, 0.16), transparent 70%),
+    radial-gradient(260px 180px at 82% 68%, rgba(150, 108, 52, 0.12), transparent 72%),
+    linear-gradient(168deg, #4b3a24, #40311e);
+  box-shadow: inset 0 0 0 10px #3a2c19, inset 0 0 0 13px #2c2112, inset 0 3px 14px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .poster,
+[data-theme="dark"] .register-aside .card + .card {
+  background: var(--dk-paper);
+}
+
+[data-theme="dark"] .poster-note,
+[data-theme="dark"] .register-aside .card,
+[data-theme="dark"] .wg-join,
+[data-theme="dark"] .wg-note {
+  background: var(--dk-olive-paper);
+}
+
+[data-theme="dark"] .poster-band {
+  background: repeating-linear-gradient(45deg, var(--dk-pine-fill) 0 7px, var(--dk-stripe) 7px 14px);
+}
+
+[data-theme="dark"] .poster.pin-orange .poster-band {
+  background: repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 7px, var(--dk-stripe) 7px 14px);
+}
+
+[data-theme="dark"] .poster-rule {
+  background: repeating-linear-gradient(90deg, rgba(180, 197, 122, 0.4) 0 6px, transparent 6px 11px);
+}
+
+[data-theme="dark"] .poster-tag {
+  background: var(--dk-olive-paper);
+}
+
+[data-theme="dark"] .poster-tag.is-req,
+[data-theme="dark"] .payment-notice {
+  background: var(--dk-orange-paper);
+}
+
+[data-theme="dark"] .ev-card {
+  background:
+    repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 7px, var(--dk-stripe) 7px 14px) top left / 100% 8px no-repeat,
+    linear-gradient(178deg, var(--dk-paper-hi), var(--dk-paper));
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 24px 46px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .ev-stack.is-olive .ev-card {
+  background:
+    repeating-linear-gradient(45deg, var(--dk-pine-fill) 0 7px, var(--dk-stripe) 7px 14px) top left / 100% 8px no-repeat,
+    linear-gradient(178deg, var(--dk-paper-hi), var(--dk-paper));
+}
+
+[data-theme="dark"] .ev-card-shade {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0) 58%);
+}
+
+[data-theme="dark"] .ev-stack .poster-desc {
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .ev-pager button,
+[data-theme="dark"] .food-map-controls button {
+  background: var(--dk-paper-hi);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .ev-dots button::after {
+  background: rgba(241, 230, 211, 0.3);
+}
+
+[data-theme="dark"] .ev-poster-art {
+  background: var(--dk-paper-hi);
+}
+
+[data-theme="dark"] .ev-poster-art img,
+[data-theme="dark"] .polaroid-photo,
+[data-theme="dark"] .rec-photo img,
+[data-theme="dark"] .slide-photo img {
+  background: #3a3127;
+}
+
+[data-theme="dark"] a.arch-row:hover,
+[data-theme="dark"] .rec-doc.is-openable:hover {
+  background: var(--dk-paper-hi);
+}
+
+/* ---------- registration letter ---------- */
+
+[data-theme="dark"] .letter-sheet {
+  background:
+    repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 6px, var(--dk-stripe) 6px 12px) top / 100% 6px no-repeat,
+    radial-gradient(180px 130px at 6% 10%, rgba(158, 118, 58, 0.08), transparent 68%),
+    linear-gradient(168deg, var(--dk-paper-hi), var(--dk-paper) 60%, var(--dk-paper-lo));
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.2), 0 12px 26px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .letter-head::after {
+  background: rgba(210, 193, 163, 0.25);
+}
+
+[data-theme="dark"] .letter-sheet .field input:focus,
+[data-theme="dark"] .letter-sheet .field select:focus,
+[data-theme="dark"] .letter-sheet .field textarea:focus,
+[data-theme="dark"] .radio-panel input:focus,
+[data-theme="dark"] .radio-panel textarea:focus {
+  background: rgba(255, 154, 92, 0.08);
+}
+
+[data-theme="dark"] .lt-sheet {
+  background:
+    repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 7px, var(--dk-stripe) 7px 14px) top left / 100% 7px no-repeat,
+    linear-gradient(170deg, var(--dk-paper-hi), var(--dk-paper));
+}
+
+[data-theme="dark"] .lt-sheet p {
+  color: var(--ink-soft);
+}
+
+/* ---------- team notes, working-group files ---------- */
+
+[data-theme="dark"] .team-note,
+[data-theme="dark"] .team-note-float,
+[data-theme="dark"] .wg-file {
+  background: var(--dk-paper);
+}
+
+[data-theme="dark"] .team-notes > :nth-child(even),
+[data-theme="dark"] .wg-files .wg-file:nth-of-type(3n+2),
+[data-theme="dark"] .wg-files .wg-file:nth-of-type(5n+3) {
+  background: var(--dk-paper-hi);
+}
+
+[data-theme="dark"] .wg-board {
+  background:
+    repeating-linear-gradient(58deg, rgba(150, 110, 56, 0.05) 0 2px, transparent 2px 7px),
+    radial-gradient(220px 160px at 12% 18%, rgba(158, 116, 58, 0.08), transparent 70%),
+    linear-gradient(168deg, #3a2f20, #30271b);
+  box-shadow: inset 0 0 0 10px rgba(0, 0, 0, 0.2), inset 0 0 60px rgba(0, 0, 0, 0.25), 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .wg-files .wg-file:nth-of-type(even) .wg-icon {
+  background: var(--dk-olive-paper);
+}
+
+[data-theme="dark"] .wg-file:not(.is-open) .polaroid figcaption {
+  background: rgba(58, 48, 35, 0.94);
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .wg-open {
+  color: var(--incas-orange-deep);
+}
+
+[data-theme="dark"] .wg-detail ul,
+[data-theme="dark"] .wg-contact,
+[data-theme="dark"] .wg-join p,
+[data-theme="dark"] .rec-recipe ul,
+[data-theme="dark"] .rec-recipe ol {
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .wg-slip {
+  background: var(--dk-paper-hi);
+}
+
+/* ---------- karaoke radio ---------- */
+
+[data-theme="dark"] .radio-set {
+  background: linear-gradient(168deg, #6b5232, #5e472a 45%, #4f3c23);
+  box-shadow: inset 0 0 0 3px rgba(255, 246, 226, 0.08), 0 16px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .radio-dial,
+[data-theme="dark"] .radio-panel {
+  background: linear-gradient(168deg, var(--dk-paper-hi), var(--dk-paper));
+}
+
+[data-theme="dark"] .radio-dial::before {
+  background:
+    conic-gradient(from 200deg, rgba(210, 193, 163, 0.16) 0 40%, rgba(210, 193, 163, 0.04) 40% 100%),
+    var(--dk-paper-lo);
+}
+
+[data-theme="dark"] .radio-knob::after {
+  background: var(--dk-paper-hi);
+}
+
+/* ---------- join: the WANTED poster ---------- */
+
+[data-theme="dark"] .wanted {
+  color: var(--ink);
+  background:
+    radial-gradient(180px 130px at 8% 8%, rgba(0, 0, 0, 0.16), transparent 68%),
+    radial-gradient(200px 150px at 50% 98%, rgba(0, 0, 0, 0.18), transparent 72%),
+    linear-gradient(168deg, #4a3c26, #42351f 58%, #3a2e1a);
+  box-shadow: inset 0 0 44px rgba(0, 0, 0, 0.3), 0 16px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .wanted h2,
+[data-theme="dark"] .wanted-reward span {
+  color: var(--dk-text);
+}
+
+[data-theme="dark"] .wanted-top,
+[data-theme="dark"] .wanted-reward b,
+[data-theme="dark"] .wanted-foot,
+[data-theme="dark"] .wanted-tear {
+  color: var(--dk-text-soft);
+}
+
+[data-theme="dark"] .wanted-stamp {
+  color: rgba(255, 154, 92, 0.7);
+}
+
+[data-theme="dark"] .wanted-rule {
+  background: rgba(241, 230, 211, 0.35);
+}
+
+[data-theme="dark"] .wanted-tears::before {
+  background: repeating-linear-gradient(90deg, rgba(241, 230, 211, 0.35) 0 4px, transparent 4px 8px);
+}
+
+/* ---------- archive records, recipes, slides, food map ---------- */
+
+[data-theme="dark"] .rec-protocol {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 30px, rgba(210, 193, 163, 0.12) 30px 31px),
+    linear-gradient(170deg, var(--dk-paper-hi), var(--dk-paper));
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .rec-recipe {
+  background:
+    repeating-linear-gradient(45deg, var(--dk-orange-fill) 0 6px, var(--dk-stripe) 6px 12px) top / 100% 5px no-repeat,
+    linear-gradient(170deg, var(--dk-paper-hi), var(--dk-paper));
+}
+
+[data-theme="dark"] .slide {
+  background:
+    radial-gradient(220px 150px at 8% 8%, rgba(158, 118, 58, 0.1), transparent 70%),
+    linear-gradient(168deg, var(--dk-paper-hi), var(--dk-paper));
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .slide.tone-olive {
+  background: linear-gradient(168deg, #55622e, #4a5626 55%, #3e4820);
+}
+
+[data-theme="dark"] .food-map {
+  background:
+    radial-gradient(220px 160px at 12% 16%, rgba(158, 116, 58, 0.08), transparent 70%),
+    linear-gradient(168deg, var(--dk-band), var(--dk-paper-lo));
+}
+
+[data-theme="dark"] .food-map-land {
+  fill: #3e3324;
+  stroke: #4d4030;
+}
+
+[data-theme="dark"] .food-pin-label,
+[data-theme="dark"] .food-pin-count {
+  stroke: rgba(22, 18, 13, 0.95);
+}
+
+/* ---------- calendar treasure map ---------- */
+
+[data-theme="dark"] .treasure-sheet,
+[data-theme="dark"] .theme-parchment .treasure-sheet {
+  color: var(--ink);
+  background:
+    radial-gradient(130% 130% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.3) 100%),
+    radial-gradient(120% 100% at 30% 20%, #3a2f20 0%, #31281b 55%, #292116 100%);
+  box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .treasure-cartouche,
+[data-theme="dark"] .theme-parchment .treasure-cartouche,
+[data-theme="dark"] .treasure-label,
+[data-theme="dark"] .theme-parchment .treasure-label {
+  background: rgba(42, 34, 25, 0.94);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .treasure-x,
+[data-theme="dark"] .theme-parchment .treasure-x {
+  background: var(--dk-paper-hi);
+}
+
+[data-theme="dark"] .treasure-cartouche-sub,
+[data-theme="dark"] .treasure-empty,
+[data-theme="dark"] .treasure-station > a,
+[data-theme="dark"] .treasure-cartouche .btn-outline {
+  color: var(--ink-soft);
+}
+
+[data-theme="dark"] .treasure-month,
+[data-theme="dark"] .treasure-label time {
+  color: var(--ink-faint);
+}
+
+[data-theme="dark"] .treasure-route-path {
+  stroke: #c98a52;
+}
+
+[data-theme="dark"] .page-hero h1 em,
+[data-theme="dark"] .treasure-cartouche h1 em,
+[data-theme="dark"] .treasure-x,
+[data-theme="dark"] .treasure-next,
+[data-theme="dark"] .treasure-cartouche .hero-coords {
+  color: var(--accent-text, #ff8f4d);
+}
+
+/* ---------- appearance switch ---------- */
+
+[data-theme="dark"] .color-scheme-toggle[aria-pressed="true"] {
+  border-color: var(--pine);
+  color: var(--pine);
+}
