@@ -52,36 +52,45 @@ function TeamSpotlight({ locale }: { locale: "en" | "de" }) {
 }
 
 /** The default team theme slot ("grid") renders the Playful design: taped group photo. */
-function TeamPhotoHero() {
+function TeamPhotoHero({ locale }: { locale: "en" | "de" }) {
+  const de = locale === "de";
   return (
     <>
       <header className="team-hero">
         <div>
-          <p className="hero-coords">Who we are · 50°46′ N · 6°05′ E</p>
-          <h1>The INCAS <em>Team</em></h1>
+          <p className="hero-coords">{de ? "Wer wir sind" : "Who we are"} · 50°46′ N · 6°05′ E</p>
+          <h1>{de ? "Das INCAS-" : "The INCAS "}<em>Team</em></h1>
           <p>
-            Students who volunteer their time to keep the intercultural program in Aachen running.
-            The work is split into working groups, each with its own leaders, each planning its
-            projects independently.
+            {de
+              ? "Studierende, die ehrenamtlich ihre Zeit einbringen, damit das interkulturelle Programm in Aachen läuft. Die Arbeit ist auf Arbeitsgruppen verteilt, jede mit eigener Leitung und eigenen Projekten."
+              : "Students who volunteer their time to keep the intercultural program in Aachen running. The work is split into working groups, each with its own leaders, each planning its projects independently."}
           </p>
           <div className="btn-row team-hero-cta">
-            <Link to="/about/working-groups" className="btn btn-primary">See the working groups</Link>
-            <Link to="/join" className="btn btn-outline">Join us</Link>
+            <Link to="/about/working-groups" className="btn btn-primary">{de ? "Zu den Arbeitsgruppen" : "See the working groups"}</Link>
+            <Link to="/join" className="btn btn-outline">{de ? "Mitmachen" : "Join us"}</Link>
           </div>
         </div>
         <figure className="photo-tape">
           <span className="tape tape-tl" aria-hidden="true" />
           <span className="tape tape-br" aria-hidden="true" />
-          <img src={assetUrl("img/site/team-photo.jpg") ?? ""} alt="The INCAS team at Humboldt-Haus" />
-          <figcaption className="photo-caption">the whole crew, Tuesday night</figcaption>
+          <img src={assetUrl("img/site/team-photo.jpg") ?? ""} alt={de ? "Das INCAS-Team im Humboldt-Haus" : "The INCAS team at Humboldt-Haus"} />
+          <figcaption className="photo-caption">{de ? "die ganze Crew, Dienstagabend" : "the whole crew, Tuesday night"}</figcaption>
         </figure>
       </header>
 
-      <div className="wg-note">
-        Want to put faces to the names? Come to the team meeting on <strong>Tuesdays at 7:00 PM</strong> at
-        Humboldt-Haus, or find any of us at an event. Every working group has its own flyer on the{" "}
-        <Link to="/about/working-groups">working groups board</Link>.
-      </div>
+      {de ? (
+        <div className="wg-note">
+          Du willst wissen, wer hinter den Namen steckt? Komm zum Teamtreffen <strong>dienstags um 19:00 Uhr</strong> im
+          Humboldt-Haus oder sprich uns bei einem Event an. Jede Arbeitsgruppe hat ihren eigenen Flyer am{" "}
+          <Link to="/about/working-groups">Brett der Arbeitsgruppen</Link>.
+        </div>
+      ) : (
+        <div className="wg-note">
+          Want to put faces to the names? Come to the team meeting on <strong>Tuesdays at 7:00 PM</strong> at
+          Humboldt-Haus, or find any of us at an event. Every working group has its own flyer on the{" "}
+          <Link to="/about/working-groups">working groups board</Link>.
+        </div>
+      )}
     </>
   );
 }
@@ -106,7 +115,7 @@ export function TeamPage() {
           <TeamSpotlight locale={locale} />
         </>
       ) : (
-        <TeamPhotoHero />
+        <TeamPhotoHero locale={locale} />
       )}
     </>
   );

@@ -75,7 +75,7 @@ export function SuggestEventForm({ initialKind = "country_evening" }: { initialK
           <input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => change("contactName", event.target.value)} />
         </Field>
         <div className="form-grid">
-          <Field label="Email" error={formErrors.errors.contactEmail}>
+          <Field label={de ? "E-Mail" : "Email"} error={formErrors.errors.contactEmail}>
             <input name="contactEmail" type="email" autoComplete="email" value={form.contactEmail} onChange={(event) => change("contactEmail", event.target.value)} />
           </Field>
           <Field label={de ? "Telefon" : "Phone"} error={formErrors.errors.contactPhone}>

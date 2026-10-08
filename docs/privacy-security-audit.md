@@ -137,7 +137,8 @@ No analytics/advertising cookies anywhere (grepped: no gtag, GA, GTM,
 Plausible, Matomo, Sentry, Facebook pixel).
 
 **Local storage (per-device, never sent to us):** `incas.locale`,
-`incas.appearance`, `incas.admin.view` (admin only), and a karaoke
+`incas.appearance`, `incas.admin.view` (admin only),
+`incas.admin.colorScheme` (admin-only dark appearance), and a karaoke
 tracking-id list. All exempt from consent.
 
 **External browser requests.**

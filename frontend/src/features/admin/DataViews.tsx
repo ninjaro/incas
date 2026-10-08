@@ -1,9 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 
+import { useCurrentLocale } from "../../i18n/LocaleContext";
+
 export type AdminViewMode = "table" | "grid" | "list";
 
 const VIEW_STORAGE_KEY = "incas.admin.view";
 const VIEW_EVENT = "incas-admin-view-change";
+const GERMAN_VIEW_LABELS: Record<AdminViewMode, string> = { table: "Tabelle", grid: "Raster", list: "Liste" };
 
 function readPreferredView(): AdminViewMode {
   const stored = globalThis.localStorage?.getItem?.(VIEW_STORAGE_KEY);
@@ -26,6 +29,7 @@ export function DataViews<T>({
   empty: ReactNode;
 }) {
   const [view, setView] = useState<AdminViewMode>(readPreferredView);
+  const de = useCurrentLocale() === "de";
   useEffect(() => {
     const synchronize = (event: Event) => {
       const next = (event as CustomEvent<AdminViewMode>).detail;
@@ -41,8 +45,8 @@ export function DataViews<T>({
   };
   return (
     <>
-      <div className="view-switcher" role="group" aria-label="View mode">
-        {(["table", "grid", "list"] as const).map((mode) => <button key={mode} type="button" className={`btn btn-sm ${view === mode ? "btn-primary" : "btn-ghost"}`} aria-pressed={view === mode} onClick={() => chooseView(mode)}>{mode}</button>)}
+      <div className="view-switcher" role="group" aria-label={de ? "Ansicht" : "View mode"}>
+        {(["table", "grid", "list"] as const).map((mode) => <button key={mode} type="button" className={`btn btn-sm ${view === mode ? "btn-primary" : "btn-ghost"}`} aria-pressed={view === mode} onClick={() => chooseView(mode)}>{de ? GERMAN_VIEW_LABELS[mode] : mode}</button>)}
       </div>
       {!items.length ? <div className="state-box">{empty}</div> : view === "table" ? (
         <div className="table-wrap"><table className="data-table"><thead><tr>{columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={keyFor(item)}>{renderCells(item).map((cell, index) => <td key={columns[index] ?? index}>{cell}</td>)}</tr>)}</tbody></table></div>

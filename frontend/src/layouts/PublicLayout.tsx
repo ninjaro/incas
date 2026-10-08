@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigationType } from "react-router-dom";
 
 import type { Locale, SiteNavItem } from "../api/types";
+import { ColorSchemeToggle } from "../appearance/ColorScheme";
 import { useSession } from "../auth/SessionContext";
 import { useData } from "../data/DataProviderContext";
 import { localizedAboutItems } from "../domain/publicSections";
@@ -369,6 +370,7 @@ export function PublicLayout() {
                   </button>
                 ))}
               </div>
+              <ColorSchemeToggle compact />
               <NavLink to="/join" className="btn btn-outline btn-sm site-nav-cta" onClick={closeGroup}>
                 {locale === "de" ? "Mitmachen" : "Join us"}
               </NavLink>

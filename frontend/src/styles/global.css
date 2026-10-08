@@ -16,7 +16,7 @@
   --paper-warm: #faf6f1;
   --line: #e8e1d8;
 
-  --ok: #1a7f37;
+  --ok: #187a34;
   --ok-soft: #e6f4ea;
   --warn: #9a6700;
   --warn-soft: #fff8e1;
@@ -1512,6 +1512,42 @@ a {
 }
 
 .admin-lock {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+/* Admin-only light/dark switch (sidebar and site navigation). */
+.color-scheme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.color-scheme-toggle:hover {
+  border-color: var(--incas-orange);
+  color: var(--ink);
+}
+
+.color-scheme-toggle.is-compact {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.admin-color-scheme {
   width: 100%;
   justify-content: center;
   margin-bottom: 0.75rem;

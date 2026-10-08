@@ -6,7 +6,9 @@ import { feature } from "topojson-client";
 import type { GeoJsonProperties, FeatureCollection, Geometry } from "geojson";
 import worldTopo from "world-atlas/countries-110m.json";
 
-import { RECIPE_BOOK, RECIPE_COUNT } from "./recipeBook";
+import type { Locale } from "../api/types";
+import { useLocale } from "../i18n/LocaleContext";
+import { RECIPE_BOOK, RECIPE_COUNT, countryName } from "./recipeBook";
 import type { BookCountry, BookRecipe } from "./recipeBook";
 import { downloadRecipeCard } from "../utils/recipeCards";
 
@@ -41,7 +43,13 @@ function clampView(view: MapView): MapView {
 
 /** The interactive map: one pushpin per country, zoomable by wheel, drag,
     buttons, or by picking a pin. */
-function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
+function recipeCount(count: number, de: boolean): string {
+  if (de) return `${count} ${count === 1 ? "Rezept" : "Rezepte"}`;
+  return `${count} ${count === 1 ? "recipe" : "recipes"}`;
+}
+
+function RecipeMap({ selected, locale, onSelect }: { selected: string | null; locale: Locale; onSelect: (id: string | null) => void }) {
+  const de = locale === "de";
   const pins = useMemo(
     () =>
       RECIPE_BOOK.map((country) => {
@@ -100,7 +108,7 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
   };
 
   return (
-    <div className="food-map" role="group" aria-label="Recipes by country">
+    <div className="food-map" role="group" aria-label={de ? "Rezepte nach Land" : "Recipes by country"}>
       <svg
         viewBox={`0 0 ${MAP_W} ${mapGeometry.height}`}
         className={`food-map-svg${view.k > 1 ? " is-zoomed" : ""}`}
@@ -141,7 +149,7 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
             transition: smooth ? "transform 0.45s cubic-bezier(0.16, 0.84, 0.28, 1)" : "none",
           }}
         >
-          <path d={mapGeometry.landPath} fill="#e2cb9c" stroke="#d9bf8b" strokeWidth={0.6} />
+          <path className="food-map-land" d={mapGeometry.landPath} strokeWidth={0.6} />
           {pins.map(({ country, x, y }) => {
             const isActive = selected === country.id;
             return (
@@ -152,7 +160,7 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
                 role="button"
                 tabIndex={0}
                 aria-pressed={isActive}
-                aria-label={`${country.country}: ${country.recipes.length} ${country.recipes.length === 1 ? "recipe" : "recipes"}`}
+                aria-label={`${countryName(country, locale)}: ${recipeCount(country.recipes.length, de)}`}
                 onClick={() => selectPin(country, isActive)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -164,9 +172,9 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
                 <circle className="food-pin-halo" r={22} />
                 <circle className="food-pin-head" r={10} />
                 <circle className="food-pin-shine" r={3} cx={-2.6} cy={-3} />
-                <text className="food-pin-label" y={26}>{country.country}</text>
+                <text className="food-pin-label" y={26}>{countryName(country, locale)}</text>
                 <text className="food-pin-count" y={39}>
-                  {country.recipes.length} {country.recipes.length === 1 ? "recipe" : "recipes"}
+                  {recipeCount(country.recipes.length, de)}
                 </text>
               </g>
             );
@@ -174,15 +182,15 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
         </g>
       </svg>
       <div className="food-map-controls">
-        <button type="button" aria-label="Zoom in" onClick={() => zoomCenter(1.6)} disabled={view.k >= MAX_ZOOM}>
+        <button type="button" aria-label={de ? "Vergrößern" : "Zoom in"} onClick={() => zoomCenter(1.6)} disabled={view.k >= MAX_ZOOM}>
           <i className="bi bi-plus-lg" aria-hidden="true" />
         </button>
-        <button type="button" aria-label="Zoom out" onClick={() => zoomCenter(1 / 1.6)} disabled={view.k <= MIN_ZOOM}>
+        <button type="button" aria-label={de ? "Verkleinern" : "Zoom out"} onClick={() => zoomCenter(1 / 1.6)} disabled={view.k <= MIN_ZOOM}>
           <i className="bi bi-dash-lg" aria-hidden="true" />
         </button>
         <button
           type="button"
-          aria-label="Reset the map view"
+          aria-label={de ? "Kartenansicht zurücksetzen" : "Reset the map view"}
           onClick={() => { setSmooth(true); setView({ k: 1, x: 0, y: 0 }); }}
           disabled={view.k === 1 && view.x === 0 && view.y === 0}
         >
@@ -193,8 +201,9 @@ function RecipeMap({ selected, onSelect }: { selected: string | null; onSelect: 
   );
 }
 
-function BookRecipeCard({ recipe, country }: { recipe: BookRecipe; country: BookCountry }) {
+function BookRecipeCard({ recipe, locale }: { recipe: BookRecipe; locale: Locale }) {
   const [open, setOpen] = useState(false);
+  const de = locale === "de";
   return (
     <article className={`rec-dish${open ? " is-open" : ""}`}>
       <div className="rec-dish-head">
@@ -204,7 +213,7 @@ function BookRecipeCard({ recipe, country }: { recipe: BookRecipe; country: Book
             {recipe.note}{" "}
             {recipe.recordId ? (
               <Link to={`/events/archive/${recipe.recordId}`} className="food-record-link">
-                From {recipe.eventLabel} <i className="bi bi-arrow-right" aria-hidden="true" />
+                {de ? "Von" : "From"} {recipe.eventLabel} <i className="bi bi-arrow-right" aria-hidden="true" />
               </Link>
             ) : (
               <span className="food-event-label">· {recipe.eventLabel}</span>
@@ -213,31 +222,31 @@ function BookRecipeCard({ recipe, country }: { recipe: BookRecipe; country: Book
         </div>
         {recipe.recipe ? (
           <button type="button" className="btn btn-outline btn-sm" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-            {open ? "Fold the recipe away" : "Open the recipe"}
+            {open ? (de ? "Rezept zuklappen" : "Fold the recipe away") : (de ? "Rezept öffnen" : "Open the recipe")}
           </button>
         ) : (
-          <span className="rec-dish-none">No recipe kept</span>
+          <span className="rec-dish-none">{de ? "Kein Rezept aufbewahrt" : "No recipe kept"}</span>
         )}
       </div>
       {open && recipe.recipe ? (
         <div className="rec-recipe">
           <div className="rec-recipe-top">
-            <span className="rec-recipe-kicker">Recipe card · {recipe.recipe.serves}</span>
+            <span className="rec-recipe-kicker">{de ? "Rezeptkarte" : "Recipe card"} · {recipe.recipe.serves}</span>
             <button
               type="button"
               className="btn btn-outline btn-sm"
-              onClick={() => downloadRecipeCard(recipe.dish, recipe.eventLabel, recipe.recipe!)}
+              onClick={() => downloadRecipeCard(recipe.dish, recipe.eventLabel, recipe.recipe!, locale)}
             >
-              <i className="bi bi-download" aria-hidden="true" /> Save the card
+              <i className="bi bi-download" aria-hidden="true" /> {de ? "Karte speichern" : "Save the card"}
             </button>
           </div>
           <div className="rec-recipe-cols">
             <div>
-              <h4>Ingredients</h4>
+              <h4>{de ? "Zutaten" : "Ingredients"}</h4>
               <ul>{recipe.recipe.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>
             </div>
             <div>
-              <h4>How it went</h4>
+              <h4>{de ? "So ging es" : "How it went"}</h4>
               <ol>{recipe.recipe.steps.map((step) => <li key={step}>{step}</li>)}</ol>
             </div>
           </div>
@@ -248,6 +257,8 @@ function BookRecipeCard({ recipe, country }: { recipe: BookRecipe; country: Book
 }
 
 export function FoodFromEvents() {
+  const { locale } = useLocale();
+  const de = locale === "de";
   const [selected, setSelected] = useState<string | null>(null);
   const bookHeadRef = useRef<HTMLDivElement>(null);
   const countries = selected ? RECIPE_BOOK.filter((country) => country.id === selected) : RECIPE_BOOK;
@@ -264,38 +275,43 @@ export function FoodFromEvents() {
   };
 
   return (
-    <section aria-label="Food from events">
+    <section aria-label={de ? "Essen von Events" : "Food from events"}>
       <p className="events-note">
-        Every dish cooked at an event ends up here: pinned to the country it came from, with the
-        recipe kept so you can cook it at home. Tap a pin to open that country's page of the book.
+        {de
+          ? "Jedes Gericht, das bei einem Event gekocht wurde, landet hier: angepinnt an sein Herkunftsland, mit Rezept, damit du es zu Hause nachkochen kannst. Tippe auf eine Nadel, um die Seite dieses Landes im Buch zu öffnen."
+          : "Every dish cooked at an event ends up here: pinned to the country it came from, with the recipe kept so you can cook it at home. Tap a pin to open that country's page of the book."}
       </p>
 
-      <RecipeMap selected={selected} onSelect={selectCountry} />
+      <RecipeMap selected={selected} locale={locale} onSelect={selectCountry} />
 
       <div className="food-book-head" ref={bookHeadRef}>
-        <h2>The recipe book</h2>
+        <h2>{de ? "Das Rezeptbuch" : "The recipe book"}</h2>
         <span className="count">
           {selected
-            ? `${countries[0]?.country} · ${countries[0]?.recipes.length ?? 0} on file`
-            : `${RECIPE_COUNT} recipes from ${RECIPE_BOOK.length} corners of the world`}
+            ? (countries[0]
+              ? `${countryName(countries[0], locale)} · ${de ? `${countries[0].recipes.length} im Buch` : `${countries[0].recipes.length} on file`}`
+              : "")
+            : de
+              ? `${RECIPE_COUNT} Rezepte aus ${RECIPE_BOOK.length} Ecken der Welt`
+              : `${RECIPE_COUNT} recipes from ${RECIPE_BOOK.length} corners of the world`}
         </span>
         {selected ? (
           <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelected(null)}>
-            Show every country
+            {de ? "Alle Länder zeigen" : "Show every country"}
           </button>
         ) : null}
       </div>
 
       <div className="food-book">
         {countries.map((country) => (
-          <section className="food-country" key={country.id} aria-label={country.country}>
+          <section className="food-country" key={country.id} aria-label={countryName(country, locale)}>
             <h3 className="food-country-head">
               <span className="food-country-pin" aria-hidden="true" />
-              {country.country}
+              {countryName(country, locale)}
             </h3>
             <div className="rec-dishes">
               {country.recipes.map((recipe) => (
-                <BookRecipeCard recipe={recipe} country={country} key={recipe.dish} />
+                <BookRecipeCard recipe={recipe} locale={locale} key={recipe.dish} />
               ))}
             </div>
           </section>
@@ -303,8 +319,12 @@ export function FoodFromEvents() {
       </div>
 
       <div className="board-note">
-        <h2>Cooked something at an event?</h2>
-        <p>Hand the recipe to the team and it goes into the book with your country's pin.</p>
+        <h2>{de ? "Bei einem Event gekocht?" : "Cooked something at an event?"}</h2>
+        <p>
+          {de
+            ? "Gib das Rezept dem Team, dann kommt es mit der Nadel deines Landes ins Buch."
+            : "Hand the recipe to the team and it goes into the book with your country's pin."}
+        </p>
       </div>
     </section>
   );

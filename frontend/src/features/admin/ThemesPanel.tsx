@@ -12,6 +12,7 @@ import {
 } from "../../components/ui";
 import { useData } from "../../data/DataProviderContext";
 import { useAsync } from "../../hooks/useAsync";
+import { useCurrentLocale } from "../../i18n/LocaleContext";
 
 const PREVIEW_ROUTES: Partial<Record<PageId, string>> = {
   landing: "/",
@@ -21,9 +22,9 @@ const PREVIEW_ROUTES: Partial<Record<PageId, string>> = {
   admin_dashboard: "/admin",
 };
 
-export function formatRemaining(untilIso: string, now = Date.now()): string {
+export function formatRemaining(untilIso: string, now = Date.now(), de = false): string {
   const ms = new Date(untilIso).getTime() - now;
-  if (ms <= 0) return "now";
+  if (ms <= 0) return de ? "jetzt" : "now";
   const totalMinutes = Math.ceil(ms / 60000);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -44,6 +45,8 @@ function ThemePageCard({
   onForce: (page: PageId, theme: string) => void;
 }) {
   const previewRoute = PREVIEW_ROUTES[page.pageId];
+  const locale = useCurrentLocale();
+  const de = locale === "de";
   const isForceLocked = Boolean(
     page.forceLock.isLocked
     && page.forceLock.lockedUntil
@@ -56,8 +59,13 @@ function ThemePageCard({
         <h3 style={{ margin: 0 }}>{page.name}</h3>
         <div>
           {isForceLocked && page.forceLock.lockedUntil ? (
-            <span className="badge badge-warn" title={`Next change at ${page.forceLock.lockedUntil}`}>
-              Force locked · {formatRemaining(page.forceLock.lockedUntil, now)} left
+            <span
+              className="badge badge-warn"
+              title={`${de ? "Nächste Änderung um" : "Next change at"} ${new Date(page.forceLock.lockedUntil).toLocaleString(locale)}`}
+            >
+              {de
+                ? `Gesperrt · noch ${formatRemaining(page.forceLock.lockedUntil, now, de)}`
+                : `Force locked · ${formatRemaining(page.forceLock.lockedUntil, now)} left`}
             </span>
           ) : null}
         </div>
@@ -74,14 +82,16 @@ function ThemePageCard({
               <div className="theme-option-head">
                 <strong>{theme.name}</strong>
                 <span>
-                  {isPublic ? <span className="badge badge-brand">Public</span> : null}{" "}
-                  {theme.isDefault ? <span className="badge badge-neutral">Default</span> : null}
+                  {isPublic ? <span className="badge badge-brand">{de ? "Öffentlich" : "Public"}</span> : null}{" "}
+                  {theme.isDefault ? <span className="badge badge-neutral">{de ? "Standard" : "Default"}</span> : null}
                 </span>
               </div>
               <p>{theme.description}</p>
               <p style={{ fontSize: "0.82rem", color: "var(--ink-faint)" }}>
-                {theme.votes ?? 0} vote{(theme.votes ?? 0) === 1 ? "" : "s"}
-                {isMyVote ? " · your vote" : ""}
+                {theme.votes ?? 0} {de
+                  ? (theme.votes ?? 0) === 1 ? "Stimme" : "Stimmen"
+                  : (theme.votes ?? 0) === 1 ? "vote" : "votes"}
+                {isMyVote ? (de ? " · deine Stimme" : " · your vote") : ""}
               </p>
               <div className="theme-option-actions">
                 {previewRoute ? (
@@ -89,7 +99,7 @@ function ThemePageCard({
                     className="btn btn-ghost btn-sm"
                     to={`${previewRoute}?previewTheme=${theme.themeId}`}
                   >
-                    Preview
+                    {de ? "Vorschau" : "Preview"}
                   </Link>
                 ) : null}
                 <button
@@ -97,7 +107,7 @@ function ThemePageCard({
                   className={`btn btn-sm ${isMyVote ? "btn-primary" : "btn-outline"}`}
                   onClick={() => onVote(page.pageId, theme.themeId)}
                 >
-                  {isMyVote ? "Voted" : "Vote"}
+                  {isMyVote ? (de ? "Abgestimmt" : "Voted") : (de ? "Abstimmen" : "Vote")}
                 </button>
                 {canForce && !isPublic ? (
                   <button
@@ -106,12 +116,12 @@ function ThemePageCard({
                     disabled={isForceLocked}
                     title={
                       isForceLocked
-                        ? "A theme can only be forced once per 24 hours"
-                        : "Make this the public theme"
+                        ? (de ? "Ein Theme kann nur einmal pro 24 Stunden erzwungen werden" : "A theme can only be forced once per 24 hours")
+                        : (de ? "Als öffentliches Theme festlegen" : "Make this the public theme")
                     }
                     onClick={() => onForce(page.pageId, theme.themeId)}
                   >
-                    Force public
+                    {de ? "Öffentlich erzwingen" : "Force public"}
                   </button>
                 ) : null}
               </div>
@@ -126,28 +136,30 @@ function ThemePageCard({
 function AuditList() {
   const data = useData();
   const audit = useAsync(() => data.getThemeAudit(), [data]);
+  const locale = useCurrentLocale();
+  const de = locale === "de";
 
   if (audit.loading) return <Loading />;
   if (audit.error) return <ErrorState error={audit.error} onRetry={audit.reload} />;
 
   const entries = audit.data?.entries ?? [];
-  if (entries.length === 0) return <EmptyState>No theme changes yet.</EmptyState>;
+  if (entries.length === 0) return <EmptyState>{de ? "Noch keine Theme-Änderungen." : "No theme changes yet."}</EmptyState>;
 
   return (
     <div className="table-wrap"><table className="table">
       <thead>
         <tr>
-          <th>When</th>
-          <th>Page</th>
-          <th>Change</th>
-          <th>Session</th>
-          <th>Note</th>
+          <th>{de ? "Wann" : "When"}</th>
+          <th>{de ? "Seite" : "Page"}</th>
+          <th>{de ? "Änderung" : "Change"}</th>
+          <th>{de ? "Sitzung" : "Session"}</th>
+          <th>{de ? "Notiz" : "Note"}</th>
         </tr>
       </thead>
       <tbody>
         {entries.map((entry, index) => (
           <tr key={index}>
-            <td>{new Date(entry.createdAt).toLocaleString()}</td>
+            <td>{new Date(entry.createdAt).toLocaleString(locale)}</td>
             <td>{entry.pageId}</td>
             <td>
               {entry.previousTheme || "—"} → <strong>{entry.newTheme}</strong>
@@ -166,6 +178,8 @@ function AuditList() {
 export function ThemesPanel() {
   const data = useData();
   const themes = useAsync(() => data.getAdminThemes(), [data]);
+  const locale = useCurrentLocale();
+  const de = locale === "de";
   const [tab, setTab] = useState<"themes" | "audit">("themes");
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [pendingForce, setPendingForce] = useState<{ page: PageId; theme: string } | null>(null);
@@ -182,7 +196,7 @@ export function ThemesPanel() {
       await data.voteTheme(page, theme);
       themes.reload();
     } catch (error) {
-      setNotice({ tone: "bad", text: error instanceof Error ? error.message : "Vote failed." });
+      setNotice({ tone: "bad", text: error instanceof Error ? error.message : de ? "Abstimmung fehlgeschlagen." : "Vote failed." });
     }
   };
 
@@ -193,7 +207,9 @@ export function ThemesPanel() {
       const result = await data.forceTheme(page, theme);
       setNotice({
         tone: "ok",
-        text: `Public theme for ${page} is now "${result.publicTheme}". Next change possible at ${new Date(result.nextChangeAt).toLocaleString()}.`,
+        text: de
+          ? `Das öffentliche Theme für ${page} ist jetzt „${result.publicTheme}“. Nächste Änderung möglich ab ${new Date(result.nextChangeAt).toLocaleString(locale)}.`
+          : `Public theme for ${page} is now "${result.publicTheme}". Next change possible at ${new Date(result.nextChangeAt).toLocaleString(locale)}.`,
       });
       themes.reload();
     } catch (error) {
@@ -201,10 +217,12 @@ export function ThemesPanel() {
         const availableAt = error.details.availableAt as string | null;
         setNotice({
           tone: "bad",
-          text: `This page theme cannot be changed yet${availableAt ? `; available at ${new Date(availableAt).toLocaleString()}` : ""}.`,
+          text: de
+            ? `Das Theme dieser Seite kann noch nicht geändert werden${availableAt ? `; möglich ab ${new Date(availableAt).toLocaleString(locale)}` : ""}.`
+            : `This page theme cannot be changed yet${availableAt ? `; available at ${new Date(availableAt).toLocaleString(locale)}` : ""}.`,
         });
       } else {
-        setNotice({ tone: "bad", text: error instanceof Error ? error.message : "Force failed." });
+        setNotice({ tone: "bad", text: error instanceof Error ? error.message : de ? "Erzwingen fehlgeschlagen." : "Force failed." });
       }
       themes.reload();
     }
@@ -218,20 +236,24 @@ export function ThemesPanel() {
   return (
     <>
       <PageHeader
-        kicker="Theme governance"
-        title="Page Themes"
+        kicker={de ? "Theme-Verwaltung" : "Theme governance"}
+        title={de ? "Seiten-Themes" : "Page Themes"}
         sub={
           payload?.canForce
-            ? "Preview and vote for themes, or force the public theme. Each page can be forced at most once per 24 hours."
-            : "Preview any theme and cast one vote per page. Forcing the public theme requires a stronger key."
+            ? (de
+              ? "Themes ansehen und abstimmen oder das öffentliche Theme erzwingen. Jede Seite kann höchstens einmal pro 24 Stunden erzwungen werden."
+              : "Preview and vote for themes, or force the public theme. Each page can be forced at most once per 24 hours.")
+            : (de
+              ? "Jedes Theme ansehen und eine Stimme pro Seite abgeben. Zum Erzwingen des öffentlichen Themes braucht es einen stärkeren Schlüssel."
+              : "Preview any theme and cast one vote per page. Forcing the public theme requires a stronger key.")
         }
       />
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "themes"} onClick={() => setTab("themes")}>
-          Themes & votes
+          {de ? "Themes & Stimmen" : "Themes & votes"}
         </button>
         <button type="button" role="tab" aria-selected={tab === "audit"} onClick={() => setTab("audit")}>
-          Audit history
+          {de ? "Änderungsprotokoll" : "Audit history"}
         </button>
       </div>
       {notice ? <p className={`notice notice-${notice.tone}`}>{notice.text}</p> : null}
@@ -251,13 +273,15 @@ export function ThemesPanel() {
       )}
       <ConfirmDialog
         open={pendingForce !== null}
-        title="Force public theme?"
+        title={de ? "Öffentliches Theme erzwingen?" : "Force public theme?"}
         body={
           pendingForce
-            ? `Every visitor will see the "${pendingForce.theme}" theme on ${pendingForce.page}. This cannot be changed again for 24 hours.`
+            ? (de
+              ? `Alle Besucher*innen sehen auf ${pendingForce.page} das Theme „${pendingForce.theme}“. Das lässt sich 24 Stunden lang nicht mehr ändern.`
+              : `Every visitor will see the "${pendingForce.theme}" theme on ${pendingForce.page}. This cannot be changed again for 24 hours.`)
             : undefined
         }
-        confirmLabel="Force theme"
+        confirmLabel={de ? "Theme erzwingen" : "Force theme"}
         onConfirm={() => pendingForce && force(pendingForce.page, pendingForce.theme)}
         onCancel={() => setPendingForce(null)}
       />

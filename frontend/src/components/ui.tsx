@@ -1,5 +1,7 @@
 import { cloneElement, isValidElement, useEffect, useId, useRef, type ReactElement, type ReactNode } from "react";
 
+import { useCurrentLocale } from "../i18n/LocaleContext";
+
 export function PageHeader({
   kicker,
   title,
@@ -57,14 +59,57 @@ const BADGE_TONES: Record<string, string> = {
   likely: "badge-warn",
 };
 
-export function StatusBadge({ status, label }: { status: string; label?: string }) {
-  return <span className={`badge ${BADGE_TONES[status] ?? "badge-neutral"}`}>{label ?? status}</span>;
+const GERMAN_STATUS_LABELS: Record<string, string> = {
+  all: "alle",
+  draft: "Entwurf",
+  scheduled: "geplant",
+  published: "veröffentlicht",
+  archived: "archiviert",
+  pending: "ausstehend",
+  approved: "bestätigt",
+  performing: "auf der Bühne",
+  completed: "fertig",
+  rejected: "abgelehnt",
+  cancelled: "storniert",
+  failed: "fehlgeschlagen",
+  paid: "bezahlt",
+  active: "aktiv",
+  expired: "abgelaufen",
+  revoked: "widerrufen",
+  refund_pending: "Erstattung ausstehend",
+  refunded: "erstattet",
+  waiting_payment: "wartet auf Zahlung",
+  waiting_list: "Warteliste",
+  waiting_refund: "wartet auf Rückzahlung",
+  viewed: "gesehen",
+  new: "neu",
+  in_progress: "in Bearbeitung",
+  resolved: "erledigt",
+  full: "voll",
+  partial: "teilweise",
+  weak: "schwach",
+  exact: "exakt",
+  likely: "wahrscheinlich",
+};
+
+/** Human label for a status value; English keeps the raw value with spaces. */
+export function statusLabel(status: string, locale: "en" | "de"): string {
+  if (locale === "de") return GERMAN_STATUS_LABELS[status] ?? status.replaceAll("_", " ");
+  return status.replaceAll("_", " ");
 }
 
-export function Loading({ label = "Loading…" }: { label?: string }) {
-  const displayLabel = label === "Loading…" && document.documentElement.lang === "de"
-    ? "Wird geladen…"
-    : label;
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
+  const locale = useCurrentLocale();
+  return (
+    <span className={`badge ${BADGE_TONES[status] ?? "badge-neutral"}`}>
+      {label ?? (locale === "de" ? statusLabel(status, locale) : status)}
+    </span>
+  );
+}
+
+export function Loading({ label }: { label?: string }) {
+  const locale = useCurrentLocale();
+  const displayLabel = label ?? (locale === "de" ? "Wird geladen…" : "Loading…");
   return (
     <div className="state-box" role="status" aria-live="polite">
       {displayLabel}
@@ -73,7 +118,7 @@ export function Loading({ label = "Loading…" }: { label?: string }) {
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const de = document.documentElement.lang === "de";
+  const de = useCurrentLocale() === "de";
   const message = error instanceof Error ? error.message : (de ? "Etwas ist schiefgelaufen." : "Something went wrong.");
   return (
     <div className="state-box state-error" role="alert">
@@ -95,7 +140,7 @@ export function ConfirmDialog({
   open,
   title,
   body,
-  confirmLabel = "Confirm",
+  confirmLabel,
   danger = false,
   onConfirm,
   onCancel,
@@ -112,6 +157,7 @@ export function ConfirmDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const titleId = useId();
+  const de = useCurrentLocale() === "de";
 
   useEffect(() => {
     if (open) {
@@ -163,7 +209,7 @@ export function ConfirmDialog({
         {body ? <p>{body}</p> : null}
         <div className="dialog-actions">
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Cancel
+            {de ? "Abbrechen" : "Cancel"}
           </button>
           <button
             ref={confirmRef}
@@ -171,7 +217,7 @@ export function ConfirmDialog({
             className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {confirmLabel ?? (de ? "Bestätigen" : "Confirm")}
           </button>
         </div>
       </div>

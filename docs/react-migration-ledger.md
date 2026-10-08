@@ -35,8 +35,8 @@ This ledger is the source of truth for legacy retirement. `Parity` means the Rea
 | Access keys | Jinja admin | React key/QR/scanner panel | parity | secret visible once | API, E2E |
 | Social publications | request-triggered mock | admin panel and dedicated worker | redesign | idempotent worker with bounded backoff | worker/API tests |
 | Theme governance | mixed registries | generated registry and React review panel | parity | cooldown/audit preserved | registry/API/E2E/visual |
-| Appearance | theme-coupled styles | persistent light/dark semantic palette | redesign | independent of page layout themes | E2E, visual, axe |
-| Localization | partial Jinja translations | EN/DE React locale context | parity for public routes | admin operational surfaces are English-only for v1 | key, route, E2E |
+| Appearance | theme-coupled styles | persistent light/dark semantic palette | redesign | independent of page layout themes; the dark switch is offered to admin sessions and themes the whole site while an access key is active (`html[data-theme="dark"]`, `styles/dark.css`) | E2E, visual, axe |
+| Localization | partial Jinja translations | EN/DE React locale context | parity for public and admin routes | CMS-like content (posts, kept edition records, recipes, wiki documents, theme descriptions) stays in the language it was written in | key, route, E2E |
 | Demo fixtures | independent offsets | canonical generated Tuesday/Saturday catalog | parity | same contracts and business rules | snapshot and demo-provider tests |
 | Database evolution | startup mutation | frozen Alembic revisions | parity | PostgreSQL production; explicit legacy stamp path | fresh/legacy migration tests |
 | Production routing and SEO | Jinja URLs and `/app/#` | BrowserRouter canonical URLs | redesign | HashRouter only in static demo | route crawl/direct-load/meta tests |
@@ -47,5 +47,5 @@ This ledger is the source of truth for legacy retirement. `Parity` means the Rea
 - PostgreSQL is the only supported production database. A locked `Post` row serializes capacity decisions across workers. SQLite receives an additional process lock for local/test determinism but is not a supported multi-worker deployment.
 - Rate-limit buckets are atomically stored in the shared production database. Forwarded addresses are trusted only when `TRUST_PROXY_HEADERS` and the exact proxy count are configured.
 - The static demo deliberately keeps HashRouter because it has no rewrite-capable server. Production uses BrowserRouter and Flask shell responses with per-event metadata.
-- Admin copy remains English-only in the first migrated release. Public navigation, landing, calendar, event, forms, registration, karaoke, Team, errors, map fallback, dates, and shared event states support English and German.
+- Public pages and the admin panel support English and German, including navigation, forms, statuses, capability names, dates, and shared states. Authored content (posts, kept edition records and recipes, wiki documents, theme descriptions) and API error messages are shown as written.
 - Map dependency, license, attribution, CSP, integrity, and fallback decisions are recorded in `docs/map-delivery.md`.

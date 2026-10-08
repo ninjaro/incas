@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./app/App";
+import { applyStoredColorScheme } from "./appearance/ColorScheme";
 import "bootstrap-icons/font/bootstrap-icons.css";
 // Self-hosted Baloo 2 (SIL OFL 1.1): bundled and served from our own origin,
 // matching the CSP font-src 'self' and the no-Google-Fonts privacy rule.
@@ -16,6 +17,9 @@ import "./styles/playful.css";
 import "./styles/playful-site.css";
 import "./styles/playful-mobile.css";
 import "./styles/playful-a11y.css";
+import "./styles/dark.css";
+
+applyStoredColorScheme();
 
 const container = document.getElementById("root");
 if (container) {

@@ -82,6 +82,14 @@ export function useLocale(): LocaleContextValue {
   return ctx;
 }
 
+/**
+ * Locale for shared components that may also render outside LocaleProvider
+ * (generic UI primitives, isolated component tests); falls back to English.
+ */
+export function useCurrentLocale(): Locale {
+  return useContext(LocaleContext)?.locale ?? "en";
+}
+
 export function useT(): (key: string) => string {
   const { site } = useLocale();
   return useCallback((key: string) => site?.strings[key] ?? key, [site]);

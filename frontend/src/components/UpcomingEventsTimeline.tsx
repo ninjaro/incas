@@ -69,19 +69,27 @@ function EventTitle({ title }: { title: EventTitleParts }) {
   );
 }
 
+/** The widget mounts into server-rendered pages, whose <html lang> carries the locale. */
+function isGermanPage(): boolean {
+  return document.documentElement.lang.startsWith("de");
+}
+
 function PaymentNotice({ payment }: { payment: EventPayment | null }) {
   if (!payment?.priceDisplay) {
     return null;
   }
 
+  const de = isGermanPage();
   const paymentCopy = payment.isDeposit
-    ? `Refundable ${payment.kindLabel.toLowerCase()}`
+    ? (de ? `Erstattbare ${payment.kindLabel}` : `Refundable ${payment.kindLabel.toLowerCase()}`)
     : payment.kindLabel;
-  const placeLabel = payment.capacity === 1 ? "place" : "places";
+  const placeLabel = de
+    ? (payment.capacity === 1 ? "Platz" : "Plätze")
+    : (payment.capacity === 1 ? "place" : "places");
 
   return (
     <div className="event-payment-notice fig-events-payment">
-      <span className="badge text-bg-warning event-payment-required">Payment Required</span>
+      <span className="badge text-bg-warning event-payment-required">{de ? "Zahlung erforderlich" : "Payment Required"}</span>
       <span className="event-payment-copy">
         {paymentCopy} <strong>€{payment.priceDisplay}</strong>
       </span>
@@ -158,6 +166,7 @@ export function UpcomingEventsTimeline({
 }: UpcomingEventsTimelineProps) {
   const headingId = useId();
   const timelineItems = items.slice(0, 6);
+  const de = isGermanPage();
 
   return (
     <section className={["fig-events", modifier].filter(Boolean).join(" ")} aria-labelledby={headingId}>
@@ -175,7 +184,7 @@ export function UpcomingEventsTimeline({
           {timelineItems.map((item, index) => (
             <EventItem item={item} index={index} key={`${item.startsAt}-${item.url}`}>
               <span className="fig-events-copy">
-                {index === 0 ? <span className="fig-events-next">Next up</span> : null}
+                {index === 0 ? <span className="fig-events-next">{de ? "Als Nächstes" : "Next up"}</span> : null}
                 <time className="fig-events-date" dateTime={item.startsAt}>
                   {item.dateLabel}
                 </time>

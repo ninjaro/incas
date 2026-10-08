@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useLocale } from "../i18n/LocaleContext";
 import { sanitizeRichHtml } from "../utils/sanitize";
 
 const STORAGE_KEY = "incas-wiki-docs-v2";
@@ -13,6 +14,19 @@ const GROUPS = [
   "International Breakfast",
   "Public Relations",
 ];
+
+/** Group names are stored on documents in English; only their display is localized. */
+const GERMAN_GROUP_NAMES: Record<string, string> = {
+  Coordination: "Koordination",
+  "International Tuesday & Café Lingua": "International Tuesday & Café Lingua",
+  "International Weekend": "International Weekend",
+  "Accommodation Search & Service Hours": "Wohnungssuche & Sprechstunden",
+  "Language Exchange": "Sprachaustausch",
+  "International Breakfast": "Internationales Frühstück",
+  "Public Relations": "Öffentlichkeitsarbeit",
+};
+
+const GERMAN_DOC_TYPES: Record<string, string> = { Text: "Text", PDF: "PDF", DOCX: "DOCX" };
 
 type WikiDoc = {
   id: string;
@@ -61,6 +75,9 @@ function typeIcon(type: WikiDoc["type"]): string {
 }
 
 export function WikiPage() {
+  const { locale } = useLocale();
+  const de = locale === "de";
+  const groupName = (group: string) => (de ? GERMAN_GROUP_NAMES[group] ?? group : group);
   const [docs, setDocs] = useState<WikiDoc[]>(loadDocs);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -100,10 +117,10 @@ export function WikiPage() {
     const doc: WikiDoc = {
       id: `doc-${Date.now()}`,
       group,
-      title: "Untitled page",
+      title: de ? "Seite ohne Titel" : "Untitled page",
       type: "Text",
-      info: `New page · ${new Date().toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}`,
-      html: "<p>Start writing…</p>",
+      info: `${de ? "Neue Seite" : "New page"} · ${new Date().toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })}`,
+      html: de ? "<p>Fang an zu schreiben…</p>" : "<p>Start writing…</p>",
     };
     persist([...docs, doc]);
     setActiveId(doc.id);
@@ -122,8 +139,12 @@ export function WikiPage() {
         group: pendingGroup.current,
         title: file.name.replace(/\.[^.]+$/, ""),
         type: ext === "PDF" ? "PDF" : "DOCX",
-        info: `Uploaded ${ext} · converted to editable text`,
-        html: `<p><em>Extracted text from ${file.name} appears here in the real app. Click Edit and write or paste the content.</em></p>`,
+        info: de
+          ? `Hochgeladenes ${ext} · in bearbeitbaren Text umgewandelt`
+          : `Uploaded ${ext} · converted to editable text`,
+        html: de
+          ? `<p><em>In der echten App erscheint hier der aus ${file.name} extrahierte Text. Klicke auf Bearbeiten und schreib oder füge den Inhalt ein.</em></p>`
+          : `<p><em>Extracted text from ${file.name} appears here in the real app. Click Edit and write or paste the content.</em></p>`,
       };
       persist([...docs, doc]);
       setActiveId(doc.id);
@@ -151,9 +172,13 @@ export function WikiPage() {
   return (
     <>
       <header className="page-hero wiki-hero">
-        <p className="wiki-badge">Team Wiki · internal</p>
+        <p className="wiki-badge">{de ? "Team-Wiki · intern" : "Team Wiki · internal"}</p>
         <h1><em>Wiki</em></h1>
-        <p>Every working group has its own library. Open a document to read or edit it, upload PDF and Word files, or write new pages directly.</p>
+        <p>
+          {de
+            ? "Jede Arbeitsgruppe hat ihre eigene Bibliothek. Öffne ein Dokument zum Lesen oder Bearbeiten, lade PDF- und Word-Dateien hoch oder schreib direkt neue Seiten."
+            : "Every working group has its own library. Open a document to read or edit it, upload PDF and Word files, or write new pages directly."}
+        </p>
       </header>
 
       {!active ? (
@@ -161,35 +186,35 @@ export function WikiPage() {
           {converting ? (
             <div className="wiki-converting" style={{ display: "flex" }}>
               <i className="bi bi-arrow-repeat" aria-hidden="true" />
-              <span>Converting “{converting}” to editable text…</span>
+              <span>{de ? `„${converting}“ wird in bearbeitbaren Text umgewandelt…` : `Converting “${converting}” to editable text…`}</span>
             </div>
           ) : null}
           <div className="library">
             {GROUPS.map((group) => {
               const groupDocs = docs.filter((doc) => doc.group === group);
               return (
-                <section className="lib-card" key={group} aria-label={`${group} library`}>
+                <section className="lib-card" key={group} aria-label={de ? `Bibliothek: ${groupName(group)}` : `${group} library`}>
                   <div className="lib-head">
-                    <h2>{group}</h2>
-                    <span>{groupDocs.length} {groupDocs.length === 1 ? "doc" : "docs"}</span>
+                    <h2>{groupName(group)}</h2>
+                    <span>{groupDocs.length} {de ? (groupDocs.length === 1 ? "Dokument" : "Dokumente") : (groupDocs.length === 1 ? "doc" : "docs")}</span>
                     <button type="button" className="lib-add" onClick={() => setOpenMenu(openMenu === group ? null : group)}>
-                      <i className="bi bi-plus-lg" aria-hidden="true" /> Add
+                      <i className="bi bi-plus-lg" aria-hidden="true" /> {de ? "Hinzufügen" : "Add"}
                     </button>
                   </div>
                   {groupDocs.map((doc) => (
                     <button type="button" className="doc-row" key={doc.id} onClick={() => openDoc(doc.id)}>
                       <i className={`bi ${typeIcon(doc.type)}`} aria-hidden="true" />
                       <strong>{doc.title}</strong>
-                      <span className="doc-type-badge">{doc.type}</span>
+                      <span className="doc-type-badge">{de ? GERMAN_DOC_TYPES[doc.type] : doc.type}</span>
                       <i className="bi bi-chevron-right" aria-hidden="true" />
                     </button>
                   ))}
                   <div className={`shelf-menu${openMenu === group ? " is-open" : ""}`}>
                     <button type="button" className="btn btn-outline btn-sm" onClick={() => { pendingGroup.current = group; fileRef.current?.click(); }}>
-                      <i className="bi bi-upload" aria-hidden="true" /> Upload PDF / DOCX
+                      <i className="bi bi-upload" aria-hidden="true" /> {de ? "PDF / DOCX hochladen" : "Upload PDF / DOCX"}
                     </button>
                     <button type="button" className="btn btn-outline btn-sm" onClick={() => newPage(group)}>
-                      <i className="bi bi-file-earmark-plus" aria-hidden="true" /> Write a new page
+                      <i className="bi bi-file-earmark-plus" aria-hidden="true" /> {de ? "Neue Seite schreiben" : "Write a new page"}
                     </button>
                   </div>
                 </section>
@@ -201,27 +226,31 @@ export function WikiPage() {
       ) : (
         <div className="wiki-doc-view is-open">
           <button type="button" className="btn btn-outline btn-sm wiki-back" onClick={() => { commitEdits(); setActiveId(null); }}>
-            <i className="bi bi-arrow-left" aria-hidden="true" /> Back to the library
+            <i className="bi bi-arrow-left" aria-hidden="true" /> {de ? "Zurück zur Bibliothek" : "Back to the library"}
           </button>
           <div className="card wiki-main-card">
             <div className="wiki-doc-head">
               <h2 ref={titleRef} contentEditable={editing} suppressContentEditableWarning>{active.title}</h2>
               <div className="wiki-toolbar">
                 <button type="button" className="btn btn-primary btn-sm" onClick={() => (editing ? commitEdits() : setEditing(true))}>
-                  {editing ? <><i className="bi bi-check-lg" aria-hidden="true" /> Done</> : <><i className="bi bi-pencil" aria-hidden="true" /> Edit</>}
+                  {editing
+                    ? <><i className="bi bi-check-lg" aria-hidden="true" /> {de ? "Fertig" : "Done"}</>
+                    : <><i className="bi bi-pencil" aria-hidden="true" /> {de ? "Bearbeiten" : "Edit"}</>}
                 </button>
                 <button type="button" className="btn btn-outline btn-sm" onClick={download}>
-                  <i className="bi bi-download" aria-hidden="true" /> Download
+                  <i className="bi bi-download" aria-hidden="true" /> {de ? "Herunterladen" : "Download"}
                 </button>
               </div>
               <div className="wiki-doc-meta">
                 <span className="badge badge-brand">{active.type}</span>
-                <span>{active.group} · {active.info}</span>
+                <span>{groupName(active.group)} · {active.info}</span>
               </div>
             </div>
             {editing ? (
               <div className="notice notice-ok wiki-edit-note" style={{ display: "block" }}>
-                You are editing this page. Changes save automatically when you click Done.
+                {de
+                  ? "Du bearbeitest diese Seite. Änderungen werden gespeichert, sobald du auf Fertig klickst."
+                  : "You are editing this page. Changes save automatically when you click Done."}
               </div>
             ) : null}
             <div
